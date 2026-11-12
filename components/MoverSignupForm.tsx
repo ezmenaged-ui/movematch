@@ -8,7 +8,8 @@ const ERR: Record<string, string> = {
   company: 'נא למלא את שם החברה.',
   phone: 'מספר הטלפון לא תקין. כתבו אותו כמו 0501234567.',
   url: 'קישור לא תקין. העתיקו את הכתובת המלאה של העמוד, שמתחילה ב-https://',
-  consent: 'צריך לאשר את התנאים כדי להירשם.',
+  consent: 'צריך לאשר קבלת הודעות כדי להירשם.',
+  terms: 'צריך לאשר את תנאי השימוש, כולל העמלה, כדי להירשם.',
   logotype: 'הלוגו צריך להיות קובץ PNG, JPG או WEBP.',
   logosize: 'קובץ הלוגו גדול מדי. עד 400KB.',
   exists: 'המספר הזה כבר רשום אצלנו. אם צריך לעדכן פרטים, כתבו לנו בוואטסאפ.',
@@ -56,6 +57,11 @@ export function MoverSignupForm() {
         <input type="checkbox" name="consent" value="1" required />
         <span className="check-box" aria-hidden />
         <span className="small">אני מאשר/ת קבלת הודעות וואטסאפ על מכרזי הובלה חדשים, ושהפרטים, הלוגו והדירוגים שלי יוצגו ללקוחות לצד הצעות המחיר שאגיש. אפשר להפסיק בכל עת במענה &quot;הסר&quot;. <a href="/terms" target="_blank">תנאי השימוש</a> · <a href="/privacy" target="_blank">מדיניות הפרטיות</a></span>
+      </label>
+      <label className="check-row terms-key" style={{ alignItems: 'flex-start' }}>
+        <input type="checkbox" name="terms" value="1" required />
+        <span className="check-box" aria-hidden />
+        <span className="small">קראתי ואני מאשר/ת את <a href="/terms" target="_blank">תנאי השימוש למובילים</a>, ובכלל זה: <b>תשלום עמלה של 10% מהמחיר הסופי (בתוספת מע״מ) על כל הובלה שאבצע ללקוח שהגיע דרך MoveMatch</b>, תוך 14 יום מההובלה; ושאני קבלן עצמאי, והאחריות להובלה, לנזקים, לביטוח ולרישוי חלה עליי בלבד ולא על MoveMatch.</span>
       </label>
       <input name="website" className="visually-hidden" tabIndex={-1} autoComplete="off" aria-hidden />
       <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} שליחת פרטים</button>

@@ -1,3 +1,4 @@
+import { LEGAL } from '@/lib/legal';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { sendAll, siteUrl } from '@/lib/notify';
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
   if (!/^0\d{8,9}$/.test(phone)) return NextResponse.json({ error: 'phone' }, { status: 422 });
   if (google_url === null || midrag_url === null) return NextResponse.json({ error: 'url' }, { status: 422 });
   if (!str('consent')) return NextResponse.json({ error: 'consent' }, { status: 422 });
+  if (!str('terms')) return NextResponse.json({ error: 'terms' }, { status: 422 });
 
   let logo: string | null = null;
   const file = f.get('logo');
@@ -29,10 +31,10 @@ export async function POST(req: NextRequest) {
     logo = `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString('base64')}`;
   }
 
-  const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: str('note', 1000) };
+  const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: str('note', 1000), terms_version: LEGAL.moverTermsVersion };
   const { error } = await db().rpc('mm_mover_signup', { p, p_logo: logo });
   if (error) {
-    const known = ['exists', 'invalid url', 'invalid phone', 'invalid company', 'too many'].find((k) => error.message.includes(k));
+    const known = ['exists', 'invalid url', 'invalid phone', 'invalid company', 'too many', 'terms'].find((k) => error.message.includes(k));
     if (!known) console.error('[mover signup]', error);
     return NextResponse.json({ error: known || 'db' }, { status: known === 'exists' ? 409 : known ? 422 : 500 });
   }
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
     `🚚 מוביל חדש נרשם — ${company} · ${phone}`,
     [`מוביל חדש נרשם ל-MoveMatch וממתין לאישור.`, `חברה: ${company}`, p.name ? `איש קשר: ${p.name}` : '', `טלפון: ${phone}`,
       p.email ? `אימייל: ${p.email}` : '', google_url ? `Google: ${google_url}` : '', midrag_url ? `מדרג: ${midrag_url}` : '',
-      p.note ? `הערה: ${p.note}` : '', logo ? 'צירף לוגו' : 'בלי לוגו', `לאישור: ${siteUrl()}/admin/movers`].filter(Boolean).join('\n'),
+      p.note ? `הערה: ${p.note}` : '', logo ? 'צירף לוגו' : 'בלי לוגו', `אישר את תנאי השימוש למובילים (גרסה ${LEGAL.moverTermsVersion}), כולל עמלה של 10%`, `לאישור: ${siteUrl()}/admin/movers`].filter(Boolean).join('\n'),
     { event: 'mover_signup', phone },
   ));
   return NextResponse.json({ ok: true });
