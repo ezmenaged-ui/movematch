@@ -40,6 +40,7 @@ export function cleanLeadInput(b: Record<string, unknown>) {
     };
   }
   if (typeof b.video_skipped === 'boolean') out.video_skipped = b.video_skipped;
+  if (b.theme === 'photo' || b.theme === 'art') out.theme = b.theme;
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign']) if (b[k] !== undefined) out[k] = s(b[k], 200);
   if (b.add_video && typeof b.add_video === 'object') {
     const v = b.add_video as Record<string, unknown>;

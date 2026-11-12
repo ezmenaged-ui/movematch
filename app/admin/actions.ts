@@ -111,3 +111,29 @@ export async function revokeMoverLogin(id: string) {
   revalidatePath('/admin/movers');
   redirect('/admin/movers?ok=1');
 }
+
+/** Money tab: mark an offer as the job that was done (with the final price), or undo it. */
+export async function markJobDone(form: FormData) {
+  const id = String(form.get('id') || '');
+  const price = Math.round(Number(String(form.get('final_price') || '').replace(/[^\d.]/g, '')));
+  await db().rpc('mm_admin_set_job', { p_secret: process.env.MM_ADMIN_SECRET, p_bid: id, p_done: true, p_final_price: Number.isFinite(price) && price > 0 ? price : null });
+  revalidatePath('/admin/money');
+}
+
+export async function undoJobDone(id: string) {
+  await db().rpc('mm_admin_set_job', { p_secret: process.env.MM_ADMIN_SECRET, p_bid: id, p_done: false, p_final_price: null });
+  revalidatePath('/admin/money');
+}
+
+/** Money tab: record (or clear) the commission payment a mover made for one job. */
+export async function setCommissionPaid(form: FormData) {
+  const id = String(form.get('id') || '');
+  const amount = Math.round(Number(String(form.get('amount') || '').replace(/[^\d.]/g, '')));
+  await db().rpc('mm_admin_set_commission', { p_secret: process.env.MM_ADMIN_SECRET, p_bid: id, p_paid: true, p_amount: Number.isFinite(amount) ? amount : 0, p_note: String(form.get('note') || '') });
+  revalidatePath('/admin/money');
+}
+
+export async function clearCommissionPaid(id: string) {
+  await db().rpc('mm_admin_set_commission', { p_secret: process.env.MM_ADMIN_SECRET, p_bid: id, p_paid: false, p_amount: null, p_note: '' });
+  revalidatePath('/admin/money');
+}

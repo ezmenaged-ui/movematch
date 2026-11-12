@@ -40,7 +40,7 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
     try {
       const fields = { name: v.name.trim(), phone: normalizePhone(v.phone), city: v.city.trim() };
       const isA = funnel === 'a';
-      const ref = await createLead(VARIANT[funnel], { ...fields, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
+      const ref = await createLead(VARIANT[funnel], { ...fields, theme, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
       const fp = funnelParams(funnel, theme);
       track('lead_created', fp);
       track('generate_lead', fp);
