@@ -1,6 +1,6 @@
-node_modules
+.env*
 .next
 .vercel
-.env*
-tsconfig.tsbuildinfo
 next-env.d.ts
+node_modules
+tsconfig.tsbuildinfo
