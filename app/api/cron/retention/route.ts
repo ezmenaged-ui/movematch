@@ -4,7 +4,7 @@ import { adminDb, db } from '@/lib/db';
 
 /**
  * Data retention, called daily by the database scheduler (pg_cron → pg_net, see migration 015).
- * Deletes client videos 6 months after the move date, tenders 24 months after they opened, and orphan uploads
+ * Deletes client videos 30 days after the move date (90 days after the tender opened when no date is set), tenders 24 months after they opened, and orphan uploads
  * after 7 days, as promised in the privacy policy (/privacy, section 6).
  */
 export const maxDuration = 60;
