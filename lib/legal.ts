@@ -7,5 +7,5 @@ export const LEGAL = {
   email: 'legal@admarkgrowth.com',
   whatsapp: '972533891029',
   whatsappDisplay: '053-389-1029',
-  updated: '11.11.2026',
+  updated: '12.11.2026',
 };
