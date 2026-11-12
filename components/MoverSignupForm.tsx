@@ -51,7 +51,16 @@ export function MoverSignupForm() {
       </div>
       <div className="field"><label htmlFor="j-logo">לוגו החברה (PNG/JPG)</label><LogoInput id="j-logo" /></div>
       <div className="field"><label htmlFor="j-google">קישור לעמוד העסק ב-Google</label><input id="j-google" name="google_url" className="input" dir="ltr" placeholder="https://maps.app.goo.gl/..." /></div>
+      <div className="bid-row">
+        <div className="field"><label htmlFor="j-grating">דירוג ב-Google (כוכבים, עד 5)</label><input id="j-grating" name="google_rating" className="input" inputMode="decimal" dir="ltr" placeholder="4.8" /></div>
+        <div className="field"><label htmlFor="j-greviews">מספר הביקורות ב-Google</label><input id="j-greviews" name="google_reviews" className="input" inputMode="numeric" dir="ltr" placeholder="127" /></div>
+      </div>
       <div className="field"><label htmlFor="j-midrag">קישור לפרופיל במדרג</label><input id="j-midrag" name="midrag_url" className="input" dir="ltr" placeholder="https://www.midrag.co.il/..." /></div>
+      <div className="bid-row">
+        <div className="field"><label htmlFor="j-mrating">ציון במדרג (עד 10)</label><input id="j-mrating" name="midrag_rating" className="input" inputMode="decimal" dir="ltr" placeholder="9.6" /></div>
+        <div className="field"><label htmlFor="j-mreviews">מספר חוות הדעת במדרג</label><input id="j-mreviews" name="midrag_reviews" className="input" inputMode="numeric" dir="ltr" placeholder="85" /></div>
+      </div>
+      <p className="small muted" style={{ margin: 0 }}>הדירוגים יוצגו ללקוחות לצד ההצעות שלכם, אחרי שנאמת אותם מול הקישורים.</p>
       <div className="field"><label htmlFor="j-note">אזורי שירות, סוג משאית, מספר עובדים (לא חובה)</label><textarea id="j-note" name="note" className="input" rows={3} placeholder="למשל: מרכז והשרון, משאית 12 טון, 4 עובדים, מנוף" /></div>
       <label className="check-row" style={{ alignItems: 'flex-start' }}>
         <input type="checkbox" name="consent" value="1" required />

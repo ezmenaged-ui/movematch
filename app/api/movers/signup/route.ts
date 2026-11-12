@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
   if (company.length < 2) return NextResponse.json({ error: 'company' }, { status: 422 });
   if (!/^0\d{8,9}$/.test(phone)) return NextResponse.json({ error: 'phone' }, { status: 422 });
   if (google_url === null || midrag_url === null) return NextResponse.json({ error: 'url' }, { status: 422 });
+  // Self-reported ratings (optional). The operator checks them against the links before approving the mover.
+  const num = (k: string, max: number) => { const v = Number(str(k, 8).replace(',', '.')); return str(k, 8) && Number.isFinite(v) && v >= 0 && v <= max ? Math.round(v * 10) / 10 : null; };
+  const int = (k: string) => { const v = Number(str(k, 8).replace(/[^\d]/g, '')); return str(k, 8) && Number.isInteger(v) && v >= 0 && v < 1000000 ? v : null; };
   if (!str('consent')) return NextResponse.json({ error: 'consent' }, { status: 422 });
   if (!str('terms')) return NextResponse.json({ error: 'terms' }, { status: 422 });
 
@@ -31,7 +34,8 @@ export async function POST(req: NextRequest) {
     logo = `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString('base64')}`;
   }
 
-  const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: str('note', 1000), terms_version: LEGAL.moverTermsVersion };
+  const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: str('note', 1000), terms_version: LEGAL.moverTermsVersion,
+    google_rating: num('google_rating', 5), google_reviews: int('google_reviews'), midrag_rating: num('midrag_rating', 10), midrag_reviews: int('midrag_reviews') };
   const { error } = await db().rpc('mm_mover_signup', { p, p_logo: logo });
   if (error) {
     const known = ['exists', 'invalid url', 'invalid phone', 'invalid company', 'too many', 'terms'].find((k) => error.message.includes(k));
@@ -42,7 +46,8 @@ export async function POST(req: NextRequest) {
   after(() => sendAll(
     `🚚 מוביל חדש נרשם — ${company} · ${phone}`,
     [`מוביל חדש נרשם ל-MoveMatch וממתין לאישור.`, `חברה: ${company}`, p.name ? `איש קשר: ${p.name}` : '', `טלפון: ${phone}`,
-      p.email ? `אימייל: ${p.email}` : '', google_url ? `Google: ${google_url}` : '', midrag_url ? `מדרג: ${midrag_url}` : '',
+      p.email ? `אימייל: ${p.email}` : '', google_url ? `Google: ${google_url}` : '', p.google_rating != null ? `Google לפי המוביל: ${p.google_rating} כוכבים, ${p.google_reviews ?? '?'} ביקורות (לאמת מול הקישור)` : '',
+      midrag_url ? `מדרג: ${midrag_url}` : '', p.midrag_rating != null ? `מדרג לפי המוביל: ${p.midrag_rating}, ${p.midrag_reviews ?? '?'} חוות דעת (לאמת מול הקישור)` : '',
       p.note ? `הערה: ${p.note}` : '', logo ? 'צירף לוגו' : 'בלי לוגו', `אישר את תנאי השימוש למובילים (גרסה ${LEGAL.moverTermsVersion}), כולל עמלה של 10%`, `לאישור: ${siteUrl()}/admin/movers`].filter(Boolean).join('\n'),
     { event: 'mover_signup', phone },
   ));
