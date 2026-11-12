@@ -1,0 +1,2 @@
+-- 010: funnel D. variant 'items' allowed; leads.items jsonb {list:[{id,name,qty,dis,asm,custom}], boxes}; mm_update_lead accepts p.items; mm_public_lead returns items.
+-- (Full definitions applied as migration 010_funnel_d_items.)

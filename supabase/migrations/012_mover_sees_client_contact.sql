@@ -1,0 +1,1 @@
+-- 012: public.mm_mover_lead_contact(p_share uuid, p_mover uuid) → {name, phone} of the client, only for an approved mover's personal token.
