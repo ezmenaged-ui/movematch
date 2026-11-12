@@ -26,10 +26,14 @@ function tenderOpenedSms(l: LeadRow) {
  * /api/twilio/status sends the SMS then.
  */
 async function sendTenderOpened(l: LeadRow) {
-  if (waEnabled() && hasTemplate('client_tender_opened') && !isTestLead(l)) { // test leads: SMS only
+  // v2 (Utility, link written in the template) once approved; until then the original template, if configured.
+  const v2 = hasTemplate('client_tender_opened_v2');
+  if (waEnabled() && (v2 || hasTemplate('client_tender_opened')) && !isTestLead(l)) { // test leads: SMS only
     try {
-      await sendWhatsApp(l.phone, 'client_tender_opened', [l.name.trim().split(/\s+/)[0], l.tender_no, `${siteUrl()}/t/${l.client_code}`],
-        { statusCallback: `${siteUrl()}/api/twilio/status?lead=${l.id}&kind=tender_open` });
+      const first = l.name.trim().split(/\s+/)[0];
+      const cb = { statusCallback: `${siteUrl()}/api/twilio/status?lead=${l.id}&kind=tender_open` };
+      if (v2) await sendWhatsApp(l.phone, 'client_tender_opened_v2', [first, l.tender_no, l.client_code], cb);
+      else await sendWhatsApp(l.phone, 'client_tender_opened', [first, l.tender_no, `${siteUrl()}/t/${l.client_code}`], cb);
       return;
     } catch (e) { console.error('[whatsapp:tender-open] falling back to SMS', e); }
   }

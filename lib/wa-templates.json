@@ -97,5 +97,28 @@
       "3,500",
       "ab3k9x"
     ]
+  },
+  "client_tender_opened_v2": {
+    "name": "mm_client_tender_opened_v2",
+    "env": "TWILIO_TPL_CLIENT_OPEN_V2",
+    "category": "UTILITY",
+    "body": "שלום {{1}}, בקשת ההובלה שלך התקבלה ונפתח עבורה מכרז מס׳ {{2}}.\nהצעות המחיר מהמובילים יופיעו בדף המכרז שלך:\nhttps://movematch.co.il/t/{{3}}\nנעדכן אותך כאן כשתתקבל הצעה.\nצוות MoveMatch",
+    "sample": [
+      "דנה",
+      "284666",
+      "5ew98u"
+    ]
+  },
+  "client_new_offer_v2": {
+    "name": "mm_client_new_offer_v2",
+    "env": "TWILIO_TPL_CLIENT_NEW_V2",
+    "category": "UTILITY",
+    "body": "שלום {{1}}, התקבלה הצעת מחיר נוספת במכרז ההובלה שלך.\nמחיר ההצעה: ₪{{2}}\nמספר ההצעות במכרז: {{3}}\nלצפייה בכל ההצעות: https://movematch.co.il/t/{{4}}\nצוות MoveMatch",
+    "sample": [
+      "דנה",
+      "2,400",
+      "3",
+      "5ew98u"
+    ]
   }
 }

@@ -31,8 +31,17 @@ These rules exist so that never happens again.
 - Message only people who opted in (consent text is on every form), and honour "הסר"/STOP at once (`app/api/twilio/inbound`).
 - Transactional messages use **Utility** templates; Marketing is only for promotions (it has hidden per-user caps and stricter review).
   `mm_mover_new_lead_v2` and `mm_client_first_offer_v2` are the Utility replacements, with the link written in the template text
-  rather than in a variable. They switch on when `TWILIO_TPL_MOVER_LEAD_V2` / `TWILIO_TPL_CLIENT_FIRST_V2` are set (after Meta approval).
+  rather than in a variable. `mm_client_tender_opened_v2` and `mm_client_new_offer_v2` replace the two templates Meta rejected
+  as SCAM. All four were submitted to Meta on 12 Nov 2026 and switch on when their env vars are set after approval:
+  `TWILIO_TPL_MOVER_LEAD_V2`, `TWILIO_TPL_CLIENT_FIRST_V2`, `TWILIO_TPL_CLIENT_OPEN_V2`, `TWILIO_TPL_CLIENT_NEW_V2`.
 - Avoid spam signals: bursts, identical repeats, invalid numbers, retries, and URLs inside template variables.
 - New or restored numbers: warm up. Real contacts message the number first, then volume grows slowly with real leads.
   Watch the quality rating in WhatsApp Manager.
 - Every WhatsApp alert has an SMS backup (immediate on refusal, or via `/api/twilio/status` when Meta reports undelivered).
+
+## Analytics (GA4 + Google Ads)
+
+`lib/client.ts` → `trackStep` sends one `funnel_step` event per step reached, with `funnel`, `theme`, `variant_id`,
+`step_number` and `step_name` (numbered, e.g. `3_to`). Steps: A `0_landing → 1_contact`; B `… 2_from 3_to 4_when 5_video 6_done`;
+C `… 2_details 3_done`; D `… 2_from 3_to 4_when 5_items 6_video 7_done`. Conversions: `generate_lead` (name + phone saved)
+and `lead_complete` (full details). Keep these names and parameters stable: GA4 reports and Google Ads conversions depend on them.

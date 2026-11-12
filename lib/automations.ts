@@ -116,7 +116,9 @@ export async function onBid(args: {
       clientStatus = ok ? 'נשלח (הצעה ראשונה)' : 'נכשל, לשלוח ידנית';
     } else {
       const best = Math.min(...offers.map((o) => o.price));
-      ok = await trySendWhatsApp('client-new', lead.phone, 'client_new_offer', [name, nis(price), String(offers.length), nis(best), link]);
+      ok = hasTemplate('client_new_offer_v2')
+        ? await trySendWhatsApp('client-new', lead.phone, 'client_new_offer_v2', [name, nis(price), String(offers.length), lead.client_code])
+        : await trySendWhatsApp('client-new', lead.phone, 'client_new_offer', [name, nis(price), String(offers.length), nis(best), link]);
       clientStatus = ok ? `נשלח (הצעה מס׳ ${offers.length})` : 'נכשל, לשלוח ידנית';
     }
   }

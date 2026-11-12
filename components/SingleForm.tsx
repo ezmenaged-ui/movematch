@@ -2,7 +2,7 @@
 import { Check, PhoneCall } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { LeadRef, track, updateLead } from '@/lib/client';
+import { funnelParams, LeadRef, track, trackStep, updateLead } from '@/lib/client';
 import { FlowTheme, loadHandoff } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
 import { Address, emptyAddress, emptyWhen, MSG, validateAddress, validateWhen, When } from '@/lib/validate';
@@ -38,6 +38,7 @@ export function SingleForm() {
     const h = loadHandoff('c');
     if (!h) { router.replace('/c/photo' + window.location.search); return; }
     setRef(h.ref); setName(h.name); up.attach(h.ref); setTheme(h.theme || 'photo');
+    trackStep('c', h.theme, 2, 'details');
     setFrom({ ...emptyAddress(), city: h.city || '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -64,6 +65,7 @@ export function SingleForm() {
     if (!hasVideo && !skipped) er.video = MSG.video;
     setErrs(er);
     if (Object.keys(er).length) {
+      track('form_error', { ...funnelParams('c', theme), fields: Object.keys(er).join(',') });
       requestAnimationFrame(() => {
         const el = document.querySelector('[aria-invalid="true"], .drop.invalid') as HTMLElement | null;
         el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -78,7 +80,8 @@ export function SingleForm() {
         status: 'complete', furthest_step: 5, video_skipped: skipped && !hasVideo, move_when: when, priority,
         move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
       });
-      track('lead_complete', { funnel: 'c', theme, variant_id: `c-${theme}` });
+      track('lead_complete', funnelParams('c', theme));
+      trackStep('c', theme, 3, 'done');
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }

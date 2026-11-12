@@ -3,7 +3,7 @@ import { CircleCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Funnel, NEXT_PATH, saveHandoff, VARIANT } from '@/lib/handoff';
-import { createLead, PhoneRecentError, track } from '@/lib/client';
+import { createLead, funnelParams, PhoneRecentError, track, trackStep } from '@/lib/client';
 import { isValidName, isValidPhone, MSG, normalizePhone, phoneRecentMsg } from '@/lib/validate';
 import { CityDatalist, CityField, Field, PhoneField } from './fields';
 import { Blueprint, Corners, MidragBadge, Spinner } from './ui';
@@ -41,8 +41,11 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
       const fields = { name: v.name.trim(), phone: normalizePhone(v.phone), city: v.city.trim() };
       const isA = funnel === 'a';
       const ref = await createLead(VARIANT[funnel], { ...fields, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
-      track('lead_created', theme ? { funnel, theme, variant_id: `${funnel}-${theme}` } : { funnel });
-      if (isA) { setDone(true); return; }
+      const fp = funnelParams(funnel, theme);
+      track('lead_created', fp);
+      track('generate_lead', fp);
+      trackStep(funnel, theme, 1, 'contact');
+      if (isA) { track('lead_complete', fp); setDone(true); return; }
       saveHandoff({ funnel, ref, ...fields, theme });
       leaving = true;
       router.push(NEXT_PATH[funnel] + window.location.search);

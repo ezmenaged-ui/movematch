@@ -48,6 +48,24 @@ export async function updateLead(ref: LeadRef, fields: Record<string, unknown>) 
   return r.json();
 }
 
+/**
+ * Funnel analytics: one `funnel_step` event per step a visitor reaches, with the same parameters in every funnel,
+ * so GA4 (Explore → Funnel exploration, broken down by `funnel` or `variant_id`) shows where each funnel loses people.
+ * step_name is prefixed with its number ("3_to") so reports sort in funnel order.
+ *   A: 0_landing → 1_contact (lead complete)
+ *   B: 0_landing → 1_contact → 2_from → 3_to → 4_when → 5_video → 6_done
+ *   C: 0_landing → 1_contact → 2_details → 3_done
+ *   D: 0_landing → 1_contact → 2_from → 3_to → 4_when → 5_items → 6_video → 7_done
+ * Conversions for Google Ads: `generate_lead` (name + phone saved, every funnel) and `lead_complete` (full details).
+ */
+export function funnelParams(funnel: string, theme?: string | null) {
+  const t = theme || 'photo';
+  return { funnel, theme: t, variant_id: `${funnel}-${t}` };
+}
+export function trackStep(funnel: string, theme: string | null | undefined, n: number, name: string, extra: Record<string, unknown> = {}) {
+  track('funnel_step', { ...funnelParams(funnel, theme), step_number: n, step_name: `${n}_${name}`, ...extra });
+}
+
 /** Analytics events: pushed to the GTM dataLayer, and sent to GA4 / Meta Pixel when loaded directly. */
 export function track(event: string, data: Record<string, unknown> = {}) {
   const w = window as unknown as { dataLayer?: unknown[]; gtag?: (...a: unknown[]) => void; fbq?: (...a: unknown[]) => void };

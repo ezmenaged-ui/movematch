@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FlowTheme, loadHandoff } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
-import { createLead, fmtDuration, LeadRef, PhoneRecentError, track, updateLead } from '@/lib/client';
+import { createLead, fmtDuration, funnelParams, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
 import { PriorityScale } from './PriorityScale';
 import { ItemsPicker } from './ItemsPicker';
@@ -56,6 +56,13 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
   const [hp, setHp] = useState('');
   const up = useUploads();
 
+  // One funnel_step event each time a step is shown (from step 2; steps 0-1 are tracked on the landing page).
+  const STEP_NAMES = isD ? ['contact', 'from', 'to', 'when', 'items', 'video', 'done'] : ['contact', 'from', 'to', 'when', 'video', 'done'];
+  useEffect(() => {
+    if (ready && step >= 2) trackStep(funnel, theme, step, STEP_NAMES[step - 1] || `step${step}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, step]);
+
   // Start from the lead created on the first page (/b). Resume mid-way after a refresh.
   useEffect(() => {
     const h = loadHandoff(funnel);
@@ -81,7 +88,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, furthest, ref, name, phone, from, to, when, priority, items, skipped]);
 
-  const go = (n: number) => { setStep(n); setFurthest((f) => Math.max(f, Math.min(n, S_VIDEO))); setFail(''); setAddrErr({}); window.scrollTo({ top: 0 }); track('wizard_step', { funnel, theme, step: n }); };
+  const go = (n: number) => { setStep(n); setFurthest((f) => Math.max(f, Math.min(n, S_VIDEO))); setFail(''); setAddrErr({}); window.scrollTo({ top: 0 }); };
 
   /** Progress bar click: save what's valid on this step (no blocking), then open the chosen step. */
   function jump(n: number) {
@@ -113,7 +120,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
         const fields = { name: name.trim(), phone: normalizePhone(phone) };
         let r = ref;
         if (r) await updateLead(r, fields);
-        else { r = await createLead('wizard', { ...fields, furthest_step: 1 }, hp); setRef(r); up.attach(r); track('lead_created', { variant: 'wizard' }); }
+        else { r = await createLead('wizard', { ...fields, furthest_step: 1 }, hp); setRef(r); up.attach(r); track('lead_created', funnelParams(funnel, theme)); track('generate_lead', funnelParams(funnel, theme)); trackStep(funnel, theme, 1, 'contact'); }
         go(2);
       } catch (e) {
         if (e instanceof PhoneRecentError) setErr({ phone: phoneRecentMsg(e.until) });
@@ -151,7 +158,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
       setBusy(true);
       try {
         if (ref) await updateLead(ref, { status: 'complete', furthest_step: S_DONE, video_skipped: !isD && skipped && !hasVideo, ...(isD ? { items } : {}) });
-        track('lead_complete', { funnel, theme, variant_id: `${funnel}-${theme}` });
+        track('lead_complete', funnelParams(funnel, theme));
         go(S_DONE);
       } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
     }

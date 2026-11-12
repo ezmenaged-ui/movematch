@@ -3,7 +3,7 @@ import { LegalNote } from '../LegalNote';
 import { ArrowLeft, ChevronDown, ChevronLeft, CircleCheck, Coins, Lock, MapPin, Phone, Tag, Timer, User } from 'lucide-react';
 import React, { useEffect, useId } from 'react';
 import type { Funnel } from '@/lib/handoff';
-import { track } from '@/lib/client';
+import { funnelParams, track, trackStep } from '@/lib/client';
 import { CityDatalist } from '../fields';
 import { Theme, useCallbackLead } from '../CallbackForm';
 import { Spinner } from '../ui';
@@ -36,7 +36,7 @@ function IconField({ icon, label, value, onChange, error, type = 'text', inputMo
 export function LeadCard({ funnel, theme }: { funnel: Funnel; theme: Theme }) {
   const { v, set, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel, theme, '.lp-form');
 
-  useEffect(() => { track('landing_view', { funnel, theme, variant_id: `${funnel}-${theme}` }); }, [funnel, theme]);
+  useEffect(() => { track('landing_view', funnelParams(funnel, theme)); trackStep(funnel, theme, 0, 'landing'); }, [funnel, theme]);
 
   if (done) {
     return (
