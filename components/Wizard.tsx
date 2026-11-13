@@ -185,6 +185,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
           <Blueprint className="wiz-card">
             <form onSubmit={next} noValidate key={step} className="step-anim">
               <CityDatalist />
+              {step !== 1 && <h1 className="visually-hidden">{isD ? 'בקשת הצעות מחיר להובלה עם רשימת פריטים' : 'בקשת הצעות מחיר להובלה'}</h1>}
               {step === 1 && (
                 <>
                   <h1>עוברים דירה? עזבו אותכם מהתמקחות עם מובילים! אנחנו נתמקח בשבילכם.</h1>

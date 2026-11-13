@@ -4,7 +4,7 @@
   --color-bg: #f2f2f3;
   --color-surface: #e9e9ea;
   --color-text: #1d1f20;
-  --color-accent: #5980a6;
+  --color-accent: #4a6f94; /* WCAG AA: 4.7:1 on the page background (was #5980a6, 3.7:1) */
   --color-accent-2: #728fab;
   --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
 
@@ -15,7 +15,7 @@
   --color-neutral-300: #d4d4d7;
   --color-neutral-400: #b7b7ba;
   --color-neutral-500: #98989b;
-  --color-neutral-600: #7a7a7d;
+  --color-neutral-600: #69696c; /* darkened from #7a7a7d for WCAG AA contrast of small grey text */
   --color-neutral-700: #5d5d60;
   --color-neutral-800: #424244;
   --color-neutral-900: #2b2b2d;

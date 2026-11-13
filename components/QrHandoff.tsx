@@ -35,7 +35,7 @@ export function QrHandoff({ leadRef, onRemoteCount, onCompleted }: { leadRef: Le
 
   return (
     <div className="qr-handoff desktop-only">
-      <div className="qr-box" aria-label="קוד QR לצילום בטלפון" dangerouslySetInnerHTML={{ __html: svg }} />
+      <div className="qr-box" role="img" aria-label="קוד QR לצילום בטלפון" dangerouslySetInnerHTML={{ __html: svg }} />
       <div className="qr-text">
         <b><Smartphone size={18} strokeWidth={1.5} aria-hidden /> נוח יותר לצלם בטלפון?</b>
         <span>סרקו את הקוד עם מצלמת הטלפון וצלמו שם. אפשר לסיים בטלפון, או לחזור לכאן ולשלוח מהמחשב.</span>

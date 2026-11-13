@@ -7,7 +7,7 @@
   --lp-muted: #4a5a72;
   --lp-blue: #0b63ce;
   --lp-blue-dk: #0950a8;
-  --lp-teal: #17a6c8;
+  --lp-teal: #0b7590; /* WCAG AA contrast on #fff and #eaf2fa (was #17a6c8) */
   --lp-line: #d6dee8;
   --lp-err: #c4282d;
   width: 100%;

@@ -124,5 +124,5 @@ function PhotoLanding({ funnel }: { funnel: Funnel }) {
 }
 
 export function ThemedLanding({ funnel, theme }: { funnel: Funnel; theme: Theme }) {
-  return theme === 'art' ? <ArtLanding funnel={funnel} /> : <PhotoLanding funnel={funnel} />;
+  return <main>{theme === 'art' ? <ArtLanding funnel={funnel} /> : <PhotoLanding funnel={funnel} />}</main>;
 }

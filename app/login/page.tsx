@@ -9,6 +9,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <Header />
       <main className="wiz">
         <Blueprint className="wiz-card">
+          <h1 className="visually-hidden">כניסה לסביבת הניהול של MoveMatch</h1>
           <h2>כניסה ללידים</h2>
           <p className="muted">נכנסים פעם אחת, והמכשיר הזה יזכור אתכם ל־6 חודשים.</p>
           <form method="post" action="/api/login" className="stack" style={{ marginTop: 18 }}>
