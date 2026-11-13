@@ -188,7 +188,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
               {step !== 1 && <h1 className="visually-hidden">{isD ? 'בקשת הצעות מחיר להובלה עם רשימת פריטים' : 'בקשת הצעות מחיר להובלה'}</h1>}
               {step === 1 && (
                 <>
-                  <h1>עוברים דירה? עזבו אותכם מהתמקחות עם מובילים! אנחנו נתמקח בשבילכם.</h1>
+                  <h1>עוברים דירה? מעלים את כל פרטי ההובלה פעם אחת, מקבלים כמה הצעות מחיר ובוחרים את המחיר הטוב ביותר.</h1>
                   <p className="lead-sub">תנו לנו קצת פרטים ו־2 דקות ואנחנו חוזרים אליכם עם 5 הצעות מחברות הובלה מדורגות.</p>
                   <div className="stack">
                     <Field label="שם מלא" value={name} onChange={(v) => { setName(v); setErr((e) => ({ ...e, name: '' })); }} error={err.name} autoComplete="name" />

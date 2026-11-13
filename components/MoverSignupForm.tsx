@@ -3,13 +3,15 @@ import { CircleCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { Corners, Spinner } from './ui';
 import { LogoInput } from './LogoInput';
+import { AreaPicker } from './AreaPicker';
 
 const ERR: Record<string, string> = {
   company: 'נא למלא את שם החברה.',
   phone: 'מספר הטלפון לא תקין. כתבו אותו כמו 0501234567.',
   url: 'קישור לא תקין. העתיקו את הכתובת המלאה של העמוד, שמתחילה ב-https://',
-  consent: 'צריך לאשר קבלת הודעות כדי להירשם.',
-  terms: 'צריך לאשר את תנאי השימוש, כולל העמלה, כדי להירשם.',
+  areas: 'נא לבחור לפחות אזור שירות אחד. לפי האזורים נשלח לכם רק מכרזים שרלוונטיים לכם.',
+  consent: 'צריך לאשר קבלת הודעות וואטסאפ והצגת הפרטים כדי להירשם.',
+  terms: 'צריך לאשר את הסכם המובילים, כולל העמלה, כדי להירשם.',
   logotype: 'הלוגו צריך להיות קובץ PNG, JPG או WEBP.',
   logosize: 'קובץ הלוגו גדול מדי. עד 400KB.',
   exists: 'המספר הזה כבר רשום אצלנו. אם צריך לעדכן פרטים, כתבו לנו בוואטסאפ.',
@@ -23,9 +25,12 @@ export function MoverSignupForm() {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setErr(''); setBusy(true);
+    setErr('');
+    const body = new FormData(e.currentTarget);
+    if (!body.getAll('areas').length) { setErr(ERR.areas); document.getElementById('j-areas-0')?.focus(); return; }
+    setBusy(true);
     try {
-      const r = await fetch('/api/movers/signup', { method: 'POST', body: new FormData(e.currentTarget) });
+      const r = await fetch('/api/movers/signup', { method: 'POST', body });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setErr(ERR[j.error] || 'משהו השתבש. נסו שוב בעוד רגע.'); return; }
       setDone(true); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -61,20 +66,22 @@ export function MoverSignupForm() {
         <div className="field"><label htmlFor="j-mreviews">מספר חוות הדעת במדרג</label><input id="j-mreviews" name="midrag_reviews" className="input" inputMode="numeric" dir="ltr" placeholder="85" /></div>
       </div>
       <p className="small muted" style={{ margin: 0 }}>הדירוגים יוצגו ללקוחות לצד ההצעות שלכם, אחרי שנאמת אותם מול הקישורים.</p>
-      <div className="field"><label htmlFor="j-note">אזורי שירות, סוג משאית, מספר עובדים (לא חובה)</label><textarea id="j-note" name="note" className="input" rows={3} placeholder="למשל: מרכז והשרון, משאית 12 טון, 4 עובדים, מנוף" /></div>
+      <AreaPicker idPrefix="j-areas" legend="אזורי שירות * (חובה, אפשר לבחור כמה)" errorId={err === ERR.areas ? 'j-err' : undefined} />
+      <p className="small muted" style={{ margin: '-6px 0 0' }}>תקבלו מכרזים רק של הובלות שיוצאות מהאזורים שבחרתם.</p>
+      <div className="field"><label htmlFor="j-note">סוג משאית, מספר עובדים, הערות (לא חובה)</label><textarea id="j-note" name="note" className="input" rows={3} placeholder="למשל: משאית 12 טון, 4 עובדים, מנוף" /></div>
       <label className="check-row" style={{ alignItems: 'flex-start' }}>
         <input type="checkbox" name="consent" value="1" required />
         <span className="check-box" aria-hidden />
-        <span className="small">אני מאשר/ת קבלת הודעות וואטסאפ על מכרזי הובלה חדשים, ושהפרטים, הלוגו והדירוגים שלי יוצגו ללקוחות לצד הצעות המחיר שאגיש. אפשר להפסיק בכל עת במענה &quot;הסר&quot;. <a href="/terms" target="_blank">תנאי השימוש</a> · <a href="/privacy" target="_blank">מדיניות הפרטיות</a></span>
+        <span className="small">אני מאשר/ת קבלת הודעות וואטסאפ על מכרזי הובלה חדשים, ושהפרטים, הלוגו והדירוגים שלי יוצגו ללקוחות לצד הצעות המחיר שאגיש. אפשר להפסיק בכל עת במענה &quot;הסר&quot;. <a href="/privacy" target="_blank">מדיניות הפרטיות</a></span>
       </label>
       <label className="check-row terms-key" style={{ alignItems: 'flex-start' }}>
         <input type="checkbox" name="terms" value="1" required />
         <span className="check-box" aria-hidden />
-        <span className="small">קראתי ואני מאשר/ת את <a href="/terms" target="_blank">תנאי השימוש למובילים</a>, ובכלל זה: <b>תשלום עמלה של 10% מהמחיר הסופי (בתוספת מע״מ) על כל הובלה שאבצע ללקוח שהגיע דרך MoveMatch</b>, תוך 14 יום מההובלה; ושאני קבלן עצמאי, והאחריות להובלה, לנזקים, לביטוח ולרישוי חלה עליי בלבד ולא על MoveMatch.</span>
+        <span className="small">קראתי ואני מאשר/ת את הסכם המובילים של MoveMatch, ובכלל זה: <b>תשלום עמלה של 10% מהמחיר הסופי (בתוספת מע״מ) על כל הובלה שאבצע ללקוח שהגיע דרך MoveMatch</b>. <a href="/movers/terms" target="_blank">לתנאים המלאים לחצו כאן</a></span>
       </label>
       <input name="website" className="visually-hidden" tabIndex={-1} autoComplete="off" aria-hidden />
       <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} שליחת פרטים</button>
-      {err && <div className="field-error" role="alert">{err}</div>}
+      {err && <div className="field-error" id="j-err" role="alert">{err}</div>}
     </form>
   );
 }

@@ -1,5 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 import React from 'react';
+import { LEGAL } from '@/lib/legal';
 
 export function Corners() {
   return (<><i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" /></>);
@@ -41,7 +42,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <div className="wrap">
-        <span>© {new Date().getFullYear()} MoveMatch</span>
+        <span>© {new Date().getFullYear()} MoveMatch · {LEGAL.entityShort}, ח.פ. {LEGAL.companyId}</span>
         <span>השירות ללא עלות ללקוח. הפרטים שלכם מועברים רק למובילים לצורך הצעת מחיר, ועדכונים על המכרז וההצעות יישלחו אליכם ב-SMS ובוואטסאפ.</span>
         <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a><a href="/movers/join">למובילים: הצטרפות</a></span>
       </div>

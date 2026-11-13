@@ -42,7 +42,8 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 | `/movers/crew` | Employees, and their day schedule on WhatsApp (Hebrew / Russian). |
 | `/movers/profile` | Company name, contact name, logo, password change. |
 | `/movers/login` · `/movers/forgot` · `/movers/reset` · `/movers/password` | Sign-in, forgot password, reset link, first-login password. |
-| `/movers/join` | **Public** sign-up form for new movers (no login). |
+| `/movers/join` | **Public** sign-up form for new movers (no login). Service areas are required. |
+| `/movers/terms` | **Public** mover agreement (commission, ₪50 discount, confidentiality), accepted at sign-up. |
 
 Old `/mover/…` links forward to `/movers/…`.
 
@@ -58,4 +59,10 @@ Old `/mover/…` links forward to `/movers/…`.
 
 ## Legal
 
-`/privacy` · `/terms` · `/accessibility`
+`/privacy` · `/terms` · `/accessibility` · `/movers/terms` (mover agreement). Drafts awaiting a lawyer: `LEGAL_REVIEW.md`.
+
+## Lead routing
+
+A completed lead goes only to active movers whose service areas include the lead's origin area (`lib/areas.ts` maps cities to areas;
+areas are stored in `movematch.mover_service_areas`, migration 013, edited in `/admin/movers`). A lead from a city we don't recognise
+goes to no mover; the operator alert says so.

@@ -5,8 +5,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'MoveMatch · 5 הצעות מחיר ממובילים מדורגים',
-  description: 'עוברים דירה? משאירים פרטים ואנחנו מתמקחים בשבילכם ומביאים 5 הצעות מחיר מחברות הובלה בדירוג גבוה. חינם ובלי התחייבות.',
-  openGraph: { title: 'MoveMatch · 5 הצעות ממובילים מדורגים', description: 'אנחנו נתמקח בשבילכם. חינם ובלי התחייבות.', locale: 'he_IL', type: 'website' },
+  description: 'עוברים דירה? מעלים את פרטי ההובלה פעם אחת, מקבלים הצעות מחיר מכמה חברות הובלה מדורגות ובוחרים את המחיר הטוב ביותר. חינם ובלי התחייבות.',
+  openGraph: { title: 'MoveMatch · 5 הצעות ממובילים מדורגים', description: 'מעלים פרטים פעם אחת, מקבלים כמה הצעות ובוחרים את המחיר הטוב ביותר. חינם ובלי התחייבות.', locale: 'he_IL', type: 'website' },
   robots: { index: true, follow: true },
 };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#f2f2f3' };

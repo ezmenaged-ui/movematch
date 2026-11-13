@@ -1,4 +1,4 @@
-/** MoveMatch commission on a finished job (see /terms, section 3). Amounts in whole shekels. */
+/** MoveMatch commission on a finished job (see /movers/terms, section 6). The final price is what the client paid after the ₪50 discount, before VAT. Amounts in whole shekels. */
 export const COMMISSION_RATE = 0.1;
 export const VAT_RATE = 0.18;
 

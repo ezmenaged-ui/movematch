@@ -24,7 +24,7 @@ export function CallbackLanding({ funnel = 'a' }: { funnel?: Funnel }) {
           <div className="wrap">
             <div className="hero-text">
               <div className="kicker">5 הצעות · חינם · בלי התחייבות</div>
-              <h1>עוברים דירה? עזבו אותכם מהתמקחות עם מובילים! אנחנו נתמקח בשבילכם.</h1>
+              <h1>עוברים דירה? מעלים את כל פרטי ההובלה פעם אחת, מקבלים כמה הצעות מחיר ובוחרים את המחיר הטוב ביותר.</h1>
               <p className="hero-sub">משאירים שם, טלפון ועיר, ואנחנו חוזרים אליכם עם 5 הצעות מחברות הובלה מדורגות.</p>
               <CallbackForm funnel={funnel} />
             </div>

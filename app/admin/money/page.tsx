@@ -129,7 +129,7 @@ export default async function Money() {
       {open.length === 0 ? <div className="mmx-empty">אין הצעות פתוחות כרגע.</div> : (
         <div className="mmx-tablebox">
           <table className="mmx-table">
-            <thead><tr><th>מכרז</th><th>מוביל</th><th className="num">הצעה</th><th>מצב</th><th>מחיר סופי וסימון</th></tr></thead>
+            <thead><tr><th>מכרז</th><th>מוביל</th><th className="num">הצעה</th><th>מצב</th><th>מחיר סופי (אחרי הנחת 50 ₪, לפני מע״מ) וסימון</th></tr></thead>
             <tbody>
               {open.map((b) => (
                 <tr key={b.id}>

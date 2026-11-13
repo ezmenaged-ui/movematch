@@ -2,6 +2,7 @@ import { LEGAL } from '@/lib/legal';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { sendAll, siteUrl } from '@/lib/notify';
+import { cleanAreas } from '@/lib/areas';
 
 /** Public mover sign-up (multipart form from /movers/join). Creates a pending mover and emails the operator. */
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -23,6 +24,8 @@ export async function POST(req: NextRequest) {
   // Self-reported ratings (optional). The operator checks them against the links before approving the mover.
   const num = (k: string, max: number) => { const v = Number(str(k, 8).replace(',', '.')); return str(k, 8) && Number.isFinite(v) && v >= 0 && v <= max ? Math.round(v * 10) / 10 : null; };
   const int = (k: string) => { const v = Number(str(k, 8).replace(/[^\d]/g, '')); return str(k, 8) && Number.isInteger(v) && v >= 0 && v < 1000000 ? v : null; };
+  const areas = cleanAreas(f.getAll('areas').map(String));
+  if (!areas.length) return NextResponse.json({ error: 'areas' }, { status: 422 });
   if (!str('consent')) return NextResponse.json({ error: 'consent' }, { status: 422 });
   if (!str('terms')) return NextResponse.json({ error: 'terms' }, { status: 422 });
 
@@ -36,19 +39,20 @@ export async function POST(req: NextRequest) {
 
   const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: str('note', 1000), terms_version: LEGAL.moverTermsVersion,
     google_rating: num('google_rating', 5), google_reviews: int('google_reviews'), midrag_rating: num('midrag_rating', 10), midrag_reviews: int('midrag_reviews') };
-  const { error } = await db().rpc('mm_mover_signup', { p, p_logo: logo });
+  // v2 = the original sign-up plus the mover's service areas, in one transaction (migration 013).
+  const { error } = await db().rpc('mm_mover_signup_v2', { p, p_logo: logo, p_areas: areas });
   if (error) {
-    const known = ['exists', 'invalid url', 'invalid phone', 'invalid company', 'too many', 'terms'].find((k) => error.message.includes(k));
+    const known = ['exists', 'invalid url', 'invalid phone', 'invalid company', 'too many', 'terms', 'areas'].find((k) => error.message.includes(k));
     if (!known) console.error('[mover signup]', error);
     return NextResponse.json({ error: known || 'db' }, { status: known === 'exists' ? 409 : known ? 422 : 500 });
   }
 
   after(() => sendAll(
     `🚚 מוביל חדש נרשם — ${company} · ${phone}`,
-    [`מוביל חדש נרשם ל-MoveMatch וממתין לאישור.`, `חברה: ${company}`, p.name ? `איש קשר: ${p.name}` : '', `טלפון: ${phone}`,
+    [`מוביל חדש נרשם ל-MoveMatch וממתין לאישור.`, `חברה: ${company}`, p.name ? `איש קשר: ${p.name}` : '', `טלפון: ${phone}`, `אזורי שירות: ${areas.join(', ')}`,
       p.email ? `אימייל: ${p.email}` : '', google_url ? `Google: ${google_url}` : '', p.google_rating != null ? `Google לפי המוביל: ${p.google_rating} כוכבים, ${p.google_reviews ?? '?'} ביקורות (לאמת מול הקישור)` : '',
       midrag_url ? `מדרג: ${midrag_url}` : '', p.midrag_rating != null ? `מדרג לפי המוביל: ${p.midrag_rating}, ${p.midrag_reviews ?? '?'} חוות דעת (לאמת מול הקישור)` : '',
-      p.note ? `הערה: ${p.note}` : '', logo ? 'צירף לוגו' : 'בלי לוגו', `אישר את תנאי השימוש למובילים (גרסה ${LEGAL.moverTermsVersion}), כולל עמלה של 10%`, `לאישור: ${siteUrl()}/admin/movers`].filter(Boolean).join('\n'),
+      p.note ? `הערה: ${p.note}` : '', logo ? 'צירף לוגו' : 'בלי לוגו', `אישר את הסכם המובילים (גרסה ${LEGAL.moverTermsVersion}), כולל עמלה של 10%, והסכים להודעות וואטסאפ`, `לאישור: ${siteUrl()}/admin/movers`].filter(Boolean).join('\n'),
     { event: 'mover_signup', phone },
   ));
   return NextResponse.json({ ok: true });

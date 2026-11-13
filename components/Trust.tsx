@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react';
 
-export const TRUST = ['חינם ובלי התחייבות', 'כל המובילים מדורגים', 'אנחנו מתמקחים בשבילכם על המחיר'];
+export const TRUST = ['חינם ובלי התחייבות', 'כל המובילים מדורגים', 'מעלים פרטים פעם אחת ומקבלים כמה הצעות'];
 
 export function TrustList({ className = '' }: { className?: string }) {
   return (

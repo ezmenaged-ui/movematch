@@ -6,6 +6,7 @@ import { elevatorText, whenText } from './validate';
 import { hasTemplate, sendWhatsApp, trySendSms, trySendWhatsApp, waEnabled, type TemplateKey } from './whatsapp';
 import { moverAlertSms, operatorAlertSms } from './alertSms';
 import { isTestLead } from './qa';
+import { areasOfCity, type Area } from './areas';
 
 type Addr = Record<string, unknown> | null | undefined;
 const secret = () => process.env.MM_ADMIN_SECRET;
@@ -46,8 +47,23 @@ export async function alertWithSmsBackup(label: string, to: string, key: Templat
 }
 
 /**
+ * Movers whose service areas include the lead's origin area. Strict: a mover with no areas, a lead whose origin city
+ * we don't recognise, or a failed lookup → nobody (the operator alert says so and the operator routes by hand).
+ */
+async function routeByArea<M extends { id: string }>(l: LeadRow, movers: M[]): Promise<{ matched: M[]; areas: Area[]; note: string }> {
+  const areas = areasOfCity((l.move_from?.city as string) || l.city);
+  if (!movers.length) return { matched: [], areas, note: '' };
+  if (!areas.length) return { matched: [], areas, note: 'אזור המוצא לא זוהה, לשלוח ידנית' };
+  const { data, error } = await db().rpc('mm_admin_mover_areas', { p_secret: secret() });
+  if (error) { console.error('[automations] mover areas (migration 013 applied?)', error); return { matched: [], areas, note: 'שגיאה בקריאת אזורי המובילים, לשלוח ידנית' }; }
+  const byMover = new Map(((data || []) as { mover_id: string; areas: string[] }[]).map((r) => [r.mover_id, r.areas]));
+  const matched = movers.filter((m) => (byMover.get(m.id) || []).some((a) => (areas as string[]).includes(a)));
+  return { matched, areas, note: matched.length ? '' : `אין מובילים פעילים באזור ${areas.join(' / ')}` };
+}
+
+/**
  * Lead finished the full form/wizard:
- *  1. WhatsApp every active mover (once per lead) with the mover page link.
+ *  1. WhatsApp the active movers that serve the lead's origin area (once per lead) with the mover page link.
  *  2. WhatsApp the operator.
  *  3. Email the operator (existing behaviour).
  * Funnel A (callback only) has no move details, so movers are not pinged for it.
@@ -56,11 +72,15 @@ export async function onLeadComplete(l: LeadRow, opts: { pingMovers: boolean }) 
   const site = siteUrl();
   const when = l.move_when ? whenText(l.move_when as never) : 'לא צוין';
   let moversSent = 0;
+  let routeNote = '';
 
   if (opts.pingMovers) {
     const { data, error } = await db().rpc('mm_claim_mover_ping', { p_secret: secret(), p_id: l.id });
     if (error) console.error('[automations] claim movers', error);
-    const movers = (data || []) as { id: string; name: string; company_name: string; phone: string; token: string }[];
+    const active = (data || []) as { id: string; name: string; company_name: string; phone: string; token: string }[];
+    const { matched: movers, areas, note } = await routeByArea(l, active);
+    routeNote = note || (areas.length ? `אזור ${areas.join(' / ')}` : '');
+    console.info(`[automations] lead ${tenderRef(l)}: ${movers.length}/${active.length} active movers serve ${areas.join(' / ') || 'unknown area'}`);
     // Each mover gets a personal link (?m=token) so the offer form already knows their company and logo.
     if (isTestLead(l)) console.warn(`[qa] test lead ${tenderRef(l)}: mover alerts suppressed for ${movers.length} movers`);
     const results = isTestLead(l) ? [] : await Promise.all(movers.map((m) => {
@@ -78,7 +98,7 @@ export async function onLeadComplete(l: LeadRow, opts: { pingMovers: boolean }) 
   await Promise.all([
     alertWithSmsBackup('op-lead', operator(), 'op_lead', [
       `${l.name} · מכרז ${tenderRef(l)}`, l.phone, routeOf(l), when, String(l.videos?.length || 0) + (l.video_skipped ? ' (דילג, להתקשר)' : ''),
-      opts.pingMovers ? String(moversSent) : '0 (משפך A, להתקשר ללקוח)', `${site}/admin`,
+      opts.pingMovers ? `${moversSent}${routeNote ? ` (${routeNote})` : ''}` : '0 (משפך A, להתקשר ללקוח)', `${site}/admin`,
     ], { kind: 'op_lead', lead: l.id }, operatorAlertSms(l, site), { test: isTestLead(l) }),
     notifyLead('complete', l),
   ]);

@@ -137,3 +137,14 @@ export async function clearCommissionPaid(id: string) {
   await db().rpc('mm_admin_set_commission', { p_secret: process.env.MM_ADMIN_SECRET, p_bid: id, p_paid: false, p_amount: null, p_note: '' });
   revalidatePath('/admin/money');
 }
+
+/** Replace a mover's service areas (form: id + checkboxes "areas"). Leads are routed by these areas. */
+export async function setMoverAreas(form: FormData) {
+  const { cleanAreas } = await import('@/lib/areas');
+  const id = String(form.get('id') || '');
+  const areas = cleanAreas(form.getAll('areas').map(String));
+  const { error } = await db().rpc('mm_admin_set_mover_areas', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p_areas: areas });
+  if (error) { console.error('[setMoverAreas]', error); redirect('/admin/movers?err=db'); }
+  revalidatePath('/admin/movers');
+  redirect('/admin/movers?ok=1');
+}
