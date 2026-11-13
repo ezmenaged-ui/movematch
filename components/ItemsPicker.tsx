@@ -1,7 +1,7 @@
 'use client';
 import { Check, ChevronDown, LayoutGrid, Minus, Plus, Search, SendHorizontal, Trash2, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
-import { ALL_ITEMS, ItemsValue, itemsCount, PickedItem, ROOMS, searchItems } from '@/lib/items';
+import { ALL_ITEMS, itemAsks, ItemsValue, itemsCount, PickedItem, ROOMS, searchItems } from '@/lib/items';
 import '@/app/items.css';
 
 const byId = new Map(ALL_ITEMS.map((i) => [i.id, i]));
@@ -16,18 +16,52 @@ function Stepper({ value, onChange, label, step = 1 }: { value: number; onChange
   );
 }
 
-function Flags({ it, canD, canA, onChange }: { it?: PickedItem; canD: boolean; canA: boolean; onChange: (p: Partial<PickedItem>) => void }) {
-  if (!it || (!canD && !canA)) return null;
+function YesNo({ label, value, onChange }: { label: string; value?: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className={`it-yn ${value === undefined ? 'unset' : ''}`} role="radiogroup" aria-label={label}>
+      <span className="it-yn-label">{label}</span>
+      <span className="it-yn-btns">
+        <button type="button" role="radio" aria-checked={value === true} className={value === true ? 'on' : ''} onClick={() => onChange(true)}>כן</button>
+        <button type="button" role="radio" aria-checked={value === false} className={value === false ? 'on no' : ''} onClick={() => onChange(false)}>לא</button>
+      </span>
+    </div>
+  );
+}
+
+/** Explicit yes/no for disassembly and assembly, so "not answered" is never mistaken for "no". */
+function Flags({ it, onChange }: { it?: PickedItem; onChange: (p: Partial<PickedItem>) => void }) {
+  if (!it) return null;
+  const k = itemAsks(it);
+  if (!k.d && !k.a) return null;
   return (
     <div className="it-flags">
-      {canD && <label><input type="checkbox" checked={!!it.dis} onChange={(e) => onChange({ dis: e.target.checked })} /> פירוק</label>}
-      {canA && <label><input type="checkbox" checked={!!it.asm} onChange={(e) => onChange({ asm: e.target.checked })} /> הרכבה</label>}
+      {k.d && <YesNo label="צריך פירוק?" value={it.dis} onChange={(v) => onChange({ dis: v })} />}
+      {k.a && <YesNo label="צריך הרכבה?" value={it.asm} onChange={(v) => onChange({ asm: v })} />}
+    </div>
+  );
+}
+
+/** Reminder shown when "continue" is pressed while some items have no disassembly/assembly answer. Closable; never blocks. */
+export function FlagsNote({ missing, onBack, onContinue }: { missing: PickedItem[]; onBack: () => void; onContinue: () => void }) {
+  const names = missing.slice(0, 4).map((m) => m.name).join(', ') + (missing.length > 4 ? ` ועוד ${missing.length - 4}` : '');
+  return (
+    <div className="it-note-back" onClick={onBack}>
+      <div className="it-note" role="dialog" aria-modal="true" aria-labelledby="it-note-t" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="it-note-x" onClick={onBack} aria-label="סגירה"><X size={20} strokeWidth={2.5} /></button>
+        <b id="it-note-t">סימנתם בכל פריט אם צריך פירוק והרכבה?</b>
+        <p>חסר סימון כן / לא ב: {names}.</p>
+        <p className="it-note-sub">כך המובילים יתמחרו נכון ולא יהיו הפתעות ביום ההובלה.</p>
+        <div className="it-note-actions">
+          <button type="button" className="btn btn-primary" onClick={onBack}>חזרה לסימון</button>
+          <button type="button" className="btn-link" onClick={onContinue}>המשך בכל זאת</button>
+        </div>
+      </div>
     </div>
   );
 }
 
 /** Funnel D: type items chat-style (primary) or browse by room; quantities + disassembly/assembly per item. */
-export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: (v: ItemsValue) => void }) {
+export function ItemsPicker({ value, onChange, attn }: { value: ItemsValue; onChange: (v: ItemsValue) => void; attn?: boolean }) {
   const [q, setQ] = useState('');
   const [browse, setBrowse] = useState(false);
   const [room, setRoom] = useState(ROOMS[0].id);
@@ -67,7 +101,7 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
   };
 
   return (
-    <div className="it">
+    <div className={`it ${attn ? 'it-attn' : ''}`}>
       <div className="it-input" role="search">
         <Search size={20} strokeWidth={2} aria-hidden className="it-input-ico" />
         <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} placeholder="כתבו פריט, למשל: ספה" aria-label="חיפוש פריט" enterKeyHint="send" autoComplete="off" />
@@ -117,7 +151,7 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
                       <span className="it-card-ico" aria-hidden>{it.icon}</span>
                       <span className="it-card-name">{it.name}</span>
                       <Stepper value={p?.qty || 0} label={it.name} onChange={(n) => setItem(it.id, { qty: n })} />
-                      <Flags it={p} canD={!!it.d} canA={!!it.a} onChange={(patch) => setItem(it.id, patch)} />
+                      <Flags it={p} onChange={(patch) => setItem(it.id, patch)} />
                       {p && <Check size={16} strokeWidth={3} className="it-card-ok" aria-label="נבחר" />}
                     </div>
                   );
@@ -141,7 +175,7 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
               return (
                 <li key={p.id}>
                   <span className="it-row-name"><span aria-hidden>{c?.icon || '📦'}</span> {p.name}</span>
-                  <Flags it={p} canD canA onChange={(patch) => setItem(p.id, patch)} />
+                  <Flags it={p} onChange={(patch) => setItem(p.id, patch)} />
                   <Stepper value={p.qty} label={p.name} onChange={(n) => setItem(p.id, { qty: n })} />
                   <button type="button" className="it-del" onClick={() => setItem(p.id, { qty: 0 })} aria-label={`הסרת ${p.name}`}><Trash2 size={16} /></button>
                 </li>

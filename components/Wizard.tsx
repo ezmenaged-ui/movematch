@@ -7,8 +7,8 @@ import { FlowShell } from './themed/FlowShell';
 import { createLead, fmtDuration, funnelParams, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
 import { PriorityScale } from './PriorityScale';
-import { ItemsPicker } from './ItemsPicker';
-import { emptyItems, ItemsValue, itemsCount } from '@/lib/items';
+import { FlagsNote, ItemsPicker } from './ItemsPicker';
+import { emptyItems, ItemsValue, itemsCount, itemsMissingFlags } from '@/lib/items';
 import { WhenFields } from './WhenFields';
 import { QrHandoff } from './QrHandoff';
 import { AddressFields } from './AddressFields';
@@ -46,6 +46,9 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
   const [whenErr, setWhenErr] = useState('');
   const [priority, setPriority] = useState(3);
   const [items, setItems] = useState<ItemsValue>(emptyItems);
+  /** Items step: reminder about unanswered disassembly/assembly (shown once; closing it lets the client continue). */
+  const [flagsNote, setFlagsNote] = useState(false);
+  const [flagsSeen, setFlagsSeen] = useState(false);
   const [remote, setRemote] = useState(0);
   const onRemote = useCallback((n: number) => setRemote(n), []);
   const [skipped, setSkipped] = useState(false);
@@ -148,6 +151,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
     }
     if (isD && step === S_ITEMS) {
       if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד. כתבו אותו בתיבה או בחרו מהרשימה.'); return; }
+      if (!flagsSeen && itemsMissingFlags(items).length) { setFlagsNote(true); setFlagsSeen(true); return; }
       if (ref) updateLead(ref, { items, furthest_step: S_ITEMS }).catch(() => {});
       go(S_VIDEO);
       return;
@@ -225,7 +229,14 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
 
               {isD && step === S_ITEMS && (
                 <>
-                  <ItemsPicker value={items} onChange={(v) => { setItems(v); setFail(''); }} />
+                  <ItemsPicker value={items} onChange={(v) => { setItems(v); setFail(''); }} attn={flagsSeen} />
+                  {flagsNote && (
+                    <FlagsNote
+                      missing={itemsMissingFlags(items)}
+                      onBack={() => { setFlagsNote(false); setTimeout(() => document.querySelector('.it-list .it-yn.unset')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}
+                      onContinue={() => { setFlagsNote(false); next(); }}
+                    />
+                  )}
                 </>
               )}
 

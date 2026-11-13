@@ -161,7 +161,19 @@ export function searchItems(q: string, limit = 12) {
   return scored.sort((a, b) => a.score - b.score).slice(0, limit).map((s) => s.i);
 }
 
+/** `dis` / `asm`: true = yes, false = no, missing = the client hasn't answered yet. */
 export type PickedItem = { id: string; name: string; qty: number; dis?: boolean; asm?: boolean; custom?: boolean };
+
+/** Which questions an item gets: catalog items by their `d`/`a` flags, typed (custom) items both. */
+export function itemAsks(p: Pick<PickedItem, 'id' | 'custom'>) {
+  if (p.custom || p.id.startsWith('custom:')) return { d: true, a: true };
+  const c = ALL_ITEMS.find((i) => i.id === p.id);
+  return { d: !!c?.d, a: !!c?.a };
+}
+/** Items where the client hasn't said yes/no to a disassembly or assembly question that applies. */
+export function itemsMissingFlags(v: ItemsValue) {
+  return v.list.filter((p) => { const k = itemAsks(p); return (k.d && p.dis === undefined) || (k.a && p.asm === undefined); });
+}
 export type ItemsValue = { list: PickedItem[]; boxes: number };
 export const emptyItems = (): ItemsValue => ({ list: [], boxes: 20 });
 export const itemsCount = (v: ItemsValue | null | undefined) => (v?.list || []).reduce((n, i) => n + i.qty, 0);
