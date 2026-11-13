@@ -40,7 +40,13 @@ export async function POST(req: NextRequest) {
   const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: str('note', 1000), terms_version: LEGAL.moverTermsVersion,
     google_rating: num('google_rating', 5), google_reviews: int('google_reviews'), midrag_rating: num('midrag_rating', 10), midrag_reviews: int('midrag_reviews') };
   // v2 = the original sign-up plus the mover's service areas, in one transaction (migration 013).
-  const { error } = await db().rpc('mm_mover_signup_v2', { p, p_logo: logo, p_areas: areas });
+  let { error } = await db().rpc('mm_mover_signup_v2', { p, p_logo: logo, p_areas: areas });
+  // Until migration 013 is applied, v2 doesn't exist: save the mover the old way and keep the areas in the note,
+  // so the operator can set them in /admin/movers after running the migration.
+  if (error?.code === 'PGRST202') {
+    console.warn('[mover signup] mm_mover_signup_v2 missing (migration 013 not applied); areas kept in the note');
+    ({ error } = await db().rpc('mm_mover_signup', { p: { ...p, note: [`אזורי שירות: ${areas.join(', ')}`, p.note].filter(Boolean).join('\n').slice(0, 1000) }, p_logo: logo }));
+  }
   if (error) {
     const known = ['exists', 'invalid url', 'invalid phone', 'invalid company', 'too many', 'terms', 'areas'].find((k) => error.message.includes(k));
     if (!known) console.error('[mover signup]', error);

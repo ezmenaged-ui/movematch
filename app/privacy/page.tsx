@@ -7,7 +7,7 @@ export const metadata = { title: 'מדיניות פרטיות · MoveMatch' };
 const ext = { target: '_blank', rel: 'noreferrer' } as const;
 
 export default function Privacy() {
-  const supabaseCountry = LEGAL.hosting.supabase || '[להשלמה: מדינת השרתים של Supabase]';
+  const supabaseCountry = LEGAL.hosting.supabase || 'מחוץ לישראל';
   return (
     <>
       <Header />
