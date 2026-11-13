@@ -10,11 +10,11 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 |---|---|---|---|---|
 | 1 | A · photo | `/a/photo` | none (thank-you on the same page) | Name, phone, city. We call back. |
 | 2 | A · art | `/a/art` | none | Same as A, illustrated design. |
-| 3 | B · photo | `/b/photo` | `/b/steps` | Step-by-step wizard: from → to → when → video (required). |
+| 3 | B · photo | `/b/photo` | `/b/steps` | Step-by-step wizard: from → to → when → items (picked from the room list, or added by the client). No video. |
 | 4 | B · art | `/b/art` | `/b/steps` | Same as B, illustrated design. |
 | 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video. |
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
-| 7 | D · photo | `/d/photo` | `/d/steps` | Wizard with an item list (typed or picked); video optional. |
+| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard and item list as B, plus a video step (optional). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
 
 **Homepage `/`** shows **D · photo** (same page as `/d/photo`).

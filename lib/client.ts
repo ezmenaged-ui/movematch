@@ -53,7 +53,7 @@ export async function updateLead(ref: LeadRef, fields: Record<string, unknown>) 
  * so GA4 (Explore → Funnel exploration, broken down by `funnel` or `variant_id`) shows where each funnel loses people.
  * step_name is prefixed with its number ("3_to") so reports sort in funnel order.
  *   A: 0_landing → 1_contact (lead complete)
- *   B: 0_landing → 1_contact → 2_from → 3_to → 4_when → 5_video → 6_done
+ *   B: 0_landing → 1_contact → 2_from → 3_to → 4_when → 5_items → 6_done (until 13 Nov 2026 step 5 was 5_video)
  *   C: 0_landing → 1_contact → 2_details → 3_done
  *   D: 0_landing → 1_contact → 2_from → 3_to → 4_when → 5_items → 6_video → 7_done
  * Conversions for Google Ads: `generate_lead` (name + phone saved, every funnel) and `lead_complete` (full details).
