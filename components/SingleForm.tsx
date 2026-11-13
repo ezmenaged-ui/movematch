@@ -3,7 +3,7 @@ import { Check, PhoneCall } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { funnelParams, LeadRef, track, trackStep, updateLead } from '@/lib/client';
-import { FlowTheme, loadHandoff } from '@/lib/handoff';
+import { FlowTheme, liveHandoff, loadHandoff } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
 import { Address, emptyAddress, emptyWhen, MSG, validateAddress, validateWhen, When } from '@/lib/validate';
 import { WhenFields } from './WhenFields';
@@ -35,11 +35,14 @@ export function SingleForm() {
   const up = useUploads();
 
   useEffect(() => {
-    const h = loadHandoff('c');
-    if (!h) { router.replace('/c/photo' + window.location.search); return; }
-    setRef(h.ref); setName(h.name); up.attach(h.ref); setTheme(h.theme || 'photo');
-    trackStep('c', h.theme, 2, 'details');
-    setFrom({ ...emptyAddress(), city: h.city || '' });
+    const h0 = loadHandoff('c');
+    if (!h0) { router.replace('/c/photo' + window.location.search); return; }
+    liveHandoff(h0).then((h) => {
+      if (!h) { router.replace('/c/photo' + window.location.search); return; }
+      setRef(h.ref); setName(h.name); up.attach(h.ref); setTheme(h.theme || 'photo');
+      trackStep('c', h.theme, 2, 'details');
+      setFrom({ ...emptyAddress(), city: h.city || '' });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

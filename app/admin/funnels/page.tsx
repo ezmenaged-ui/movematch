@@ -11,9 +11,9 @@ type Bid = { lead_id: string; hidden: boolean; job_done_at: string | null };
 
 const FUNNELS = [
   { v: 'a', letter: 'A', name: 'חזרה טלפונית', steps: ['פרטים'] },
-  { v: 'wizard', letter: 'B', name: 'אשף עם סרטון', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'סרטון'] },
+  { v: 'wizard', letter: 'B', name: 'אשף עם רשימת פריטים', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים'] },
   { v: 'form', letter: 'C', name: 'טופס בעמוד אחד', steps: ['פרטים', 'טופס הפרטים'] },
-  { v: 'items', letter: 'D', name: 'אשף עם רשימת פריטים', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים'] },
+  { v: 'items', letter: 'D', name: 'אשף עם פריטים וסרטונים', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים'] },
 ] as const;
 const RANGES = [{ d: '7', label: '7 ימים' }, { d: '30', label: '30 יום' }, { d: '90', label: '90 יום' }, { d: 'all', label: 'הכול' }];
 const THEME: Record<string, string> = { photo: 'צילום', art: 'איור' };
