@@ -65,7 +65,7 @@ function AddOwn({ onAdd, label, variant }: { onAdd: (name: string) => void; labe
  * Funnels B and D: pick items from the room-by-room list (open from the start), or add anything that is not on it.
  * Quantities + disassembly/assembly per item. A search box on top jumps straight to an item.
  */
-export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: (v: ItemsValue) => void }) {
+export function ItemsPicker({ value, onChange, flagsMissing = false }: { value: ItemsValue; onChange: (v: ItemsValue) => void; flagsMissing?: boolean }) {
   const [q, setQ] = useState('');
   const [room, setRoom] = useState(ROOMS[0].id);
   const input = useRef<HTMLInputElement>(null);
@@ -84,7 +84,8 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
       const next = { ...cur, ...patch };
       list = next.qty <= 0 ? value.list.filter((i) => i.id !== id) : value.list.map((i) => (i.id === id ? next : i));
     }
-    onChange({ ...value, list });
+    // ticking disassembly/assembly on any item answers the "does anything need it?" question
+    onChange({ ...value, list, ...(patch.dis || patch.asm ? { noAsm: false } : {}) });
   };
   const add = (id: string) => setItem(id, { qty: (picked(id)?.qty || 0) + 1 });
   const addCustom = (text: string) => {
@@ -138,7 +139,8 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
 
       {/* room-by-room list, open from the start */}
       <div className="it-browse">
-        <div className="it-tabs" role="tablist" aria-label="חדרים">
+        <p className="it-tabs-label" id="it-rooms-label">בחרו חדר:</p>
+        <div className="it-tabs" role="tablist" aria-labelledby="it-rooms-label">
           {ROOMS.map((r) => {
             const n = r.sections.reduce((s, sec) => s + sec.items.reduce((m, it) => m + (picked(it.id)?.qty || 0), 0), 0);
             return (
@@ -159,7 +161,7 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
                     <span className="it-card-ico" aria-hidden>{it.icon}</span>
                     <span className="it-card-name">{it.name}</span>
                     <Stepper value={p?.qty || 0} label={it.name} onChange={(n) => setItem(it.id, { qty: n })} />
-                    <Flags it={p} canD={!!it.d} canA={!!it.a} onChange={(patch) => setItem(it.id, patch)} />
+                    <Flags it={p} canD canA onChange={(patch) => setItem(it.id, patch)} />
                     {p && <Check size={16} strokeWidth={3} className="it-card-ok" aria-label="נבחר" />}
                   </div>
                 );
@@ -174,7 +176,7 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
       </div>
 
       {/* my list */}
-      <section className="it-list" aria-label="הרשימה שלי">
+      <section id="it-list" className={`it-list ${flagsMissing ? 'it-list-missing' : ''}`} aria-label="הרשימה שלי">
         <div className="it-list-head">
           <h3>הרשימה שלי</h3>
           <span className="it-badge">{count} פריטים</span>
@@ -193,6 +195,12 @@ export function ItemsPicker({ value, onChange }: { value: ItemsValue; onChange: 
               );
             })}
           </ul>
+        )}
+        {value.list.length > 0 && (
+          <div className={`it-asm-q ${flagsMissing ? 'missing' : ''}`}>
+            {flagsMissing && <p role="alert"><b>צריך פירוק או הרכבה?</b> סמנו ליד כל פריט שצריך &quot;פירוק&quot; ו/או &quot;הרכבה&quot;, או סמנו שאף פריט לא צריך.</p>}
+            <label><input type="checkbox" checked={!!value.noAsm} onChange={(e) => onChange({ ...value, noAsm: e.target.checked, ...(e.target.checked ? { list: value.list.map((i) => ({ ...i, dis: false, asm: false })) } : {}) })} /> אף פריט לא צריך פירוק או הרכבה</label>
+          </div>
         )}
         <AddOwn variant="row" label="הוספת פריט שלא ברשימה" onAdd={addCustom} />
         <div className="it-boxes">

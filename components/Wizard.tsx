@@ -2,13 +2,13 @@
 import { Check } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FlowTheme, loadHandoff } from '@/lib/handoff';
+import { FlowTheme, liveHandoff, loadHandoff } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
 import { createLead, fmtDuration, funnelParams, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
 import { PriorityScale } from './PriorityScale';
 import { ItemsPicker } from './ItemsPicker';
-import { emptyItems, ItemsValue, itemsCount } from '@/lib/items';
+import { asmAnswered, emptyItems, ItemsValue, itemsCount } from '@/lib/items';
 import { WhenFields } from './WhenFields';
 import { QrHandoff } from './QrHandoff';
 import { AddressFields } from './AddressFields';
@@ -53,6 +53,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
   const [addrErr, setAddrErr] = useState<Partial<Record<keyof Address, string>>>({});
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState('');
+  const [flagsMissing, setFlagsMissing] = useState(false);
   const [hp, setHp] = useState('');
   const up = useUploads();
 
@@ -65,11 +66,14 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
 
   // Start from the lead created on the first page (/b). Resume mid-way after a refresh.
   useEffect(() => {
-    const h = loadHandoff(funnel);
+    const h0 = loadHandoff(funnel);
+    if (!h0) { router.replace(`/${funnel}/photo` + window.location.search); return; }
+    (async () => {
+    const h = await liveHandoff(h0);
     if (!h) { router.replace(`/${funnel}/photo` + window.location.search); return; }
     try {
       const s: Saved = JSON.parse(localStorage.getItem(STORE) || 'null');
-      if (s && s.ref?.id === h.ref.id && s.step < S_DONE) {
+      if (s && (s.ref?.id === h.ref.id || s.ref?.id === h0.ref.id) && s.step < S_DONE) {
         setStep(Math.max(2, Math.min(s.step, S_LAST))); setFurthest(Math.max(2, Math.min(Math.max(s.furthest || 0, s.step), S_LAST))); setFrom(s.from); setTo(s.to); setWhen(s.when || emptyWhen()); setPriority(s.priority || 3); if (s.items) setItems(s.items);
       } else {
         setFrom({ ...emptyAddress(), city: h.city || '' });
@@ -77,6 +81,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
     } catch { setFrom({ ...emptyAddress(), city: h.city || '' }); }
     setRef(h.ref); setName(h.name); setPhone(h.phone); up.attach(h.ref); setTheme(h.theme || 'photo');
     setReady(true);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -148,6 +153,12 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
     }
     if (step === S_ITEMS) {
       if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
+      if (!asmAnswered(items)) {
+        setFlagsMissing(true);
+        setFail('סמנו אילו פריטים צריכים פירוק או הרכבה, או סמנו שאף פריט לא צריך.');
+        requestAnimationFrame(() => document.getElementById('it-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        return;
+      }
       if (isD) {
         if (ref) updateLead(ref, { items, furthest_step: S_ITEMS }).catch(() => {});
         go(S_VIDEO);
@@ -157,7 +168,11 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
     if (step === S_LAST) {
       setBusy(true);
       try {
-        if (ref) await updateLead(ref, { status: 'complete', furthest_step: S_DONE, video_skipped: false, items });
+        // send every detail again: if the lead was re-opened (see liveHandoff), the earlier step saves went to the old one
+        if (ref) await updateLead(ref, {
+          status: 'complete', furthest_step: S_DONE, video_skipped: false, items, move_when: when, priority,
+          move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
+        });
         track('lead_complete', funnelParams(funnel, theme));
         go(S_DONE);
       } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
@@ -224,7 +239,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
               )}
 
               {step === S_ITEMS && (
-                <ItemsPicker value={items} onChange={(v) => { setItems(v); setFail(''); }} />
+                <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
               )}
 
               {isD && step === S_VIDEO && (

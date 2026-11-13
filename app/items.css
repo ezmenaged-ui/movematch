@@ -140,3 +140,23 @@
 .it-own-ok { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--it-green); font-size: 14px; font-weight: 600; }
 .it-own-note { margin: 0; font-size: 14px; color: var(--it-muted); }
 .it-own-tag { font-size: 11px; font-weight: 600; color: var(--it-blue); background: var(--it-soft); border-radius: 999px; padding: 1px 8px; }
+/* disassembly / assembly question: required answer before continuing */
+.it-card .it-flags { flex-wrap: wrap; justify-content: center; }
+.it-asm-q { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: var(--it-soft); display: grid; gap: 8px; }
+.it-asm-q label { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--it-ink); cursor: pointer; }
+.it-asm-q input { width: 18px; height: 18px; accent-color: var(--it-blue); }
+.it-asm-q p { margin: 0; font-size: 14px; color: #b3261e; line-height: 1.5; }
+.it-asm-q.missing { background: #fdecec; border: 1.5px solid #e5484d; }
+.it-list.it-list-missing { border: 2px solid #e5484d; scroll-margin-top: 12px; }
+.it-list.it-list-missing .it-flags { color: #b3261e; font-weight: 700; }
+.it-list.it-list-missing .it-flags input { outline: 2px solid #e5484d; outline-offset: 1px; border-radius: 3px; }
+/* room buttons: clear, tappable tiles. Desktop: all visible in a grid (no side scroll). Phone: one row that scrolls sideways. */
+.it-tabs-label { margin: 0 0 -6px; font-size: 15px; font-weight: 700; color: var(--it-ink); }
+.it-tabs button { border: 1.5px solid var(--it-line); min-height: 48px; font-size: 15px; transition: border-color .12s, background .12s; }
+.it-tabs button:hover { border-color: var(--it-blue); }
+.it-tabs button.on { border-color: var(--it-ink); }
+.it-tabs button > span[aria-hidden] { font-size: 20px; line-height: 1; }
+@media (min-width: 641px) {
+  .it-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; overflow: visible; padding-bottom: 0; }
+  .it-tabs button { justify-content: center; white-space: normal; text-align: center; padding: 10px 12px; }
+}

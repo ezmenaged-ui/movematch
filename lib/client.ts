@@ -21,6 +21,10 @@ export type LeadRef = { id: string; token: string };
 export class PhoneRecentError extends Error {
   constructor(public until: string) { super('phone_recent'); }
 }
+/** The lead behind a saved handoff no longer exists (e.g. a test lead that was deleted while the browser still remembered it). */
+export class LeadGoneError extends Error {
+  constructor() { super('lead_gone'); }
+}
 
 async function leadFail(r: Response, msg: string): Promise<never> {
   if (r.status === 409) {
@@ -44,6 +48,7 @@ export async function updateLead(ref: LeadRef, fields: Record<string, unknown>) 
     method: 'PATCH', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token: ref.token, ...fields }), keepalive: !('add_video' in fields),
   });
+  if (r.status === 404) throw new LeadGoneError();
   if (!r.ok) await leadFail(r, 'update failed');
   return r.json();
 }
