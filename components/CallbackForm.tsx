@@ -1,9 +1,9 @@
 'use client';
 import { CircleCheck } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Funnel, NEXT_PATH, saveHandoff, VARIANT } from '@/lib/handoff';
-import { createLead, funnelParams, PhoneRecentError, track, trackStep } from '@/lib/client';
+import { Funnel, loadHandoff, NEXT_PATH, saveHandoff, VARIANT } from '@/lib/handoff';
+import { createLead, funnelParams, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { isValidName, isValidPhone, MSG, normalizePhone, phoneRecentMsg } from '@/lib/validate';
 import { CityDatalist, CityField, Field, PhoneField } from './fields';
 import { Blueprint, Corners, MidragBadge, Spinner } from './ui';
@@ -21,6 +21,13 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
   const [done, setDone] = useState(false);
   const [fail, setFail] = useState('');
   const [hp, setHp] = useState('');
+
+  // Came back from the follow-up page (phone Back button) with an unfinished request: show their details again.
+  useEffect(() => {
+    if (funnel === 'a') return;
+    const h = loadHandoff(funnel);
+    if (h) setV((s) => (s.name || s.phone || s.city ? s : { name: h.name, phone: h.phone, city: h.city }));
+  }, [funnel]);
 
   const set = (k: keyof typeof v) => (x: string) => { setV((s) => ({ ...s, [k]: x })); if (err[k]) setErr((e) => ({ ...e, [k]: '' })); };
 
@@ -40,6 +47,18 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
     try {
       const fields = { name: v.name.trim(), phone: normalizePhone(v.phone), city: v.city.trim() };
       const isA = funnel === 'a';
+      // Same phone as the unfinished request in this browser: continue that lead instead of opening a second one
+      // (a second one would also hit the 30-day phone rule and block the client from their own request).
+      const prev = isA ? null : loadHandoff(funnel);
+      if (prev && normalizePhone(prev.phone) === fields.phone) {
+        const r = await updateLead(prev.ref, { name: fields.name, city: fields.city }).catch(() => null);
+        if (r && r.status !== 'complete') {
+          saveHandoff({ ...prev, ...fields, theme: theme ?? prev.theme });
+          leaving = true;
+          router.push(NEXT_PATH[funnel] + window.location.search);
+          return;
+        }
+      }
       const ref = await createLead(VARIANT[funnel], { ...fields, theme, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
       const fp = funnelParams(funnel, theme);
       track('lead_created', fp);

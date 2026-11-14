@@ -117,7 +117,12 @@ export function ItemsPicker({ value, onChange, flagsMissing = false }: { value: 
 
       <div className="it-input it-input-sm" role="search">
         <Search size={18} strokeWidth={2} aria-hidden className="it-input-ico" />
-        <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} placeholder="חיפוש מהיר, למשל: מקרר" aria-label="חיפוש פריט" enterKeyHint="search" autoComplete="off" />
+        <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }}
+          onFocus={(e) => { // phones: bring the box to the top so its suggestions fit above the keyboard
+            const el = e.currentTarget;
+            if (window.matchMedia('(max-width: 640px)').matches) setTimeout(() => el.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50);
+          }}
+          placeholder="חיפוש מהיר, למשל: מקרר" aria-label="חיפוש פריט" enterKeyHint="search" autoComplete="off" />
         {q.trim().length >= 2 && (
           <ul className="it-suggest" role="listbox">
             {live.map((it) => {
