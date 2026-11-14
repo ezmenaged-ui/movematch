@@ -18,8 +18,8 @@ All operator details come from one place: `lib/legal.ts`.
 
 ## Points for the lawyer to decide
 
-1. **Supabase country (privacy §4)**: still blank. The owner must read it in Supabase → Project Settings → General and set
-   `LEGAL.hosting.supabase` in `lib/legal.ts`. Until then the page says only "מחוץ לישראל".
+1. **Supabase country (privacy §4)**: read from the Supabase project settings and set as
+   `LEGAL.hosting.supabase` in `lib/legal.ts`: done 14 Nov 2026, eu-central-1 = Frankfurt, Germany (EU).
    Vercel functions run in `iad1` (Washington DC, USA), checked in the Vercel project settings on 13 Nov 2026.
 2. **Safeguards wording (privacy §4)**: describes what the providers publish (DPAs, SCCs, SOC 2 / ISO 27001, encryption). Confirm this is enough under the 2001 transfer regulations, or whether explicit consent should also be taken on the forms.
 3. **Breach notification (privacy §7)**: worded as "notify the Authority / affected people when the law or the Authority requires", including Amendment 13. Confirm the wording matches current obligations.

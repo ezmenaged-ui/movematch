@@ -17,6 +17,6 @@ export const LEGAL = {
    *  (e.g. 'גרמניה (פרנקפורט, האיחוד האירופי)' for eu-central-1, 'ארה״ב' for us-east-1). */
   hosting: {
     vercel: 'ארה״ב (וושינגטון)',
-    supabase: '',
+    supabase: 'גרמניה (פרנקפורט, האיחוד האירופי)', // eu-central-1, checked in Supabase project settings on 14.11.2026
   },
 };

@@ -1,5 +1,5 @@
 -- 013: mover service areas (required at sign-up) → tender routing by the lead's origin area.
--- Run once in Supabase → SQL editor. Safe to re-run. Does not change any existing function.
+-- Applied to production on 14 Nov 2026. Safe to re-run. Does not change any existing function.
 -- The area list must match AREAS in lib/areas.ts.
 
 create table if not exists movematch.mover_service_areas (
@@ -24,8 +24,7 @@ language plpgsql security definer set search_path = '' as $$
 declare a text[] := public.mm_clean_areas(p_areas); mid uuid;
 begin
   if cardinality(a) = 0 then raise exception 'areas'; end if;
-  perform public.mm_mover_signup(p, p_logo);
-  select id into mid from movematch.movers where phone = p->>'phone';
+  mid := (public.mm_mover_signup(p, p_logo)->>'id')::uuid;
   if mid is null then raise exception 'signup failed'; end if;
   insert into movematch.mover_service_areas(mover_id, area) select mid, x from unnest(a) x on conflict do nothing;
 end $$;
