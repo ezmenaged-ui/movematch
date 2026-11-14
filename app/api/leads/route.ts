@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }); }
   if (body.website) return NextResponse.json({ id: 'ok', token: 'ok' }); // honeypot
   const variant = body.variant;
-  if (variant !== 'a' && variant !== 'wizard' && variant !== 'form' && variant !== 'items') return NextResponse.json({ error: 'variant' }, { status: 400 });
+  if (variant !== 'a' && variant !== 'wizard' && variant !== 'form' && variant !== 'items' && variant !== 'choice') return NextResponse.json({ error: 'variant' }, { status: 400 });
   const p = cleanLeadInput(body);
   if (!isValidName(String(p.name || '')) || !isValidPhone(String(p.phone || ''))) {
     return NextResponse.json({ error: 'invalid' }, { status: 422 });

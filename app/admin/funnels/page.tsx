@@ -14,6 +14,7 @@ const FUNNELS = [
   { v: 'wizard', letter: 'B', name: 'אשף עם רשימת פריטים', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים'] },
   { v: 'form', letter: 'C', name: 'טופס בעמוד אחד', steps: ['פרטים', 'טופס הפרטים'] },
   { v: 'items', letter: 'D', name: 'אשף עם פריטים וסרטונים', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים'] },
+  { v: 'choice', letter: 'E', name: 'אשף עם בחירה: סרטון או פריטים', steps: ['פרטים', 'מאיפה', 'לאן', 'מתי', 'סרטון או פריטים'] },
 ] as const;
 const RANGES = [{ d: '7', label: '7 ימים' }, { d: '30', label: '30 יום' }, { d: '90', label: '90 יום' }, { d: 'all', label: 'הכול' }];
 const THEME: Record<string, string> = { photo: 'צילום', art: 'איור' };
@@ -21,7 +22,7 @@ const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '�
 const isTest = (l: Lead) => /^\s*QA\b/i.test(l.name || '') || (l.utm_source || '').toLowerCase() === 'qa';
 
 /**
- * Funnel performance: for each of the 4 funnels (and its photo / art design), how many people left their details,
+ * Funnel performance: for each of the 5 funnels (and its photo / art design), how many people left their details,
  * how many finished, and at which step the others stopped. Read live from the leads table on every page load.
  * Page views are not stored here: "visitors → lead" is in Google Analytics (event funnel_step, step 0_landing).
  */

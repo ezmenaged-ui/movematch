@@ -8,9 +8,10 @@ import { tenderRef } from '@/lib/publicLead';
  * Called every 5 minutes by the database scheduler (pg_cron → pg_net, see migration 011).
  * Emails the operator once per lead that filled the first page but didn't finish within 15 minutes.
  */
-const FUNNEL: Record<string, string> = { wizard: 'B', form: 'C', items: 'D' };
+const FUNNEL: Record<string, string> = { wizard: 'B', form: 'C', items: 'D', choice: 'E' };
 const STEP: Record<string, string[]> = {
-  wizard: ['', 'פרטים (עמוד ראשון)', 'מאיפה', 'לאן', 'מתי', 'סרטון'],
+  wizard: ['', 'פרטים (עמוד ראשון)', 'מאיפה', 'לאן', 'מתי', 'פריטים'],
+  choice: ['', 'פרטים (עמוד ראשון)', 'מאיפה', 'לאן', 'מתי', 'סרטון או פריטים'],
   items: ['', 'פרטים (עמוד ראשון)', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים'],
   form: ['', 'פרטים (עמוד ראשון)', 'טופס הפרטים'],
 };

@@ -1,10 +1,10 @@
 'use client';
-import { Check } from 'lucide-react';
+import { Check, ClipboardList, Video } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearHandoff, FlowTheme, liveHandoff, loadHandoff } from '@/lib/handoff';
+import { clearHandoff, FlowTheme, liveHandoff, loadHandoff, saveHandoff, VARIANT } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
-import { createLead, fmtDuration, funnelParams, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
+import { createLead, fmtDuration, funnelParams, LeadGoneError, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
 import { PriorityScale } from './PriorityScale';
 import { ItemsPicker } from './ItemsPicker';
@@ -21,18 +21,24 @@ import { HAS_MOVERS_PHOTO, MoversTrustRow } from './MoversVisual';
 
 const S_WHEN = 4;
 
-type Saved = { step: number; furthest?: number; ref: LeadRef | null; name: string; phone: string; from: Address; to: Address; when: When; priority?: number; items?: ItemsValue; t: number };
+type Saved = { step: number; furthest?: number; ref: LeadRef | null; name: string; phone: string; from: Address; to: Address; when: When; priority?: number; items?: ItemsValue; mode?: InfoMode; t: number };
+/** Funnel E: how the client tells the movers what is moving. The other option stays available as an optional extra. */
+type InfoMode = 'video' | 'items';
+/** Funnel E asks for a full walk-through of about 3 minutes; shorter videos get a warning but can still be sent. */
+const E_VIDEO_TARGET_S = 180;
+const fmtMin = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
 
 /**
  * Funnels B and D, after the shared first step: from → to → when → items (picked from the room list, or added by the client).
  * B ends there: from → to → when → items → done.
  * D adds an optional video step: from → to → when → items → videos → done.
+ * E has one information page instead: from → to → when → info (a full 3-minute video OR the item list; the other is optional) → done.
  */
-export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
-  const isD = funnel === 'd';
-  const LABELS = isD ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים', 'סיום'] : ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סיום'];
-  const S_ITEMS = 5, S_VIDEO = isD ? 6 : -1, S_DONE = isD ? 7 : 6, TOTAL = S_DONE, S_LAST = S_DONE - 1;
-  const STORE = isD ? 'mm_wizard_d1' : 'mm_wizard_b5';
+export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
+  const isD = funnel === 'd', isE = funnel === 'e';
+  const LABELS = isD ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים', 'סיום'] : isE ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'מה עובר', 'סיום'] : ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סיום'];
+  const S_ITEMS = isE ? -1 : 5, S_INFO = isE ? 5 : -1, S_VIDEO = isD ? 6 : -1, S_DONE = isD ? 7 : 6, TOTAL = S_DONE, S_LAST = S_DONE - 1;
+  const STORE = isD ? 'mm_wizard_d1' : isE ? 'mm_wizard_e1' : 'mm_wizard_b5';
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [theme, setTheme] = useState<FlowTheme>('photo');
@@ -47,6 +53,9 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
   const [whenErr, setWhenErr] = useState('');
   const [priority, setPriority] = useState(3);
   const [items, setItems] = useState<ItemsValue>(emptyItems);
+  const [mode, setMode] = useState<InfoMode | null>(null);
+  const [extraOpen, setExtraOpen] = useState(false);
+  const [shortWarn, setShortWarn] = useState(false);
   const [remote, setRemote] = useState(0);
   const onRemote = useCallback((n: number) => setRemote(n), []);
   const [err, setErr] = useState<Record<string, string>>({});
@@ -58,9 +67,9 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
   const up = useUploads();
 
   // One funnel_step event each time a step is shown (from step 2; steps 0-1 are tracked on the landing page).
-  const STEP_NAMES = isD ? ['contact', 'from', 'to', 'when', 'items', 'video', 'done'] : ['contact', 'from', 'to', 'when', 'items', 'done'];
+  const STEP_NAMES = isD ? ['contact', 'from', 'to', 'when', 'items', 'video', 'done'] : isE ? ['contact', 'from', 'to', 'when', 'info', 'done'] : ['contact', 'from', 'to', 'when', 'items', 'done'];
   useEffect(() => {
-    if (ready && step >= 2) trackStep(funnel, theme, step, STEP_NAMES[step - 1] || `step${step}`);
+    if (ready && step >= 2) trackStep(funnel, theme, step, STEP_NAMES[step - 1] || `step${step}`, isE && step === S_DONE && mode ? { info_choice: mode } : {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, step]);
 
@@ -74,7 +83,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
     try {
       const s: Saved = JSON.parse(localStorage.getItem(STORE) || 'null');
       if (s && (s.ref?.id === h.ref.id || s.ref?.id === h0.ref.id) && s.step < S_DONE) {
-        setStep(Math.max(2, Math.min(s.step, S_LAST))); setFurthest(Math.max(2, Math.min(Math.max(s.furthest || 0, s.step), S_LAST))); setFrom(s.from); setTo(s.to); setWhen(s.when || emptyWhen()); setPriority(s.priority || 3); if (s.items) setItems(s.items);
+        setStep(Math.max(2, Math.min(s.step, S_LAST))); setFurthest(Math.max(2, Math.min(Math.max(s.furthest || 0, s.step), S_LAST))); setFrom(s.from); setTo(s.to); setWhen(s.when || emptyWhen()); setPriority(s.priority || 3); if (s.items) setItems(s.items); if (s.mode) setMode(s.mode);
       } else {
         setFrom({ ...emptyAddress(), city: h.city || '' });
       }
@@ -88,10 +97,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
     if (!ref) return;
     try {
       if (step >= S_DONE) localStorage.removeItem(STORE);
-      else localStorage.setItem(STORE, JSON.stringify({ step, furthest, ref, name, phone, from, to, when, priority, items, t: Date.now() } satisfies Saved));
+      else localStorage.setItem(STORE, JSON.stringify({ step, furthest, ref, name, phone, from, to, when, priority, items, mode: mode || undefined, t: Date.now() } satisfies Saved));
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, furthest, ref, name, phone, from, to, when, priority, items]);
+  }, [step, furthest, ref, name, phone, from, to, when, priority, items, mode]);
 
   const show = (n: number) => { setStep(n); setFurthest((f) => Math.max(f, Math.min(n, S_LAST))); setFail(''); setAddrErr({}); setErr({}); setWhenErr(''); window.scrollTo({ top: 0 }); };
   /** Open a step. Each step gets its own browser history entry, so the phone's Back button goes to the previous step
@@ -129,7 +138,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
         updateLead(ref, step === 2 ? { move_from: norm } : { move_to: norm }).catch(() => {});
       }
       if (step === S_WHEN && !validateWhen(when).date) updateLead(ref, { move_when: when, priority }).catch(() => {});
-      if (step === S_ITEMS && items.list.length) updateLead(ref, { items }).catch(() => {});
+      if ((step === S_ITEMS || step === S_INFO) && items.list.length) updateLead(ref, { items }).catch(() => {});
     }
     setErr({}); setWhenErr('');
     go(n);
@@ -172,8 +181,29 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
       setWhenErr(er.date || '');
       if (er.date) return;
       if (ref) updateLead(ref, { move_when: when, priority, furthest_step: S_WHEN }).catch(() => {});
-      go(S_ITEMS);
+      go(isE ? S_INFO : S_ITEMS);
       return;
+    }
+    if (step === S_INFO) {
+      if (!mode) { setFail('בחרו איך לספר למובילים מה עובר: סרטון של הדירה או רשימת פריטים.'); return; }
+      const hasVideo = up.usable.length > 0 || remote > 0;
+      if (mode === 'video') {
+        if (!hasVideo) { setFail('צלמו או העלו את סרטון הדירה. אפשר גם לבחור ברשימת פריטים במקום.'); return; }
+        // Warn (once) when the known length is under 3 minutes. Videos sent from the phone (QR) have no known length here.
+        const known = !remote && up.usable.every((c) => c.duration != null);
+        if (known && up.totalDuration < E_VIDEO_TARGET_S && !shortWarn) {
+          setShortWarn(true);
+          requestAnimationFrame(() => document.getElementById('e-short')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+          return;
+        }
+      } else if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
+      // Items are the main option, or were added as an extra: they need the disassembly answer like in B and D.
+      if (items.list.length && !asmAnswered(items)) {
+        setFlagsMissing(true);
+        setFail('סמנו אילו פריטים צריכים פירוק או הרכבה, או סמנו שאף פריט לא צריך.');
+        requestAnimationFrame(() => document.getElementById('it-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        return;
+      }
     }
     if (step === S_ITEMS) {
       if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
@@ -195,14 +225,26 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
       if (Object.keys(fromErr).length) { go(2); setAddrErr(fromErr); return; }
       if (Object.keys(toErr).length) { go(3); setAddrErr(toErr); return; }
       if (validateWhen(when).date) { go(S_WHEN); setWhenErr(validateWhen(when).date || ''); return; }
-      if (!items.list.length || !asmAnswered(items)) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
+      // (Funnel E's last step is its own info step, checked just above.)
+      if (S_ITEMS > 0 && (!items.list.length || !asmAnswered(items))) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
       setBusy(true);
       try {
         // send every detail again: if the lead was re-opened (see liveHandoff), the earlier step saves went to the old one
-        if (ref) await updateLead(ref, {
+        const all = {
           status: 'complete', furthest_step: S_DONE, video_skipped: isD && !up.usable.length && !remote, items, move_when: when, priority,
           move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
-        });
+        };
+        if (ref) {
+          try { await updateLead(ref, all); } catch (e) {
+            if (!(e instanceof LeadGoneError)) throw e;
+            // The lead was deleted while the page was open (e.g. a cleanup): open a fresh one with every detail, once.
+            // Videos already uploaded belonged to the old lead and are not carried over. No new generate_lead event.
+            const fresh = await createLead(VARIANT[funnel], { name, phone, city: from.city, theme, status: 'partial', furthest_step: 1 });
+            setRef(fresh); up.attach(fresh);
+            saveHandoff({ funnel, ref: fresh, name, phone, city: from.city, theme });
+            await updateLead(fresh, all);
+          }
+        }
         track('lead_complete', funnelParams(funnel, theme));
         go(S_DONE);
       } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
@@ -280,7 +322,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
                   <div className="stack">
                     {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
                     <div className="vid-guide" role="note">
-                      <b>מה לצלם: 3–4 סרטונים, עד דקה כל אחד</b>
+                      <b>מה לצלם: סרטון אחד או כמה, עד 4 דקות כל אחד</b>
                       <ol>
                         <li><b>חדר חדר:</b> סרטון נפרד לכל חדר. בדירה גדולה, יותר סרטונים.</li>
                         <li><b>הרהיטים הגדולים מקרוב:</b> ארונות, מיטות, ספות ומוצרי חשמל.</li>
@@ -297,12 +339,88 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
                 </>
               )}
 
+              {step === S_INFO && (
+                <>
+                  <h2>ספרו למובילים מה עובר</h2>
+                  <p className="lead-sub">כדי לתת מחיר מדויק, המוביל צריך לדעת בדיוק מה הוא מעביר. בחרו דרך אחת:</p>
+                  <div className="e-choice" role="radiogroup" aria-label="איך לספר למובילים מה עובר">
+                    {([
+                      ['video', <Video key="v" size={30} strokeWidth={1.5} aria-hidden />, 'סרטון מלא של הדירה', 'כ-3 דקות, חדר אחרי חדר, ומסבירים בקול'],
+                      ['items', <ClipboardList key="i" size={30} strokeWidth={1.5} aria-hidden />, 'רשימת פריטים', 'בוחרים מהרשימה את כל מה שעובר'],
+                    ] as const).map(([m, ico, t, sub]) => (
+                      <button key={m} type="button" role="radio" aria-checked={mode === m} className={`e-opt ${mode === m ? 'on' : ''}`}
+                        onClick={() => { if (mode !== m) { setMode(m); setExtraOpen(false); setShortWarn(false); setFail(''); track('info_choice', { ...funnelParams(funnel, theme), choice: m }); } }}>
+                        {ico}<b>{t}</b><span>{sub}</span>{mode === m && <Check className="e-opt-ok" size={18} strokeWidth={2.5} aria-hidden />}
+                      </button>
+                    ))}
+                  </div>
+
+                  {mode === 'video' && (
+                    <div className="stack" style={{ marginTop: 18 }}>
+                      <div className="vid-guide e-guide" role="note">
+                        <b>מה אנחנו מצפים לקבל: סרטון מלא של כ-3 דקות</b>
+                        <ol>
+                          <li><b>חדר אחרי חדר:</b> עוברים על כל הדירה, בלי לדלג. גם מרפסת, מחסן וחניה.</li>
+                          <li><b>כל פריט, בקול:</b> מה הוא, האם צריך לפרק ולהרכיב אותו, והאם הוא כבד.</li>
+                          <li><b>מה מיוחד בדירה:</b> חדר מדרגות צר, אין מעלית או מעלית קטנה, מעברים צרים, חניה רחוקה, וכל דבר אחר שהמוביל צריך לדעת.</li>
+                          <li><b>תאורה טובה:</b> הדליקו את האורות ופתחו תריסים, כדי שהמוביל יראה בדיוק מה הוא מעביר.</li>
+                        </ol>
+                        <p className="e-guide-key">הפרטים כאן קריטיים: לפיהם המוביל קובע את המחיר. ככל שהסרטון מלא וברור יותר, ההצעה מדויקת יותר.</p>
+                        <small>אפשר סרטון אחד ארוך (עד 4 דקות) או כמה סרטונים, למשל אחד לכל חדר.</small>
+                      </div>
+                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
+                      {up.usable.length > 0 && up.totalDuration > 0 && (
+                        <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
+                          <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00</span>
+                          <i><em style={{ width: `${Math.min(100, (up.totalDuration / E_VIDEO_TARGET_S) * 100)}%` }} /></i>
+                        </div>
+                      )}
+                      <ClipList clips={up.clips} onRemove={(k) => { up.remove(k); setShortWarn(false); }} />
+                      {up.clips.some((c) => c.state === 'error') && (
+                        <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
+                      )}
+                      <VideoButtons onFiles={(f) => { up.add(f); setFail(''); setShortWarn(false); }} more={up.usable.length > 0} />
+                      {shortWarn && (
+                        <div id="e-short" className="e-warn" role="alert">
+                          <b>הסרטון קצר מ-3 דקות ({fmtMin(up.totalDuration)}).</b> סרטון קצר עלול לא להראות למובילים את כל מה שעובר, ואז קשה להם לתת מחיר מדויק. מומלץ להוסיף סרטון של מה שחסר. אפשר גם לשלוח כך.
+                        </div>
+                      )}
+                      <details className="e-extra" open={extraOpen} onToggle={(e) => setExtraOpen((e.target as HTMLDetailsElement).open)}>
+                        <summary>רוצים להוסיף גם רשימת פריטים? <span>(רשות)</span></summary>
+                        {extraOpen && <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />}
+                      </details>
+                    </div>
+                  )}
+
+                  {mode === 'items' && (
+                    <div className="stack" style={{ marginTop: 18 }}>
+                      <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
+                      <details className="e-extra" open={extraOpen} onToggle={(e) => setExtraOpen((e.target as HTMLDetailsElement).open)}>
+                        <summary>רוצים להוסיף גם סרטון של הדירה? <span>(רשות)</span></summary>
+                        {extraOpen && (
+                          <div className="stack" style={{ marginTop: 12 }}>
+                            <p className="small" style={{ margin: 0 }}>סרטון עוזר למובילים לראות את הפריטים ואת הבניין (מדרגות, מעלית, מעברים). צלמו באור טוב וספרו בקול מה צריך פירוק ומה כבד. עד 4 דקות לכל סרטון.</p>
+                            <ClipList clips={up.clips} onRemove={up.remove} />
+                            {up.clips.some((c) => c.state === 'error') && (
+                              <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
+                            )}
+                            <VideoButtons compact onFiles={(f) => { up.add(f); setFail(''); }} more={up.usable.length > 0} />
+                          </div>
+                        )}
+                      </details>
+                    </div>
+                  )}
+                </>
+              )}
+
               {step === S_DONE && (
                 <div className="done-wrap">
                   <span className="done-icon blueprint"><Corners /><Check size={28} strokeWidth={1.5} /></span>
                   <h2 style={{ marginBottom: 14 }}>קיבלנו. ההצעות בדרך.</h2>
                   <p className="muted" style={{ maxWidth: 420, marginInline: 'auto' }}>
-                    {isD && (up.usable.length || remote)
+                    {isE
+                      ? `שלחנו את ${[(up.usable.length || remote) && 'הסרטון', items.list.length && 'רשימת הפריטים'].filter(Boolean).join(' ואת ') || 'הפרטים'} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
+                      : isD && (up.usable.length || remote)
                       ? 'שלחנו את רשימת הפריטים והסרטונים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'
                       : 'שלחנו את רשימת הפריטים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'}
                   </p>
@@ -312,8 +430,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
                     <tr><td>מאיפה</td><td>{[from.city, from.floor && `קומה ${from.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>לאן</td><td>{[to.city, to.floor && `קומה ${to.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>מתי</td><td>{whenText(when) || '—'}</td></tr>
-                    <tr><td>פריטים</td><td>{itemsCount(items)} פריטים{items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}</td></tr>
-                    {isD && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : '—'}</td></tr>}
+                    {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{itemsCount(items)} פריטים{items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}</td></tr>}
+                    {(isD || isE) && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : '—'}</td></tr>}
                   </tbody></table>
                 </div>
               )}
@@ -321,7 +439,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
               {fail && <div className="field-error" role="alert" style={{ marginTop: 16 }}>{fail}</div>}
 
               {step < S_DONE && (
-                <div className={`wiz-actions ${step === S_ITEMS ? 'wiz-actions-sticky' : ''} ${isD && step === S_VIDEO ? 'vid-d' : ''}`}>
+                <div className={`wiz-actions ${step === S_ITEMS || (step === S_INFO && mode === 'items') ? 'wiz-actions-sticky' : ''} ${isD && step === S_VIDEO ? 'vid-d' : ''}`}>
                   {step > 2 && !(isD && step === S_VIDEO) ? <button type="button" className="btn-link" onClick={() => go(step - 1)}>חזרה</button> : !(isD && step === S_VIDEO) && <span />}
                   {isD && step === S_VIDEO ? (
                     <>
@@ -331,6 +449,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' }) {
                       </div>
                       <button type="button" className="btn-link" onClick={() => go(step - 1)}>חזרה</button>
                     </>
+                  ) : step === S_INFO ? (
+                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy || !mode} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn && mode === 'video' ? 'שליחה בכל זאת' : 'שלחו לי 5 הצעות'}{mode === 'items' && itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
                   ) : !isD && step === S_ITEMS ? (
                     <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} שלחו לי 5 הצעות{itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
                   ) : (

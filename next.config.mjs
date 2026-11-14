@@ -13,6 +13,7 @@ export default {
       { source: '/b', destination: '/b/photo', permanent: false },
       { source: '/c', destination: '/c/photo', permanent: false },
       { source: '/d', destination: '/d/photo', permanent: false },
+      { source: '/e', destination: '/e/photo', permanent: false },
       // Mover panel moved from /mover to /movers (links already sent keep working).
       { source: '/mover', destination: '/movers', permanent: true },
       { source: '/mover/:path*', destination: '/movers/:path*', permanent: true },

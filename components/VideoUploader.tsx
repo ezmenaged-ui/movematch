@@ -25,11 +25,11 @@ export function Checklist() {
   );
 }
 
-/** The two rules we want every uploader to notice: 1.5 minutes max per clip, and several clips are fine. */
+/** The two rules we want every uploader to notice: 4 minutes max per clip, and several clips are fine. */
 export function VideoRules() {
   return (
     <div className="video-rules" role="note">
-      <div className="rule"><Clock size={22} strokeWidth={1.5} aria-hidden /><span><b>כל סרטון עד דקה וחצי</b><small>סרטון ארוך יותר לא יעלה</small></span></div>
+      <div className="rule"><Clock size={22} strokeWidth={1.5} aria-hidden /><span><b>כל סרטון עד 4 דקות</b><small>סרטון ארוך יותר לא יעלה</small></span></div>
       <div className="rule"><Copy size={22} strokeWidth={1.5} aria-hidden /><span><b>אפשר להעלות כמה סרטונים</b><small>למשל סרטון לכל חדר</small></span></div>
     </div>
   );
@@ -73,8 +73,8 @@ export function ClipList({ clips, onRemove }: { clips: Clip[]; onRemove: (key: s
               )}
             </span>
           </div>
-          {c.state === 'too_long' && <span className="small">הסרטון ארוך מדקה וחצי ולכן לא יעלה. צלמו אותו מחדש בכמה סרטונים קצרים.</span>}
-          {c.state === 'too_big' && <span className="small">הקובץ גדול מדי. צלמו סרטון קצר יותר, עד דקה וחצי.</span>}
+          {c.state === 'too_long' && <span className="small">הסרטון ארוך מ-4 דקות ולכן לא יעלה. צלמו אותו מחדש בכמה סרטונים קצרים יותר.</span>}
+          {c.state === 'too_big' && <span className="small">הקובץ גדול מדי. צלמו סרטון קצר יותר, או צלמו באיכות רגילה (לא 4K).</span>}
           {c.state === 'not_video' && <span className="small">הקובץ הזה אינו סרטון ולכן לא יעלה. בחרו קובץ וידאו.</span>}
           {c.state === 'error' && <span className="small">ההעלאה נכשלה. נסו שוב.</span>}
           {(c.state === 'uploading' || c.state === 'queued') && <div className="bar"><i style={{ width: `${c.progress}%` }} /></div>}

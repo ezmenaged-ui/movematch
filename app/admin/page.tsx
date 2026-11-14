@@ -16,7 +16,7 @@ type Bid = { id: string; lead_id: string; price: number; mover_phone: string; mo
 type Lead = LeadRow & { client_token: string; movers_pinged_at: string | null; movers_pinged_count: number | null; priority: number | null };
 const PRIO: Record<number, string> = { 1: 'שירות פרימיום', 2: 'בעיקר שירות', 3: 'איזון', 4: 'בעיקר מחיר', 5: 'המחיר הנמוך' };
 
-const V: Record<string, string> = { a: 'A · חזרה', wizard: 'B · פריטים', form: 'C · טופס', items: 'D · פריטים+סרטון' };
+const V: Record<string, string> = { a: 'A · חזרה', wizard: 'B · פריטים', form: 'C · טופס', items: 'D · פריטים+סרטון', choice: 'E · סרטון או פריטים' };
 const fmt = (d: string) => new Date(d).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' });
 const dShort = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' });
 const wa = (phone: string, text?: string) => `https://wa.me/972${phone.replace(/^0/, '')}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
@@ -77,7 +77,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const nOffers = allLeads.filter((l) => (bidsBy.get(l.id) || []).length).length;
   const nOpen = allLeads.filter((l) => !l.handled).length;
 
-  const stats = (['a', 'wizard', 'form', 'items'] as const).map((v) => {
+  const stats = (['a', 'wizard', 'form', 'items', 'choice'] as const).map((v) => {
     const ls = allLeads.filter((l) => l.variant === v);
     const c = ls.filter((l) => l.status === 'complete').length;
     return { v, total: ls.length, complete: c, rate: ls.length ? Math.round((c / ls.length) * 100) : 0 };
