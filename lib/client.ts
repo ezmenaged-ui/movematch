@@ -81,11 +81,11 @@ export function track(event: string, data: Record<string, unknown> = {}) {
   if (event === 'lead_complete') w.fbq?.('track', 'CompleteRegistration', data);
 }
 
-/** Each clip may be at most 90 seconds (small tolerance for metadata rounding). */
-export const MAX_VIDEO_SECONDS = 90;
-export const MAX_VIDEO_SECONDS_TOLERANCE = 95;
-/** Hard ceiling per file (a 90s 4K clip is ~400-500MB). */
-export const MAX_VIDEO_BYTES = 700 * 1024 * 1024;
+/** Each clip may be at most 4 minutes (small tolerance for metadata rounding). */
+export const MAX_VIDEO_SECONDS = 240;
+export const MAX_VIDEO_SECONDS_TOLERANCE = 245;
+/** Hard ceiling per file (a 4-minute 4K clip can reach ~1.5GB). Uploads go in 45MB parts; lib/sanitize.ts allows up to 50 parts. */
+export const MAX_VIDEO_BYTES = 2000 * 1024 * 1024;
 /** Supabase free tier caps each stored object at 50MB, so large clips go up in parts. */
 const CHUNK = 45 * 1024 * 1024;
 

@@ -2,7 +2,7 @@
 import { createLead, LeadGoneError, LeadRef, updateLead } from './client';
 
 /** The shared first step (funnels B and C) creates the lead, then hands it to the next page. */
-export type Funnel = 'a' | 'b' | 'c' | 'd';
+export type Funnel = 'a' | 'b' | 'c' | 'd' | 'e';
 export type FlowTheme = 'photo' | 'art';
 export type Handoff = { funnel: Funnel; ref: LeadRef; name: string; phone: string; city: string; theme?: FlowTheme; t: number };
 const KEY = 'mm_handoff';
@@ -20,8 +20,8 @@ export function loadHandoff(funnel: Funnel): Handoff | null {
 }
 
 /** DB variant names for each funnel. */
-export const VARIANT: Record<Funnel, 'a' | 'wizard' | 'form' | 'items'> = { a: 'a', b: 'wizard', c: 'form', d: 'items' };
-export const NEXT_PATH: Record<Funnel, string> = { a: '', b: '/b/steps', c: '/c/details', d: '/d/steps' };
+export const VARIANT: Record<Funnel, 'a' | 'wizard' | 'form' | 'items' | 'choice'> = { a: 'a', b: 'wizard', c: 'form', d: 'items', e: 'choice' };
+export const NEXT_PATH: Record<Funnel, string> = { a: '', b: '/b/steps', c: '/c/details', d: '/d/steps', e: '/e/steps' };
 
 export function clearHandoff() {
   try { localStorage.removeItem(KEY); } catch { /* ignore */ }

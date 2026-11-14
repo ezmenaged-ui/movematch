@@ -1,4 +1,4 @@
-export type Variant = 'a' | 'wizard' | 'form' | 'items';
+export type Variant = 'a' | 'wizard' | 'form' | 'items' | 'choice';
 
 export type ElevatorType = 'small' | 'regular' | 'large';
 /** Elevator size: what movers need to know (does a sofa / fridge fit?). */

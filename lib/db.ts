@@ -23,7 +23,7 @@ export type LeadRow = {
   id: string;
   created_at: string;
   updated_at: string;
-  variant: 'a' | 'wizard' | 'form' | 'items';
+  variant: 'a' | 'wizard' | 'form' | 'items' | 'choice';
   items?: { list: { id: string; name: string; qty: number; dis?: boolean; asm?: boolean; custom?: boolean }[]; boxes: number } | null;
   status: 'partial' | 'complete';
   furthest_step: number;

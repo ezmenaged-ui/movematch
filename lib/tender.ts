@@ -9,7 +9,7 @@ export type TenderOffer = {
   midrag_url: string | null; midrag_rating: number | null; midrag_reviews: number | null;
 };
 export type Tender = {
-  id: string; tender_no: number; created_at: string; status: 'partial' | 'complete'; variant: 'a' | 'wizard' | 'form' | 'items';
+  id: string; tender_no: number; created_at: string; status: 'partial' | 'complete'; variant: 'a' | 'wizard' | 'form' | 'items' | 'choice';
   name: string; city: string | null; move_from: Record<string, unknown> | null; move_to: Record<string, unknown> | null;
   move_when: Record<string, unknown> | null; videos: number; video_skipped: boolean;
   closes_at: string | null; now: string;

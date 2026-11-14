@@ -160,3 +160,29 @@
   .it-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; overflow: visible; padding-bottom: 0; }
   .it-tabs button { justify-content: center; white-space: normal; text-align: center; padding: 10px 12px; }
 }
+
+/* Funnel E: one information page, the client picks a full video or the item list (the other is an optional extra). */
+.e-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.e-opt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 12px; border-radius: 18px;
+  border: 2px solid #dbe5f0; background: #fff; color: #0f2a43; font: inherit; text-align: center; cursor: pointer; transition: border-color .12s, background .12s; }
+.e-opt svg { color: #1f6fd1; }
+.e-opt b { font-size: 17px; }
+.e-opt span { font-size: 13px; color: #5b6b7f; }
+.e-opt:hover { border-color: #1f6fd1; }
+.e-opt.on { border-color: #1f9254; background: #f1faf5; }
+.e-opt:focus-visible { outline: 3px solid #1f6fd1; outline-offset: 2px; }
+.e-opt-ok { position: absolute; top: 10px; inset-inline-end: 10px; color: #1f9254; }
+.e-guide ol { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; }
+.e-guide li b { font-size: 14px; }
+.e-guide-key { margin: 4px 0 0; padding: 10px 12px; border-radius: 12px; background: #fff4d6; color: #5c3d00; font-weight: 600; }
+.e-guide small { color: #5b6b7f; }
+.e-meter { display: grid; gap: 6px; font-size: 14px; color: #0f2a43; }
+.e-meter i { display: block; height: 8px; border-radius: 999px; background: #e4ebf3; overflow: hidden; }
+.e-meter em { display: block; height: 100%; background: #d99a1e; transition: width .3s; }
+.e-meter.ok em { background: #1f9254; }
+.e-warn { padding: 12px 14px; border-radius: 12px; border: 1.5px solid #d99a1e; background: #fff8e6; color: #5c3d00; font-size: 14px; line-height: 1.5; }
+.e-extra { border: 1.5px dashed #dbe5f0; border-radius: 16px; padding: 12px 14px; }
+.e-extra > summary { cursor: pointer; font-weight: 700; color: #1f6fd1; }
+.e-extra > summary span { font-weight: 400; color: #5b6b7f; }
+.e-extra[open] > summary { margin-bottom: 10px; }
+@media (max-width: 420px) { .e-choice { gap: 8px; } .e-opt { padding: 14px 8px; } .e-opt b { font-size: 15px; } }

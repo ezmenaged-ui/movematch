@@ -2,7 +2,7 @@
 
 Domain: `movematch.co.il`. Everything below hangs off that domain.
 
-## 1. Funnels (8): 4 flows × 2 designs
+## 1. Funnels (10): 5 flows × 2 designs
 
 Each funnel starts on its landing page, where the client gives name and phone (the lead is saved right there). Then it continues on the funnel's own follow-up page. **photo** = real-photo design, **art** = illustrated design.
 
@@ -16,11 +16,15 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
 | 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard and item list as B, plus a video step (optional). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
+| 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. No ₪50 offer. |
+| 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
 **Homepage `/`** shows **D · photo** (same page as `/d/photo`).
 
+Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`).
+
 Short addresses forward automatically, and tracking parameters (`?utm_…`) are kept:
-`/a` → `/a/photo` · `/b` → `/b/photo` · `/c` → `/c/photo` · `/d` → `/d/photo` · old `/wizard` → `/b/photo` · old `/form` → `/c/photo`.
+`/a` → `/a/photo` · `/b` → `/b/photo` · `/c` → `/c/photo` · `/d` → `/d/photo` · `/e` → `/e/photo` · old `/wizard` → `/b/photo` · old `/form` → `/c/photo`.
 
 ## 2. Admin (1): you
 
