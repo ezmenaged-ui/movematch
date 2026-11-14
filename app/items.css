@@ -86,7 +86,7 @@
 .it-suggest button.on { background: #ecf8f1; }
 .it-suggest button em { font-style: normal; margin-inline-start: auto; font-size: 12px; font-weight: 700; color: #fff; background: var(--it-green); border-radius: 999px; padding: 2px 8px; }
 .it-suggest-hint { padding: 6px 12px 2px; font-size: 12px; color: var(--it-muted); }
-.it-suggest-done { justify-content: center; font-weight: 700 !important; color: var(--it-ink) !important; background: var(--it-soft) !important; margin-top: 4px; }
+.it-search-ok { margin: -4px 4px 10px; }
 .it-list li .it-flags::before { content: 'צריך:'; color: var(--it-muted); }
 /* items step: continue/back always reachable while browsing the long room list */
 .wiz-actions.wiz-actions-sticky { position: sticky; bottom: 0; z-index: 20; background: rgba(255,255,255,.96); backdrop-filter: blur(6px);
