@@ -68,6 +68,7 @@ function AddOwn({ onAdd, label, variant }: { onAdd: (name: string) => void; labe
 export function ItemsPicker({ value, onChange, flagsMissing = false }: { value: ItemsValue; onChange: (v: ItemsValue) => void; flagsMissing?: boolean }) {
   const [q, setQ] = useState('');
   const [room, setRoom] = useState(ROOMS[0].id);
+  const [justAdded, setJustAdded] = useState('');
   const input = useRef<HTMLInputElement>(null);
 
   const live = useMemo(() => (q.trim().length >= 2 ? searchItems(q, 8) : []), [q]);
@@ -95,14 +96,20 @@ export function ItemsPicker({ value, onChange, flagsMissing = false }: { value: 
     setItem(id, { qty: (picked(id)?.qty || 0) + 1 }, { name, custom: true });
   };
 
-  /** Enter in the search box: one match → add it; none → add as the client's own item; several → keep the list open. */
+  /** After any pick from the search: tick it, clear the box and keep focus so the next item can be typed straight away. */
+  const afterPick = (name: string) => { setQ(''); setJustAdded(name); input.current?.focus(); };
+  const pickFromSearch = (id: string, name: string) => { add(id); afterPick(name); };
+
+  /** Enter in the search box: exact name or single match → add it; none → add as the client's own item; several → keep the list open. */
   function send() {
     const text = q.trim();
     if (!text) return;
     const res = searchItems(text, 12);
-    if (res.length === 1) { add(res[0].id); setQ(''); }
-    else if (res.length === 0) { addCustom(text); setQ(''); }
-    input.current?.focus();
+    const exact = res.find((r) => r.name === text);
+    const hit = exact || (res.length === 1 ? res[0] : null);
+    if (hit) pickFromSearch(hit.id, hit.name);
+    else if (res.length === 0) { addCustom(text); afterPick(text); }
+    else input.current?.focus();
   }
 
   const cur = ROOMS.find((r) => r.id === room)!;
@@ -117,25 +124,25 @@ export function ItemsPicker({ value, onChange, flagsMissing = false }: { value: 
 
       <div className="it-input it-input-sm" role="search">
         <Search size={18} strokeWidth={2} aria-hidden className="it-input-ico" />
-        <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} placeholder="חיפוש מהיר, למשל: מקרר" aria-label="חיפוש פריט" enterKeyHint="search" autoComplete="off" />
+        <input ref={input} value={q} onChange={(e) => { setQ(e.target.value); setJustAdded(''); }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} placeholder="חיפוש מהיר, למשל: מקרר" aria-label="חיפוש פריט" enterKeyHint="search" autoComplete="off" />
         {q.trim().length >= 2 && (
           <ul className="it-suggest" role="listbox">
             {live.map((it) => {
               const p = picked(it.id);
               return (
-                <li key={it.id}><button type="button" className={p ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => { add(it.id); if (live.length === 1) setQ(''); input.current?.focus(); }}>
+                <li key={it.id}><button type="button" className={p ? 'on' : ''} onMouseDown={(e) => e.preventDefault()} onClick={() => pickFromSearch(it.id, it.name)}>
                   <span aria-hidden>{it.icon}</span> {it.name} {p ? <em>✓ ×{p.qty}</em> : <small>{it.room}</small>}
                 </button></li>
               );
             })}
             {live.length === 0 && <li className="it-suggest-hint">לא מצאנו &quot;{q.trim()}&quot; ברשימה. אפשר להוסיף אותו:</li>}
-            {live.length > 1 && <li><button type="button" className="it-suggest-done" onClick={() => setQ('')}>סיום הבחירה</button></li>}
-            <li><button type="button" className="it-add-new" onClick={() => { addCustom(q); setQ(''); input.current?.focus(); }}>
+            <li><button type="button" className="it-add-new" onClick={() => { addCustom(q); afterPick(q.trim()); }}>
               <Plus size={16} strokeWidth={2.5} aria-hidden /> הוספת &quot;{q.trim()}&quot; כפריט שלא ברשימה
             </button></li>
           </ul>
         )}
       </div>
+      {justAdded && !q && <p className="it-own-ok it-search-ok" role="status"><Check size={14} strokeWidth={3} aria-hidden /> &quot;{justAdded}&quot; נוסף לרשימה. אפשר לחפש את הפריט הבא.</p>}
 
       {/* room-by-room list, open from the start */}
       <div className="it-browse">
