@@ -67,7 +67,15 @@ export default async function CrewPage({ searchParams }: { searchParams: Promise
                     <span className="mv-ico" aria-hidden>{c.full_name.trim().charAt(0)}</span>
                     <span><b>{c.full_name}</b><small className="mv-meta" dir="ltr" style={{ display: 'block', textAlign: 'right' }}>{c.phone}{c.email ? ` · ${c.email}` : ''}</small>{c.lang === 'ru' && <span className="mv-pill grey" style={{ marginTop: 4 }}>Русский</span>}</span>
                     <div className="mv-crew-jobs">{mine.length ? <ul>{mine.map((j) => <li key={j.key}><b style={{ color: 'var(--mmx-ink)' }}>{hours(j, 'he')}</b> · <Link href={j.href}>{j.title}</Link></li>)}</ul> : 'אין עבודות ביום הזה'}</div>
-                    <CrewSend name={c.full_name} phone={c.phone} memberLang={c.lang} date={date} jobs={mine} company={company} site={site} />
+                    <CrewSend name={c.full_name} phone={c.phone} memberLang={c.lang} date={date} jobs={mine} company={company} site={site} editForm={
+                      <>
+                        <form action={saveCrew} className="mv-fields" style={{ alignItems: 'end' }}>
+                          <CrewFields c={c} />
+                          <div className="wide"><button className="btn btn-primary" type="submit">שמירה</button></div>
+                        </form>
+                        <form action={deleteCrew.bind(null, c.id)} style={{ marginTop: 8 }}><button className="btn btn-secondary" type="submit"><Trash2 size={15} /> הסרת העובד</button></form>
+                      </>
+                    } />
                   </div>
                 );
               })}
@@ -77,19 +85,8 @@ export default async function CrewPage({ searchParams }: { searchParams: Promise
       </CrewLangProvider>
 
       <div className="mv-card">
-        <h2>עובדי החברה ({crew.length})</h2>
-        {crew.map((c) => (
-          <details key={c.id} style={{ borderTop: '1px solid var(--mmx-line)', padding: '10px 0' }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{c.full_name} <span className="mv-meta" dir="ltr">{c.phone}</span></summary>
-            <form action={saveCrew} className="mv-fields" style={{ alignItems: 'end' }}>
-              <CrewFields c={c} />
-              <div className="wide" style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary" type="submit">שמירה</button></div>
-            </form>
-            <form action={deleteCrew.bind(null, c.id)}><button className="btn btn-secondary" type="submit"><Trash2 size={15} /> הסרת העובד</button></form>
-          </details>
-        ))}
-        <form action={saveCrew} className="mv-fields" style={{ alignItems: 'end', borderTop: crew.length ? '1px solid var(--mmx-line)' : 0, paddingTop: crew.length ? 14 : 0 }}>
-          <h3 className="wide" style={{ margin: 0 }}><UserPlus size={17} style={{ verticalAlign: '-3px' }} /> הוספת עובד</h3>
+        <form action={saveCrew} className="mv-fields" style={{ alignItems: 'end' }}>
+          <h2 className="wide" style={{ margin: 0 }}><UserPlus size={19} style={{ verticalAlign: '-3px' }} /> הוספת עובד</h2>
           <CrewFields />
           <div className="wide"><button className="btn btn-primary" type="submit">הוספת עובד</button></div>
         </form>
