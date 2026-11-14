@@ -203,6 +203,8 @@ a.mv-ev:hover { background: #d4e8db; }
 .mv-crew-jobs { font-size: 13px; color: var(--mmx-muted); }
 .mv-crew-jobs li { margin: 2px 0; }
 .mv-crew-jobs ul { margin: 0; padding-inline-start: 16px; }
+.mv-crew-panel { grid-column: 1 / -1; border-top: 1px solid var(--mmx-line); padding-top: 12px; }
+.mv-preview.mv-crew-panel { border-top: 0; padding-top: 12px; margin: 0; }
 .mv-wa { background: #1f9d55 !important; border-color: #1f9d55 !important; color: #fff !important; }
 .mv-wa:hover { background: #17834a !important; }
 .mv-lang { display: inline-flex; border: 1px solid var(--mmx-line); border-radius: 10px; overflow: hidden; background: #fff; }
