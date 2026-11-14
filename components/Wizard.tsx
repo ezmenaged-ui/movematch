@@ -2,9 +2,9 @@
 import { Check, ClipboardList, Video } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FlowTheme, liveHandoff, loadHandoff } from '@/lib/handoff';
+import { FlowTheme, liveHandoff, loadHandoff, saveHandoff, VARIANT } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
-import { createLead, fmtDuration, funnelParams, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
+import { createLead, fmtDuration, funnelParams, LeadGoneError, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
 import { PriorityScale } from './PriorityScale';
 import { ItemsPicker } from './ItemsPicker';
@@ -199,10 +199,21 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       setBusy(true);
       try {
         // send every detail again: if the lead was re-opened (see liveHandoff), the earlier step saves went to the old one
-        if (ref) await updateLead(ref, {
+        const all = {
           status: 'complete', furthest_step: S_DONE, video_skipped: false, items, move_when: when, priority,
           move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
-        });
+        };
+        if (ref) {
+          try { await updateLead(ref, all); } catch (e) {
+            if (!(e instanceof LeadGoneError)) throw e;
+            // The lead was deleted while the page was open (e.g. a cleanup): open a fresh one with every detail, once.
+            // Videos already uploaded belonged to the old lead and are not carried over. No new generate_lead event.
+            const fresh = await createLead(VARIANT[funnel], { name, phone, city: from.city, theme, status: 'partial', furthest_step: 1 });
+            setRef(fresh); up.attach(fresh);
+            saveHandoff({ funnel, ref: fresh, name, phone, city: from.city, theme });
+            await updateLead(fresh, all);
+          }
+        }
         track('lead_complete', funnelParams(funnel, theme));
         go(S_DONE);
       } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
