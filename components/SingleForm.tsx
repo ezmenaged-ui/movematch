@@ -134,7 +134,7 @@ export function SingleForm() {
             </Blueprint>
             <Blueprint as="section" className="f-sec full">
               <h2><span className="f-num">4</span> סרטון של מה שעובר</h2>
-              {ref && <div style={{ marginBottom: 18 }}><QrHandoff leadRef={ref} onRemoteCount={(n) => { onRemote(n); if (n) setErrs((e) => ({ ...e, video: '' })); }} onCompleted={() => { setDone(true); window.scrollTo({ top: 0 }); }} /></div>}
+              {ref && <div style={{ marginBottom: 18 }}><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={(n) => { onRemote(n); if (n) setErrs((e) => ({ ...e, video: '' })); }} onCompleted={() => { setDone(true); window.scrollTo({ top: 0 }); }} /></div>}
               <div className="f-video">
                 <div className={`drop ${errs.video ? 'invalid' : ''}`}>
                   <VideoRules />
