@@ -225,7 +225,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       if (Object.keys(fromErr).length) { go(2); setAddrErr(fromErr); return; }
       if (Object.keys(toErr).length) { go(3); setAddrErr(toErr); return; }
       if (validateWhen(when).date) { go(S_WHEN); setWhenErr(validateWhen(when).date || ''); return; }
-      if (!items.list.length || !asmAnswered(items)) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
+      // (Funnel E's last step is its own info step, checked just above.)
+      if (S_ITEMS > 0 && (!items.list.length || !asmAnswered(items))) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
       setBusy(true);
       try {
         // send every detail again: if the lead was re-opened (see liveHandoff), the earlier step saves went to the old one
