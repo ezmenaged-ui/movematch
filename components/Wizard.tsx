@@ -1,8 +1,8 @@
 'use client';
 import { Check, ClipboardList, Video } from 'lucide-react';
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FlowTheme, liveHandoff, loadHandoff, saveHandoff, VARIANT } from '@/lib/handoff';
+import { clearHandoff, FlowTheme, liveHandoff, loadHandoff, saveHandoff, VARIANT } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
 import { createLead, fmtDuration, funnelParams, LeadGoneError, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
@@ -102,7 +102,31 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, furthest, ref, name, phone, from, to, when, priority, items, mode]);
 
-  const go = (n: number) => { setStep(n); setFurthest((f) => Math.max(f, Math.min(n, S_LAST))); setFail(''); setAddrErr({}); window.scrollTo({ top: 0 }); };
+  const show = (n: number) => { setStep(n); setFurthest((f) => Math.max(f, Math.min(n, S_LAST))); setFail(''); setAddrErr({}); setErr({}); setWhenErr(''); window.scrollTo({ top: 0 }); };
+  /** Open a step. Each step gets its own browser history entry, so the phone's Back button goes to the previous step
+   *  instead of leaving the funnel. (Spread the current state: Next.js keeps its router state in it.) */
+  const go = (n: number) => {
+    if (n !== stepRef.current) { try { window.history.pushState({ ...(window.history.state || {}), mmStep: n }, ''); } catch { /* ignore */ } }
+    show(n);
+  };
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
+  // Browser Back / Forward between steps. After the request is sent, Back leaves to the landing page:
+  // a finished request is never reopened (its handoff is cleared below).
+  useEffect(() => {
+    if (!ready) return;
+    try { window.history.replaceState({ ...(window.history.state || {}), mmStep: stepRef.current }, ''); } catch { /* ignore */ }
+    const onPop = (e: PopStateEvent) => {
+      if (stepRef.current >= S_DONE) { router.replace(`/${funnel}/${theme}` + window.location.search); return; }
+      const n = Number((e.state as { mmStep?: unknown } | null)?.mmStep);
+      if (Number.isInteger(n) && n >= 2 && n <= S_LAST) show(n);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
+  useEffect(() => { if (ready && step >= S_DONE) clearHandoff(); }, [ready, step, S_DONE]);
 
   /** Progress bar click: save what's valid on this step (no blocking), then open the chosen step. */
   function jump(n: number) {
@@ -196,11 +220,17 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       }
     }
     if (step === S_LAST) {
+      // Steps can be reached without passing their checks (progress bar, browser Forward): check everything once more.
+      const fromErr = validateAddress(from), toErr = validateAddress(to);
+      if (Object.keys(fromErr).length) { go(2); setAddrErr(fromErr); return; }
+      if (Object.keys(toErr).length) { go(3); setAddrErr(toErr); return; }
+      if (validateWhen(when).date) { go(S_WHEN); setWhenErr(validateWhen(when).date || ''); return; }
+      if (!items.list.length || !asmAnswered(items)) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
       setBusy(true);
       try {
         // send every detail again: if the lead was re-opened (see liveHandoff), the earlier step saves went to the old one
         const all = {
-          status: 'complete', furthest_step: S_DONE, video_skipped: false, items, move_when: when, priority,
+          status: 'complete', furthest_step: S_DONE, video_skipped: isD && !up.usable.length && !remote, items, move_when: when, priority,
           move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
         };
         if (ref) {
@@ -289,7 +319,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                   <p className="vid-bonus" role="note">🎁 <b>מצלמים סרטון? מקבלים 50 ₪ הנחה</b> על התשלום הסופי להובלה.</p>
                   <p className="vid-optional" role="note"><b>רשות, לא חובה.</b> סרטונים בדרך כלל מורידים את המחיר שתקבלו מהמובילים.</p>
                   <div className="stack">
-                    {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { setStep((cur) => (cur === S_VIDEO ? S_DONE : cur)); }} /></div>}
+                    {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
                     <div className="vid-guide" role="note">
                       <b>מה לצלם: סרטון אחד או כמה, עד 4 דקות כל אחד</b>
                       <ol>
@@ -337,7 +367,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                         <p className="e-guide-key">הפרטים כאן קריטיים: לפיהם המוביל קובע את המחיר. ככל שהסרטון מלא וברור יותר, ההצעה מדויקת יותר.</p>
                         <small>אפשר סרטון אחד ארוך (עד 4 דקות) או כמה סרטונים, למשל אחד לכל חדר.</small>
                       </div>
-                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { setStep((cur) => (cur === S_INFO ? S_DONE : cur)); }} /></div>}
+                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
                       {up.usable.length > 0 && up.totalDuration > 0 && (
                         <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
                           <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00</span>

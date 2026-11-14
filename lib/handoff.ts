@@ -30,10 +30,16 @@ export function clearHandoff() {
 /**
  * Check that the handoff's lead still exists before the follow-up page uses it. If it was deleted, open a fresh lead
  * with the same name and phone (no new generate_lead event) so every later save works. Network errors keep the handoff.
- * Returns null only when a new lead can't be opened (e.g. the 30-day phone rule): the caller sends the visitor to the landing page.
+ * Returns null when the lead is already complete, or when a new lead can't be opened (e.g. the 30-day phone rule):
+ * the caller sends the visitor to the landing page.
  */
 export async function liveHandoff(h: Handoff): Promise<Handoff | null> {
-  try { await updateLead(h.ref, {}); return h; } catch (e) {
+  try {
+    const r = await updateLead(h.ref, {});
+    // Already finished (e.g. the funnel was completed, or finished on the phone via the QR code): never reopen it.
+    if (r?.status === 'complete') { clearHandoff(); return null; }
+    return h;
+  } catch (e) {
     if (!(e instanceof LeadGoneError)) return h;
   }
   try {

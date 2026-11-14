@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useRef, useState } from 'react';
 import { LeadRef, updateLead, uploadVideo, videoDuration } from '@/lib/client';
-import { Clip, tooBig, tooLong } from './VideoUploader';
+import { Clip, clipRejected, looksLikeVideo, tooBig, tooLong } from './VideoUploader';
 
 /** Queue of clips; uploads start as soon as a lead exists and run in the background. */
 export function useUploads() {
@@ -13,7 +13,7 @@ export function useUploads() {
 
   const start = useCallback((c: Clip) => {
     const ref = leadRef.current;
-    if (!ref || started.current.has(c.key) || c.state === 'too_big' || c.state === 'too_long') return;
+    if (!ref || started.current.has(c.key) || clipRejected(c)) return;
     started.current.add(c.key);
     patch(c.key, { state: 'uploading' });
     uploadVideo(ref.id, c.file, (pct) => patch(c.key, { progress: pct }))
@@ -26,6 +26,7 @@ export function useUploads() {
 
   const add = useCallback(async (files: File[]) => {
     const fresh: Clip[] = await Promise.all(files.map(async (f) => {
+      if (!(await looksLikeVideo(f))) return { key: `${f.name}-${f.size}-${Math.random()}`, file: f, name: f.name, size: f.size, duration: null, progress: 0, state: 'not_video' as const };
       const duration = await videoDuration(f);
       const state: Clip['state'] = tooLong(duration) ? 'too_long' : tooBig(f) ? 'too_big' : 'queued';
       return { key: `${f.name}-${f.size}-${Math.random()}`, file: f, name: f.name, size: f.size, duration, progress: 0, state };
@@ -42,7 +43,7 @@ export function useUploads() {
   const retryFailed = useCallback(() => setClips((cs) => { cs.filter((c) => c.state === 'error').forEach(start); return cs; }), [start]);
   const remove = useCallback((key: string) => setClips((cs) => cs.filter((c) => c.key !== key)), []);
 
-  const usable = clips.filter((c) => c.state !== 'too_big' && c.state !== 'too_long' && c.state !== 'error');
+  const usable = clips.filter((c) => !clipRejected(c) && c.state !== 'error');
   const totalDuration = usable.reduce((s, c) => s + (c.duration || 0), 0);
   return { clips, add, attach, remove, retryFailed, usable, totalDuration };
 }

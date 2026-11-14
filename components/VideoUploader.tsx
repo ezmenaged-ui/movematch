@@ -5,7 +5,7 @@ import { fmtDuration, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS_TOLERANCE } from '@/lib
 
 export type Clip = {
   key: string; file: File; name: string; size: number; duration: number | null;
-  progress: number; state: 'queued' | 'uploading' | 'done' | 'error' | 'too_big' | 'too_long'; path?: string;
+  progress: number; state: 'queued' | 'uploading' | 'done' | 'error' | 'too_big' | 'too_long' | 'not_video'; path?: string;
 };
 
 export const CHECKLIST = [
@@ -58,12 +58,12 @@ export function VideoButtons({ onFiles, compact = false, more = false }: { onFil
 
 export function ClipList({ clips, onRemove }: { clips: Clip[]; onRemove: (key: string) => void }) {
   if (!clips.length) return null;
-  const ok = clips.filter((c) => c.state !== 'too_big' && c.state !== 'too_long' && c.state !== 'error').length;
+  const ok = clips.filter((c) => !clipRejected(c) && c.state !== 'error').length;
   return (
     <div className="stack" style={{ gap: 10 }}>
       {ok > 0 && <div className="small" style={{ fontWeight: 700 }}>{ok === 1 ? 'סרטון אחד' : `${ok} סרטונים`}</div>}
       {clips.map((c) => (
-        <div key={c.key} className={`clip ${c.state === 'error' || c.state === 'too_big' || c.state === 'too_long' ? 'err' : ''}`}>
+        <div key={c.key} className={`clip ${c.state === 'error' || clipRejected(c) ? 'err' : ''}`}>
           <div className="clip-top">
             <span className="clip-name">{c.name}</span>
             <span style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 'none' }}>
@@ -75,6 +75,7 @@ export function ClipList({ clips, onRemove }: { clips: Clip[]; onRemove: (key: s
           </div>
           {c.state === 'too_long' && <span className="small">הסרטון ארוך מ-4 דקות ולכן לא יעלה. צלמו אותו מחדש בכמה סרטונים קצרים יותר.</span>}
           {c.state === 'too_big' && <span className="small">הקובץ גדול מדי. צלמו סרטון קצר יותר, או צלמו באיכות רגילה (לא 4K).</span>}
+          {c.state === 'not_video' && <span className="small">הקובץ הזה אינו סרטון ולכן לא יעלה. בחרו קובץ וידאו.</span>}
           {c.state === 'error' && <span className="small">ההעלאה נכשלה. נסו שוב.</span>}
           {(c.state === 'uploading' || c.state === 'queued') && <div className="bar"><i style={{ width: `${c.progress}%` }} /></div>}
         </div>
@@ -84,4 +85,25 @@ export function ClipList({ clips, onRemove }: { clips: Clip[]; onRemove: (key: s
 }
 
 export const tooBig = (f: File) => f.size > MAX_VIDEO_BYTES;
+/** Clips that are never uploaded: too big, too long, or not a video at all. */
+export const clipRejected = (c: Pick<Clip, 'state'>) => c.state === 'too_big' || c.state === 'too_long' || c.state === 'not_video';
+
+/**
+ * Is this file really a video? Checks the first bytes (container signature), not the name or the browser's MIME guess,
+ * which both come from the file extension. Never rejects a file it can't read, so a real clip is never blocked.
+ */
+export async function looksLikeVideo(f: File): Promise<boolean> {
+  if (/^(image|audio|text)\//.test(f.type) || /^application\/(pdf|zip|json|msword|vnd\.)/.test(f.type)) return false;
+  let b: Uint8Array;
+  try { b = new Uint8Array(await f.slice(0, 16).arrayBuffer()); } catch { return true; }
+  if (b.length < 12) return false;
+  const ascii = (from: number, to: number) => String.fromCharCode(...b.slice(from, to));
+  const box = ascii(4, 8); // MP4 / MOV / 3GP / M4V: an ISO-BMFF or QuickTime box at offset 4
+  if (['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip', 'pnot', 'uuid'].includes(box)) return true;
+  if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return true; // WebM / MKV
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'AVI ') return true; // AVI
+  if (b[0] === 0 && b[1] === 0 && b[2] === 1 && (b[3] === 0xba || b[3] === 0xb3)) return true; // MPEG-PS
+  if (b[0] === 0x47 && f.size > 188 * 2) return true; // MPEG-TS (sync byte)
+  return false;
+}
 export const tooLong = (seconds: number | null) => seconds != null && seconds > MAX_VIDEO_SECONDS_TOLERANCE;
