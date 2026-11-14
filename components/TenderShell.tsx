@@ -1,6 +1,7 @@
 import { Logo } from './themed/Logo';
 import '../app/landing.css';
 import '../app/tender.css';
+import { LEGAL } from '@/lib/legal';
 
 /** Shared frame for the client tender pages: calm, airy, a soft illustration of the new home instead of a busy photo. */
 export function TenderShell({ tenderNo, children, hero }: { tenderNo: number; children: React.ReactNode; hero?: React.ReactNode }) {
@@ -22,7 +23,7 @@ export function TenderShell({ tenderNo, children, hero }: { tenderNo: number; ch
       <main className="lp-wrap tp-main">{children}</main>
       <footer className="tp-foot">
         <div className="lp-wrap">
-          <span>© {new Date().getFullYear()} MoveMatch · השירות ללא עלות ללקוח</span>
+          <span>© {new Date().getFullYear()} MoveMatch · {LEGAL.entityShort}, ח.פ. {LEGAL.companyId} · השירות ללא עלות ללקוח</span>
           <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a></span>
         </div>
       </footer>

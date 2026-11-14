@@ -10,11 +10,11 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 |---|---|---|---|---|
 | 1 | A · photo | `/a/photo` | none (thank-you on the same page) | Name, phone, city. We call back. |
 | 2 | A · art | `/a/art` | none | Same as A, illustrated design. |
-| 3 | B · photo | `/b/photo` | `/b/steps` | Step-by-step wizard: from → to → when → video (required). |
+| 3 | B · photo | `/b/photo` | `/b/steps` | Step-by-step wizard: from → to → when → items (picked from the room list, or added by the client). No video. |
 | 4 | B · art | `/b/art` | `/b/steps` | Same as B, illustrated design. |
 | 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video. |
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
-| 7 | D · photo | `/d/photo` | `/d/steps` | Wizard with an item list (typed or picked); video optional. |
+| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard and item list as B, plus a video step (optional). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
 
 **Homepage `/`** shows **D · photo** (same page as `/d/photo`).
@@ -42,7 +42,8 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 | `/movers/crew` | Employees, and their day schedule on WhatsApp (Hebrew / Russian). |
 | `/movers/profile` | Company name, contact name, logo, password change. |
 | `/movers/login` · `/movers/forgot` · `/movers/reset` · `/movers/password` | Sign-in, forgot password, reset link, first-login password. |
-| `/movers/join` | **Public** sign-up form for new movers (no login). |
+| `/movers/join` | **Public** sign-up form for new movers (no login). Service areas are required. |
+| `/movers/terms` | **Public** mover agreement (commission, ₪50 discount, confidentiality), accepted at sign-up. |
 
 Old `/mover/…` links forward to `/movers/…`.
 
@@ -58,4 +59,10 @@ Old `/mover/…` links forward to `/movers/…`.
 
 ## Legal
 
-`/privacy` · `/terms` · `/accessibility`
+`/privacy` · `/terms` · `/accessibility` · `/movers/terms` (mover agreement). Drafts awaiting a lawyer: `LEGAL_REVIEW.md`.
+
+## Lead routing
+
+A completed lead goes only to active movers whose service areas include the lead's origin area (`lib/areas.ts` maps cities to areas;
+areas are stored in `movematch.mover_service_areas`, migration 013, edited in `/admin/movers`). A lead from a city we don't recognise
+goes to no mover; the operator alert says so.

@@ -16,7 +16,7 @@ export default function JoinMovers() {
           <p className="muted" style={{ margin: 0 }}>לקוחות פותחים אצלנו מכרז עם כל פרטי ההובלה וסרטון של הדירה. אתם מקבלים הודעה, מגישים מחיר בקליק, והלקוח רואה את ההצעה שלכם עם הלוגו והדירוגים.</p>
           <ul className="join-perks">
             <li><Truck size={18} strokeWidth={1.5} /> מכרזים עם כתובות, קומות, מעלית וסרטון</li>
-            <li><Megaphone size={18} strokeWidth={1.5} /> הודעה בוואטסאפ על כל מכרז חדש באזור</li>
+            <li><Megaphone size={18} strokeWidth={1.5} /> הודעה בוואטסאפ על כל מכרז חדש באזורי השירות שבחרתם</li>
             <li><Star size={18} strokeWidth={1.5} /> הפרופיל שלכם מוצג עם דירוגי Google ומדרג</li>
             <li><CircleCheck size={18} strokeWidth={1.5} /> אפשר להפסיק בכל רגע במענה &quot;הסר&quot;</li>
           </ul>

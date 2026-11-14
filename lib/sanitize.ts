@@ -33,6 +33,7 @@ export function cleanLeadInput(b: Record<string, unknown>) {
     const raw = b.items as { list: Record<string, unknown>[]; boxes?: unknown };
     out.items = {
       boxes: Math.min(500, Math.max(0, Math.floor(Number(raw.boxes) || 0))),
+      ...((raw as { noAsm?: unknown }).noAsm === true ? { noAsm: true } : {}),
       list: raw.list.slice(0, 200).map((i) => ({
         id: s(i.id, 80) || '', name: s(i.name, 80) || '', qty: Math.min(99, Math.max(1, Math.floor(Number(i.qty) || 1))),
         ...(i.dis === true ? { dis: true } : {}), ...(i.asm === true ? { asm: true } : {}), ...(i.custom === true ? { custom: true } : {}),

@@ -3,11 +3,12 @@ import { CircleCheck, MessageCircle, Truck, UserPlus } from 'lucide-react';
 import { db } from '@/lib/db';
 import { waEnabled } from '@/lib/whatsapp';
 import { MoverLogo } from '@/components/MoverLogo';
-import { approveMover, clearMoverLogo, deleteMover, revokeMoverLogin, saveMover, setMoverActive, setMoverLogin, testMover } from '../actions';
+import { approveMover, clearMoverLogo, deleteMover, revokeMoverLogin, saveMover, setMoverActive, setMoverAreas, setMoverLogin, testMover } from '../actions';
 import { MoverLoginForm } from '@/components/MoverLoginForm';
 import { CopyButton } from '@/components/CopyButton';
 import { siteUrl } from '@/lib/notify';
 import { LogoInput } from '@/components/LogoInput';
+import { AreaPicker } from '@/components/AreaPicker';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Movers · MoveMatch', robots: { index: false } };
@@ -25,6 +26,22 @@ const MSG: Record<string, string> = {
   send: 'שליחת הודעת הבדיקה נכשלה. בדקו שהגדרות Twilio הושלמו.',
   email: 'כתובת דוא״ל לא תקינה.', pw: 'הסיסמה הראשונית צריכה להיות באורך 8 תווים לפחות.', emailused: 'כתובת הדוא״ל כבר משויכת למוביל אחר.', mail: 'הגישה נשמרה, אבל שליחת המייל נכשלה. העתיקו את ההודעה ושלחו ידנית, או נסו שוב (הסיסמה תתחלף).',
 };
+
+/** Area tags + an editor. Leads go only to movers whose areas include the lead's origin area. */
+function MoverAreas({ m, areas }: { m: Mover; areas: string[] }) {
+  return (
+    <details style={{ marginTop: 8 }}>
+      <summary className="small" style={{ cursor: 'pointer', color: 'var(--color-accent-700)', fontWeight: 600 }}>
+        אזורי שירות: {areas.length ? areas.join(' · ') : <span className="adm-tag warn">לא נבחרו, לא יקבל מכרזים</span>}
+      </summary>
+      <form action={setMoverAreas} style={{ marginTop: 10, display: 'grid', gap: 10 }}>
+        <input type="hidden" name="id" value={m.id} />
+        <AreaPicker idPrefix={`ar-${m.id}`} selected={areas} legend="אזורי שירות (מכרזים נשלחים לפי אזור המוצא של ההובלה)" />
+        <button className="btn btn-primary adm-btn" type="submit" style={{ justifySelf: 'start' }}>שמירת אזורים</button>
+      </form>
+    </details>
+  );
+}
 
 function MoverFields({ m }: { m?: Mover }) {
   const k = m?.id || 'new';
@@ -47,8 +64,12 @@ function MoverFields({ m }: { m?: Mover }) {
 
 export default async function Movers({ searchParams }: { searchParams: Promise<{ err?: string; ok?: string; to?: string }> }) {
   const { err, ok, to } = await searchParams;
-  const { data, error } = await db().rpc('mm_admin_movers', { p_secret: process.env.MM_ADMIN_SECRET });
+  const [{ data, error }, ar] = await Promise.all([
+    db().rpc('mm_admin_movers', { p_secret: process.env.MM_ADMIN_SECRET }),
+    db().rpc('mm_admin_mover_areas', { p_secret: process.env.MM_ADMIN_SECRET }),
+  ]);
   if (error) return <main style={{ padding: 24 }}>שגיאה: {error.message}</main>;
+  const areasOf = new Map(((ar.data || []) as { mover_id: string; areas: string[] }[]).map((r) => [r.mover_id, r.areas]));
   const all = (data || []) as Mover[];
   const pending = all.filter((m) => m.status === 'pending');
   const movers = all.filter((m) => m.status !== 'pending');
@@ -65,12 +86,13 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
         <StatCard icon={<UserPlus size={20} />} n={pending.length} label="ממתינים לאישור" />
       </div>
       {!waEnabled() && <p className="adm-tag warn" style={{ display: 'inline-block', padding: '6px 10px' }}>וואטסאפ עדיין לא מחובר (חסרות הגדרות Twilio). אפשר כבר להוסיף מובילים.</p>}
+      {ar.error && <p className="adm-tag warn" style={{ display: 'block', padding: '6px 10px' }}>אזורי השירות לא נטענו: צריך להריץ את מיגרציה 013 (supabase/migrations/013_mover_service_areas.sql). עד אז מכרזים לא יישלחו למובילים.</p>}
       {err && <p className="adm-tag warn" style={{ display: 'block', padding: '6px 10px' }}>{MSG[err] || 'שגיאה'}</p>}
       {ok && <p className="adm-tag ok" style={{ display: 'block', padding: '6px 10px' }}>{ok === 'test' ? 'הודעת בדיקה נשלחה.' : ok === 'login' ? 'הגישה לפאנל נשמרה. העתיקו ושלחו למוביל את ההודעה עם הסיסמה.' : ok === 'sent' ? `הגישה נשמרה ונשלח מייל עם פרטי הכניסה${to ? ` אל ${to}` : ''}.` : 'נשמר.'}</p>}
 
       <div className="adm-box" style={{ margin: '14px 0' }}>
         <h4>קישור הרשמה למובילים</h4>
-        <p className="small muted" style={{ margin: '0 0 8px' }}>שלחו את הקישור למובילים. הם ממלאים שם חברה, לוגו, טלפון ופרופילי Google ומדרג, והפרטים מופיעים כאן לאישור.</p>
+        <p className="small muted" style={{ margin: '0 0 8px' }}>שלחו את הקישור למובילים. הם ממלאים שם חברה, לוגו, טלפון, אזורי שירות ופרופילי Google ומדרג, והפרטים מופיעים כאן לאישור.</p>
         <div className="adm-link"><a href={joinLink} target="_blank" rel="noreferrer" dir="ltr">{joinLink}</a></div>
         <div className="adm-actions"><CopyButton text={joinLink} label="העתקת קישור" /></div>
       </div>
@@ -91,6 +113,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
                   <span className="small muted">נרשם {new Date(m.created_at).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' })}</span>
                 </div>
                 {m.signup_note && <p className="small" style={{ margin: '6px 0 0' }}>“{m.signup_note}”</p>}
+                <MoverAreas m={m} areas={areasOf.get(m.id) || []} />
                 <div className="adm-actions">
                   <form action={approveMover.bind(null, m.id)}><button className="btn btn-primary adm-btn" type="submit">אישור והפעלה</button></form>
                   <form action={deleteMover.bind(null, m.id)}><button className="btn btn-secondary adm-btn" type="submit">דחייה ומחיקה</button></form>
@@ -137,6 +160,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
               {m.has_logo && <form action={clearMoverLogo.bind(null, m.id)}><button className="btn btn-secondary adm-btn" type="submit">הסרת לוגו</button></form>}
               <form action={deleteMover.bind(null, m.id)}><button className="btn btn-secondary adm-btn" type="submit">מחיקה</button></form>
             </div>
+            <MoverAreas m={m} areas={areasOf.get(m.id) || []} />
             <details style={{ marginTop: 8 }}>
               <summary className="small" style={{ cursor: 'pointer', color: 'var(--color-accent-700)', fontWeight: 600 }}>{m.auth_user_id ? `גישה לפאנל המובילים · ${m.email}` : 'פתיחת גישה לפאנל המובילים'}</summary>
               <MoverLoginForm id={m.id} email={m.email || ''} hasLogin={!!m.auth_user_id} panelUrl={panelUrl} firstName={m.name.split(' ')[0]} action={setMoverLogin} />

@@ -162,7 +162,9 @@ export function searchItems(q: string, limit = 12) {
 }
 
 export type PickedItem = { id: string; name: string; qty: number; dis?: boolean; asm?: boolean; custom?: boolean };
-export type ItemsValue = { list: PickedItem[]; boxes: number };
+export type ItemsValue = { list: PickedItem[]; boxes: number; noAsm?: boolean };
+/** Has the client answered disassembly/assembly: ticked it on some item, or said no item needs it? */
+export const asmAnswered = (v: ItemsValue) => !!v.noAsm || v.list.some((i) => i.dis || i.asm);
 export const emptyItems = (): ItemsValue => ({ list: [], boxes: 20 });
 export const itemsCount = (v: ItemsValue | null | undefined) => (v?.list || []).reduce((n, i) => n + i.qty, 0);
 
