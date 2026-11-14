@@ -32,7 +32,7 @@ These rules exist so that never happens again.
 - Transactional messages use **Utility** templates; Marketing is only for promotions (it has hidden per-user caps and stricter review).
   `mm_mover_new_lead_v2` and `mm_client_first_offer_v2` are the Utility replacements, with the link written in the template text
   rather than in a variable. `mm_client_tender_opened_v2` and `mm_client_new_offer_v2` replace the two templates Meta rejected
-  as SCAM. All four were submitted to Meta on 12 Nov 2026 and switch on when their env vars are set after approval:
+  as SCAM. All four were approved by Meta (UTILITY) on 14 Nov 2026 and are live via these production env vars:
   `TWILIO_TPL_MOVER_LEAD_V2`, `TWILIO_TPL_CLIENT_FIRST_V2`, `TWILIO_TPL_CLIENT_OPEN_V2`, `TWILIO_TPL_CLIENT_NEW_V2`.
 - Avoid spam signals: bursts, identical repeats, invalid numbers, retries, and URLs inside template variables.
 - New or restored numbers: warm up. Real contacts message the number first, then volume grows slowly with real leads.
