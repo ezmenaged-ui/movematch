@@ -15,6 +15,8 @@ export type Tender = {
   closes_at: string | null; now: string;
   offers: TenderOffer[]; // in arrival order: offer #n = offers[n-1]
   resume: { id: string; token: string; name: string; phone: string; city: string | null } | null;
+  /** Finished tenders: lets the client add a video from the tender page (migration 019). */
+  upload?: { id: string; token: string } | null;
 };
 
 const CODE = /^[a-z0-9]{4,12}$/i;

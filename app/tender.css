@@ -208,3 +208,4 @@
 .tz-bubble::before { content: ''; position: absolute; top: -8px; left: 50%; width: 14px; height: 14px; background: #f2f7fd; border-top: 1px solid #dfe9f4; border-left: 1px solid #dfe9f4; transform: translateX(-50%) rotate(45deg); }
 .tz-bubble b { display: block; font-size: 18px; color: var(--lp-navy); margin-bottom: 4px; }
 .tz-bubble p { margin: 0; color: var(--lp-muted); line-height: 1.6; }
+.tp-resume.tp-video { background: #eef6ff; border-color: #bcd7f5; }

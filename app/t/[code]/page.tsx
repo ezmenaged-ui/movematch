@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, CalendarDays, ChevronLeft, Layers, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronLeft, Layers, ShieldCheck, Video } from 'lucide-react';
 import { AutoRefresh } from '@/components/AutoRefresh';
 import { Countdown } from '@/components/Countdown';
 import { MoverLogo } from '@/components/MoverLogo';
@@ -53,6 +53,16 @@ export default async function TenderPage({ params }: { params: Promise<{ code: s
           <div className="tp-resume">
             <div><b>נשאר צעד אחד כדי לקבל הצעות מדויקות</b><span>השלמת הכתובות, התאריך וסרטון קצר עוזרת למובילים לתת מחיר סופי.</span></div>
             <Link href={`/t/${code}/continue`} className="lp-btn">השלמת פרטים <ChevronLeft size={20} /></Link>
+          </div>
+        )}
+
+        {t.upload && (
+          <div className="tp-resume tp-video">
+            <div>
+              <b>{t.videos > 0 ? `יש ${t.videos === 1 ? 'סרטון אחד' : `${t.videos} סרטונים`} במכרז. רוצים להוסיף עוד?` : 'הוסיפו סרטון קצר של הדירה'}</b>
+              <span>סרטון של החדרים עוזר למובילים לתת מחיר מדויק יותר. הוא יתווסף למכרז ויוצג למובילים.</span>
+            </div>
+            <Link href={`/u/${t.upload.id}?k=${t.upload.token}&t=${code}`} className="lp-btn"><Video size={20} strokeWidth={2} /> הוספת סרטון</Link>
           </div>
         )}
 

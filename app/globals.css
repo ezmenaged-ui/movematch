@@ -627,3 +627,5 @@ a.mv-rating:hover .mv-src { text-decoration: underline; }
 .area-grid .check-row { border: 1.5px solid var(--color-neutral-300, #cfd6dd); border-radius: 10px; min-height: 46px; padding: 0 12px; font-size: 15px; gap: 10px; }
 .area-grid .check-row:has(input:checked) { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 9%, transparent); }
 .area-pick.invalid .check-row { border-color: var(--color-error); }
+.wiz-card h1.phone-add-h { font-size: 40px; line-height: 1.08; margin: 0 0 26px; }
+@media (max-width: 760px) { .wiz-card h1.phone-add-h { font-size: 30px; } }
