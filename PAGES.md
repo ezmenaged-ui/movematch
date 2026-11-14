@@ -42,7 +42,7 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 | `/movers/offers` | Offers sent and booked moves. |
 | `/movers/history` | Closed tenders and finished moves. |
 | `/movers/leads/…` | One lead: addresses, items, videos, client contact, offer form, "the client chose me". |
-| `/movers/calendar` | Google-style week / day calendar (`?v=day`); tapping a slot or a job opens a pop-up editor. Google Calendar import and export. |
+| `/movers/calendar` | Google-style week / day calendar (`?v=day`), filterable by employee (`?c=<crew ids>`, one colour each); tapping a slot or a job opens a pop-up editor. Google Calendar import and export. |
 | `/movers/crew` | Employees, and their day schedule on WhatsApp (Hebrew / Russian). |
 | `/movers/profile` | Company name, contact name, logo, password change. |
 | `/movers/login` · `/movers/forgot` · `/movers/reset` · `/movers/password` | Sign-in, forgot password, reset link, first-login password. |

@@ -289,3 +289,12 @@ a.mv-ev:hover { background: #d4e8db; }
   .mv-pop-when input[type='date'] { flex-basis: 100%; }
   .mv-pop-when input[type='time'] { flex: 1 1 0; }
 }
+/* calendar crew filter: one colour per employee */
+.mv-cal-crew { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -2px 0 12px; }
+.mv-cal-crew > .mv-meta:first-child { display: inline-flex; align-items: center; gap: 5px; margin-inline-end: 2px; }
+.mv-crew-chip { --c: var(--mmx-green-d); display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--mmx-line); border-radius: 999px; padding: 6px 13px; background: #fff; font: inherit; font-size: 14px; color: var(--mmx-ink); cursor: pointer; }
+.mv-crew-chip i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--c); box-sizing: border-box; }
+.mv-crew-chip:hover { border-color: #9bbbaa; }
+.mv-crew-chip[aria-pressed='true'] { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); font-weight: 700; }
+.mv-crew-chip[aria-pressed='true'] i { background: var(--c); }
+.mv-cal-crew-note { flex-basis: 100%; font-size: 12.5px; }

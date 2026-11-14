@@ -11,8 +11,8 @@ export const metadata = { title: 'יומן · סביבת מובילים', robots
 
 const month = (k: string, opts: Intl.DateTimeFormatOptions) => new Date(k + 'T12:00:00Z').toLocaleDateString('he-IL', { timeZone: 'UTC', ...opts });
 
-export default async function Calendar({ searchParams }: { searchParams: Promise<{ w?: string; v?: string; ok?: string }> }) {
-  const { w, v, ok } = await searchParams;
+export default async function Calendar({ searchParams }: { searchParams: Promise<{ w?: string; v?: string; c?: string; ok?: string }> }) {
+  const { w, v, c, ok } = await searchParams;
   const me = await requireMe();
   const today = israelDate();
   const view: CalView = v === 'day' ? 'day' : 'week';
@@ -22,7 +22,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   const [{ crew, manual, jobs }, { data: evData }] = await Promise.all([loadSchedule(), (await moverDb()).rpc('mm_mover_events')]);
   const crewName = (ids: string[]) => crew.filter((c) => ids.includes(c.id)).map((c) => c.full_name.split(' ')[0]).join(', ');
   const blocks: CalBlock[] = [
-    ...jobs.map((j) => ({ key: j.key, date: j.date, start: j.start, end: j.end, title: j.title, crewNames: crewName(j.crew), href: j.href, sheet: j.sheet, done: j.done, tender: j.tender, kind: j.kind })),
+    ...jobs.map((j) => ({ key: j.key, date: j.date, start: j.start, end: j.end, title: j.title, crewNames: crewName(j.crew), href: j.href, sheet: j.sheet, done: j.done, tender: j.tender, crew: j.crew, kind: j.kind })),
     ...((evData || []) as CalEvent[]).map((e) => ({ key: e.id, date: e.date, start: e.time ? e.time.slice(0, 5) : '', end: '', title: e.title, kind: 'ext' as const })),
   ].filter((b) => keys.includes(b.date));
   const upcoming = jobs.filter((j) => j.date >= today && !j.done).slice(0, 8);
@@ -36,7 +36,7 @@ export default async function Calendar({ searchParams }: { searchParams: Promise
   return (
     <MoverShell me={me} active="calendar" title="יומן">
       {ok === 'job' && <p className="mv-note ok" role="status">ההובלה נשמרה ביומן.</p>}
-      <MoverCalendar view={view} anchor={anchor} keys={keys} today={today} label={label} blocks={blocks} crew={crew} manual={manual} />
+      <MoverCalendar view={view} anchor={anchor} keys={keys} today={today} label={label} blocks={blocks} crew={crew} manual={manual} initialCrew={(c || '').split(',').filter((x) => /^[0-9a-f-]{36}$/.test(x))} />
       <div className="mv-cal-foot">
         <span className="mv-meta">שעון ישראל · <i className="mv-dot lead" /> הובלות מ-MoveMatch · <i className="mv-dot manual" /> הובלות שהוספתם · <i className="mv-dot ext" /> אירועים מיובאים. הובלות שסימנתם &quot;הלקוח בחר בי&quot; נכנסות ליומן אוטומטית. לחיצה על שעה פנויה פותחת הובלה חדשה.</span>
         <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>

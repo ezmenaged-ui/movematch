@@ -9,11 +9,15 @@ import { addDays } from '@/lib/moverFormat';
 export type CalView = 'week' | 'day';
 export type CalBlock = {
   key: string; date: string; start: string; end: string; title: string; kind: 'lead' | 'manual' | 'ext';
-  crewNames?: string; href?: string; sheet?: string; done?: boolean; tender?: string;
+  crewNames?: string; href?: string; sheet?: string; done?: boolean; tender?: string; crew?: string[];
+  /** Set when the block is drawn on one employee's calendar (crew filter on). */
+  owner?: string;
 };
 
 const DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const FIRST = 6, LAST = 22, ROW = 48; // visible hours 06:00–23:00, px per hour
+/** One colour per employee, in crew-list order (Google-style calendar colours that read on white text). */
+const CREW_COLORS = ['#1a73e8', '#d81b60', '#0b8043', '#f4511e', '#8e24aa', '#039be5', '#7c6a00', '#e67c73', '#3f51b5', '#33691e'];
 const ERR: Record<string, string> = { title: 'נא לתת שם להובלה.', date: 'נא לבחור תאריך.', hours: 'שעת הסיום צריכה להיות אחרי שעת ההתחלה.', db: 'השמירה נכשלה. נסו שוב.' };
 
 const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
@@ -41,21 +45,34 @@ function layout<B extends { start: string; end: string }>(day: B[]) {
 }
 
 type Pop =
-  | { type: 'new'; date: string; start: string; end: string }
+  | { type: 'new'; date: string; start: string; end: string; crew?: string[] }
   | { type: 'manual'; job: ManualJob }
   | { type: 'lead' | 'ext'; block: CalBlock };
 
 /** Google-Calendar-style week / day view. Tapping an empty slot or a job opens a pop-up editor instead of a new page. */
-export function MoverCalendar({ view, anchor, keys, today, label, blocks, crew, manual }: {
+export function MoverCalendar({ view, anchor, keys, today, label, blocks: all, crew, manual, initialCrew = [] }: {
   view: CalView; anchor: string; keys: string[]; today: string; label: string;
-  blocks: CalBlock[]; crew: Crew[]; manual: ManualJob[];
+  blocks: CalBlock[]; crew: Crew[]; manual: ManualJob[]; initialCrew?: string[];
 }) {
+  const [sel, setSel] = useState<string[]>(() => initialCrew.filter((id) => crew.some((c) => c.id === id)));
   const [pop, setPop] = useState<Pop | null>(null);
   const [toast, setToast] = useState('');
   const [now, setNow] = useState<number | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const step = view === 'week' ? 7 : 1;
-  const url = (d: string, v: CalView = view) => `/movers/calendar?w=${d}${v === 'day' ? '&v=day' : ''}`;
+  const url = (d: string, v: CalView = view, c: string[] = sel) => `/movers/calendar?w=${d}${v === 'day' ? '&v=day' : ''}${c.length ? `&c=${c.join(',')}` : ''}`;
+  const color = (id: string) => CREW_COLORS[Math.max(0, crew.findIndex((c) => c.id === id)) % CREW_COLORS.length];
+  const toggle = (id: string | null) => {
+    const next = id === null ? [] : sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id];
+    setSel(next);
+    try { window.history.replaceState(null, '', url(anchor, view, next)); } catch { /* ignore */ }
+  };
+  // Crew filter: each selected employee gets their own copy of each of their jobs, in their colour; everything else is hidden.
+  const blocks: CalBlock[] = sel.length
+    ? all.flatMap((b) => (b.crew || []).filter((id) => sel.includes(id)).map((id) => ({ ...b, owner: id })))
+    : all;
+  const unassigned = sel.length ? all.filter((b) => b.kind !== 'ext' && !(b.crew || []).length).length : 0;
+  const nameOf = (id: string) => crew.find((c) => c.id === id)?.full_name.split(' ')[0] || '';
   const shift = (n: number) => addDays(anchor, n);
 
   // Current time in Israel, for the red "now" line; refreshed every minute.
@@ -74,16 +91,16 @@ export function MoverCalendar({ view, anchor, keys, today, label, blocks, crew, 
   const slotClick = (e: React.MouseEvent<HTMLDivElement>, date: string) => {
     const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
     const s = Math.min(FIRST * 60 + Math.floor(y / (ROW / 2)) * 30, 22 * 60);
-    setPop({ type: 'new', date, start: hm(s), end: hm(Math.min(s + 120, 23 * 60 + 30)) });
+    setPop({ type: 'new', date, start: hm(s), end: hm(Math.min(s + 120, 23 * 60 + 30)), crew: sel });
   };
   const close = (msg?: string) => { setPop(null); if (msg) setToast(msg); };
   const draft = pop?.type === 'new' ? pop : null;
 
   const chip = (b: CalBlock, style?: React.CSSProperties) => (
-    <button key={b.key} type="button" className={`mv-ev ${b.kind} ${b.done ? 'done' : ''}`} style={style} onClick={(e) => { e.stopPropagation(); open(b); }}>
+    <button key={b.owner ? `${b.key}~${b.owner}` : b.key} type="button" className={`mv-ev ${b.kind} ${b.done ? 'done' : ''}`} style={b.owner ? { ...style, background: color(b.owner) } : style} onClick={(e) => { e.stopPropagation(); open(b); }}>
       <span>{b.title}</span>
       {b.start && <b dir="ltr">{b.start}{b.end ? `–${b.end}` : ''}</b>}
-      {b.crewNames && <small>👷 {b.crewNames}</small>}
+      {b.owner ? <small>👷 {nameOf(b.owner)}</small> : b.crewNames && <small>👷 {b.crewNames}</small>}
     </button>
   );
 
@@ -102,9 +119,21 @@ export function MoverCalendar({ view, anchor, keys, today, label, blocks, crew, 
             <Link href={url(anchor, 'week')} aria-current={view === 'week' ? 'page' : undefined} className={view === 'week' ? 'on' : ''}>שבוע</Link>
             <Link href={url(view === 'week' && keys.includes(today) ? today : anchor, 'day')} aria-current={view === 'day' ? 'page' : undefined} className={view === 'day' ? 'on' : ''}>יום</Link>
           </div>
-          <button type="button" className="btn btn-primary" onClick={() => setPop({ type: 'new', date: keys.includes(today) ? today : keys[0], start: '08:00', end: '12:00' })}><Plus size={16} /> הוספת הובלה</button>
+          <button type="button" className="btn btn-primary" onClick={() => setPop({ type: 'new', date: keys.includes(today) ? today : keys[0], start: '08:00', end: '12:00', crew: sel })}><Plus size={16} /> הוספת הובלה</button>
         </div>
       </div>
+
+      {crew.length > 0 && (
+        <div className="mv-cal-crew" role="group" aria-label="סינון לפי עובד">
+          <span className="mv-meta"><Users size={15} aria-hidden /> יומן של:</span>
+          <button type="button" className="mv-crew-chip" aria-pressed={!sel.length} onClick={() => toggle(null)}>כל ההובלות</button>
+          {crew.map((c) => (
+            <button key={c.id} type="button" className="mv-crew-chip" aria-pressed={sel.includes(c.id)} onClick={() => toggle(c.id)}
+              style={{ '--c': color(c.id) } as React.CSSProperties}><i aria-hidden />{c.full_name}</button>
+          ))}
+          {sel.length > 0 && <span className="mv-meta mv-cal-crew-note">שעות ריקות = {sel.length === 1 ? 'העובד פנוי' : 'העובדים פנויים'}.{unassigned > 0 && ` ${unassigned === 1 ? 'הובלה אחת' : `${unassigned} הובלות`} ${view === 'week' ? 'השבוע' : 'ביום הזה'} בלי צוות ${unassigned === 1 ? 'לא מוצגת' : 'לא מוצגות'}.`}</span>}
+        </div>
+      )}
 
       <div className="mv-week-scroll" ref={scroller} tabIndex={0} aria-label={view === 'week' ? 'יומן שבועי' : 'יומן יומי'}>
         <div className="mv-wk">
@@ -200,7 +229,7 @@ function JobForm({ pop, crew, onDone, onChange }: {
       <div className="mv-pop-row"><Users size={18} aria-hidden />
         <fieldset className="mv-crew-pick"><legend className="mv-sr">מי בצוות של ההובלה הזו?</legend>
           {crew.length === 0 ? <Link href="/movers/crew" className="mv-back">הוספת עובדים לצוות ‹</Link>
-            : crew.map((c) => <label key={c.id}><input type="checkbox" name="crew" value={c.id} defaultChecked={j?.crew_ids.includes(c.id)} /> {c.full_name}</label>)}
+            : crew.map((c) => <label key={c.id}><input type="checkbox" name="crew" value={c.id} defaultChecked={j ? j.crew_ids.includes(c.id) : pop.type === 'new' && !!pop.crew?.includes(c.id)} /> {c.full_name}</label>)}
         </fieldset>
       </div>
       <details className="mv-pop-row mv-pop-more" open={hasMore}>
