@@ -57,6 +57,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   const [extraOpen, setExtraOpen] = useState(false);
   const [shortWarn, setShortWarn] = useState(false);
   const [remote, setRemote] = useState(0);
+  const [savedVideos, setSavedVideos] = useState(0); // videos on the lead when it was sent (incl. ones uploaded before a reload)
   const onRemote = useCallback((n: number) => setRemote(n), []);
   const [err, setErr] = useState<Record<string, string>>({});
   const [addrErr, setAddrErr] = useState<Partial<Record<keyof Address, string>>>({});
@@ -199,6 +200,9 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       } else if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
       // Items are the main option, or were added as an extra: they need the disassembly answer like in B and D.
       if (items.list.length && !asmAnswered(items)) {
+        // In video mode the list is the optional extra and may be folded away (e.g. items were added before switching
+        // to video): open it, so the client sees which items the question is about.
+        if (mode === 'video') setExtraOpen(true);
         setFlagsMissing(true);
         setFail('סמנו אילו פריטים צריכים פירוק או הרכבה, או סמנו שאף פריט לא צריך.');
         requestAnimationFrame(() => document.getElementById('it-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -234,6 +238,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
           status: 'complete', furthest_step: S_DONE, video_skipped: isD && !up.usable.length && !remote, items, move_when: when, priority,
           move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
         };
+        let sent = ref;
         if (ref) {
           try { await updateLead(ref, all); } catch (e) {
             if (!(e instanceof LeadGoneError)) throw e;
@@ -243,7 +248,12 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
             setRef(fresh); up.attach(fresh);
             saveHandoff({ funnel, ref: fresh, name, phone, city: from.city, theme });
             await updateLead(fresh, all);
+            sent = fresh;
           }
+        }
+        if (sent && (isD || isE)) { // for the summary: what the server actually has
+          const v = await fetch(`/api/leads/${sent.id}/videos?k=${sent.token}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+          if (v && typeof v.count === 'number') setSavedVideos(v.count);
         }
         track('lead_complete', funnelParams(funnel, theme));
         go(S_DONE);
@@ -320,7 +330,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                   <p className="vid-bonus" role="note">🎁 <b>מצלמים סרטון? מקבלים 50 ₪ הנחה</b> על התשלום הסופי להובלה.</p>
                   <p className="vid-optional" role="note"><b>רשות, לא חובה.</b> סרטונים בדרך כלל מורידים את המחיר שתקבלו מהמובילים.</p>
                   <div className="stack">
-                    {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
+                    {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
                     <div className="vid-guide" role="note">
                       <b>מה לצלם: סרטון אחד או כמה, עד 4 דקות כל אחד</b>
                       <ol>
@@ -368,7 +378,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                         <p className="e-guide-key">הפרטים כאן קריטיים: לפיהם המוביל קובע את המחיר. ככל שהסרטון מלא וברור יותר, ההצעה מדויקת יותר.</p>
                         <small>אפשר סרטון אחד ארוך (עד 4 דקות) או כמה סרטונים, למשל אחד לכל חדר.</small>
                       </div>
-                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
+                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
                       {up.usable.length > 0 && up.totalDuration > 0 && (
                         <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
                           <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00</span>
@@ -419,8 +429,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                   <h2 style={{ marginBottom: 14 }}>קיבלנו. ההצעות בדרך.</h2>
                   <p className="muted" style={{ maxWidth: 420, marginInline: 'auto' }}>
                     {isE
-                      ? `שלחנו את ${[(up.usable.length || remote) && 'הסרטון', items.list.length && 'רשימת הפריטים'].filter(Boolean).join(' ואת ') || 'הפרטים'} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
-                      : isD && (up.usable.length || remote)
+                      ? `שלחנו את ${[(up.usable.length || remote || savedVideos) && 'הסרטון', items.list.length && 'רשימת הפריטים'].filter(Boolean).join(' ואת ') || 'הפרטים'} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
+                      : isD && (up.usable.length || remote || savedVideos)
                       ? 'שלחנו את רשימת הפריטים והסרטונים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'
                       : 'שלחנו את רשימת הפריטים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'}
                   </p>
@@ -431,7 +441,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <tr><td>לאן</td><td>{[to.city, to.floor && `קומה ${to.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>מתי</td><td>{whenText(when) || '—'}</td></tr>
                     {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{itemsCount(items)} פריטים{items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}</td></tr>}
-                    {(isD || isE) && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : '—'}</td></tr>}
+                    {(isD || isE) && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : savedVideos ? (savedVideos === 1 ? 'סרטון אחד' : `${savedVideos} סרטונים`) : '—'}</td></tr>}
                   </tbody></table>
                 </div>
               )}

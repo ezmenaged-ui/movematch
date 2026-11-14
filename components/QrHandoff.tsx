@@ -6,9 +6,12 @@ import type { LeadRef } from '@/lib/client';
 
 /** Desktop only: a QR code that opens the phone upload page for this same lead,
  *  plus a live count of videos that arrived from the phone. */
-export function QrHandoff({ leadRef, onRemoteCount, onCompleted }: { leadRef: LeadRef; onRemoteCount: (n: number) => void; onCompleted?: () => void }) {
+/** `ownCount`: videos this page already uploaded itself. The lead's video count includes them, so they are subtracted:
+ *  only videos that really came from the phone count as "from the phone". */
+export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0 }: { leadRef: LeadRef; onRemoteCount: (n: number) => void; onCompleted?: () => void; ownCount?: number }) {
   const [svg, setSvg] = useState('');
-  const [count, setCount] = useState(0);
+  const [total, setTotal] = useState(0);
+  const count = Math.max(0, total - ownCount);
   const cb = useRef(onRemoteCount);
   cb.current = onRemoteCount;
   const doneCb = useRef(onCompleted);
@@ -25,13 +28,15 @@ export function QrHandoff({ leadRef, onRemoteCount, onCompleted }: { leadRef: Le
     const tick = async () => {
       try {
         const r = await fetch(`/api/leads/${id}/videos?k=${token}`, { cache: 'no-store' });
-        if (r.ok) { const { count: n, status } = await r.json(); if (!stop) { setCount(n); cb.current(n); if (status === 'complete') doneCb.current?.(); } }
+        if (r.ok) { const { count: n, status } = await r.json(); if (!stop) { setTotal(n); if (status === 'complete') doneCb.current?.(); } }
       } catch { /* ignore */ }
     };
     tick();
     const t = setInterval(tick, 4000);
     return () => { stop = true; clearInterval(t); };
   }, [id, token]);
+
+  useEffect(() => { cb.current(count); }, [count]);
 
   return (
     <div className="qr-handoff desktop-only">
