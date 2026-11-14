@@ -148,6 +148,33 @@ export async function saveJob(form: FormData) {
   redirect(`/movers/calendar?w=${date}&ok=job`);
 }
 
+/** Calendar pop-up: save a hand-added job without leaving the calendar. Returns an error key, or `saved` to close the pop-up. */
+export type CalResult = { error?: string; saved?: number };
+export async function calSaveJob(_prev: CalResult, form: FormData): Promise<CalResult> {
+  const date = s(form, 'date', 10), start = s(form, 'start_time', 5), end = s(form, 'end_time', 5);
+  const title = s(form, 'title', 120);
+  if (!title) return { error: 'title' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: 'date' };
+  if (T5.test(start) && T5.test(end) && end <= start) return { error: 'hours' };
+  const p = { id: s(form, 'id', 40), title, date, start_time: T5.test(start) ? start : '', end_time: T5.test(end) ? end : '',
+    from_text: s(form, 'from_text', 300), to_text: s(form, 'to_text', 300), items_text: s(form, 'items_text', 3000), notes: s(form, 'notes', 1000),
+    crew_ids: form.getAll('crew').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x)) };
+  const { error } = await (await moverDb()).rpc('mm_mover_save_job', { p });
+  if (error) { console.error('[job]', error); return { error: 'db' }; }
+  revalidatePath('/movers', 'layout');
+  return { saved: Date.now() };
+}
+
+export async function calDeleteJob(id: string) {
+  await (await moverDb()).rpc('mm_mover_delete_job', { p_id: id });
+  revalidatePath('/movers', 'layout');
+}
+
+export async function calDeleteEvent(id: string) {
+  await (await moverDb()).rpc('mm_mover_delete_event', { p_id: id });
+  revalidatePath('/movers/calendar');
+}
+
 export async function deleteJob(id: string, week: string) {
   await (await moverDb()).rpc('mm_mover_delete_job', { p_id: id });
   revalidatePath('/movers', 'layout');
