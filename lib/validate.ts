@@ -86,3 +86,24 @@ export function whenText(w: Partial<When> | null | undefined): string {
   const time = w.time ? `${TIME_LABEL[w.time] || w.time}${w.time_flexible ? ' (גמיש)' : ''}` : w.time_flexible ? 'שעה גמישה' : '';
   return [date, time].filter(Boolean).join(' · ');
 }
+
+/**
+ * Turn whatever a person pasted into a clean https:// link, or '' if empty, or null if no link is in it.
+ * Phones paste share text ("Check out X on Google Maps: https://maps.app.goo.gl/…"), links without https://
+ * ("www.midrag.co.il/…"), or http:// links. We pull out the first link, add or upgrade to https://, and drop
+ * trailing punctuation.
+ */
+export function cleanUrl(raw: string): string | null {
+  const s = (raw || '').trim();
+  if (!s) return '';
+  const m = s.match(/https?:\/\/[^\s<>"'״]+/i)?.[0]
+    ?? s.match(/(?:^|[\s:(])((?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>"'״]*)?)/i)?.[1];
+  if (!m) return null;
+  const link = 'https://' + m.replace(/[.,;:!?)\]}]+$/, '').replace(/^https?:\/\//i, '');
+  try {
+    const u = new URL(link);
+    if (u.protocol !== 'https:' || !u.hostname.includes('.')) return null;
+    const out = u.toString();
+    return out.length <= 500 ? out : null;
+  } catch { return null; }
+}
