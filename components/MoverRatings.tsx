@@ -1,7 +1,8 @@
 import { Star, ThumbsUp } from 'lucide-react';
 import type { TenderOffer } from '@/lib/tender';
 
-const n = (x: number | null | undefined) => (x === null || x === undefined ? null : Number(x));
+// A rating of 0 means "none" (empty sign-up fields), so it is not shown.
+const n = (x: number | null | undefined) => (x === null || x === undefined || !Number(x) ? null : Number(x));
 
 type Item = { key: string; label: string; score: string; outOf?: string; reviews: number | null; url: string | null; icon: 'star' | 'thumb' };
 
