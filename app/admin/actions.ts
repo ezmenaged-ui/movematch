@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { cleanUrl } from '@/lib/validate';
 
 export async function setHandled(id: string, handled: boolean) {
   await db().rpc('mm_admin_set_handled', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p_handled: handled });
@@ -37,8 +38,8 @@ export async function saveMover(form: FormData) {
     return v && Number.isFinite(n) && n >= 0 && n <= max ? String(Math.round(n * 10) / 10) : '';
   };
   const int = (k: string) => { const v = String(form.get(k) || '').replace(/[^\d]/g, ''); return v ? String(Math.min(1000000, Number(v))) : ''; };
-  const url = (k: string) => { const v = String(form.get(k) || '').trim(); return /^https:\/\/\S+$/.test(v) ? v.slice(0, 500) : ''; };
-  for (const k of ['google_url', 'midrag_url']) if (String(form.get(k) || '').trim() && !url(k)) redirect('/admin/movers?err=url');
+  const url = (k: string) => cleanUrl(String(form.get(k) || '')) || '';
+  for (const k of ['google_url', 'midrag_url']) if (cleanUrl(String(form.get(k) || '')) === null) redirect('/admin/movers?err=url');
   const p = {
     name, company, phone,
     google_url: url('google_url'), google_rating: num('google_rating', 5), google_reviews: int('google_reviews'),
