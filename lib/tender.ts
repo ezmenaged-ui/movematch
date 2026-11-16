@@ -7,6 +7,7 @@ export type TenderOffer = {
   contact: string; phone: string;
   google_url: string | null; google_rating: number | null; google_reviews: number | null;
   midrag_url: string | null; midrag_rating: number | null; midrag_reviews: number | null;
+  facebook_url: string | null; facebook_recommend: number | null; facebook_reviews: number | null;
 };
 export type Tender = {
   id: string; tender_no: number; created_at: string; status: 'partial' | 'complete'; variant: 'a' | 'wizard' | 'form' | 'items' | 'choice';

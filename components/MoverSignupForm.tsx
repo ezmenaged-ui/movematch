@@ -65,7 +65,12 @@ export function MoverSignupForm() {
         <div className="field"><label htmlFor="j-mrating">ציון במדרג (עד 10)</label><input id="j-mrating" name="midrag_rating" className="input" inputMode="decimal" dir="ltr" placeholder="9.6" /></div>
         <div className="field"><label htmlFor="j-mreviews">מספר חוות הדעת במדרג</label><input id="j-mreviews" name="midrag_reviews" className="input" inputMode="numeric" dir="ltr" placeholder="85" /></div>
       </div>
-      <p className="small muted" style={{ margin: 0 }}>הדירוגים יוצגו ללקוחות לצד ההצעות שלכם, אחרי שנאמת אותם מול הקישורים.</p>
+      <div className="field"><label htmlFor="j-facebook">קישור לעמוד העסק בפייסבוק</label><input id="j-facebook" name="facebook_url" className="input" dir="ltr" placeholder="https://www.facebook.com/..." /></div>
+      <div className="bid-row">
+        <div className="field"><label htmlFor="j-frec">אחוז הממליצים בפייסבוק (עד 100)</label><input id="j-frec" name="facebook_recommend" className="input" inputMode="numeric" dir="ltr" placeholder="98" /></div>
+        <div className="field"><label htmlFor="j-freviews">מספר הביקורות בפייסבוק</label><input id="j-freviews" name="facebook_reviews" className="input" inputMode="numeric" dir="ltr" placeholder="150" /></div>
+      </div>
+      <p className="small muted" style={{ margin: 0 }}>מלאו רק את הדירוגים שיש לכם. הם יוצגו ללקוחות לצד ההצעות שלכם, אחרי שנאמת אותם מול הקישורים.</p>
       <AreaPicker idPrefix="j-areas" legend="אזורי שירות * (חובה, אפשר לבחור כמה)" errorId={err === ERR.areas ? 'j-err' : undefined} />
       <p className="small muted" style={{ margin: '-6px 0 0' }}>תקבלו מכרזים רק של הובלות שיוצאות מהאזורים שבחרתם.</p>
       <div className="field"><label htmlFor="j-note">סוג משאית, מספר עובדים, הערות (לא חובה)</label><textarea id="j-note" name="note" className="input" rows={3} placeholder="למשל: משאית 12 טון, 4 עובדים, מנוף" /></div>

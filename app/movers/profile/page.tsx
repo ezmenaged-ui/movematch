@@ -46,6 +46,7 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
           <dt>דוא״ל לכניסה</dt><dd dir="ltr" style={{ textAlign: 'right' }}>{me.email}</dd>
           <dt>דירוג Google</dt><dd>{me.google_rating !== null ? `★ ${Number(me.google_rating).toFixed(1)}${me.google_reviews ? ` (${me.google_reviews} ביקורות)` : ''}` : '—'}</dd>
           <dt>דירוג מדרג</dt><dd>{me.midrag_rating !== null ? `★ ${Number(me.midrag_rating).toFixed(1)}${me.midrag_reviews ? ` (${me.midrag_reviews} ביקורות)` : ''}` : '—'}</dd>
+          <dt>פייסבוק</dt><dd>{me.facebook_recommend !== null ? `👍 ${me.facebook_recommend}% ממליצים${me.facebook_reviews ? ` (${me.facebook_reviews} ביקורות)` : ''}` : '—'}{me.facebook_url && <> · <a href={me.facebook_url} target="_blank" rel="noreferrer">לעמוד</a></>}</dd>
           <dt>התראות וואטסאפ</dt><dd>{me.active ? 'פעילות' : 'מושהות'}</dd>
         </dl>
         <p className="mv-meta" style={{ margin: '10px 0 0' }}>לשינוי הטלפון, הדוא״ל או הדירוגים פנו ל-MoveMatch.</p>

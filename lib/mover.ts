@@ -23,6 +23,7 @@ export type Me = {
   must_change_password: boolean; business: Business;
   google_url: string | null; google_rating: number | null; google_reviews: number | null;
   midrag_url: string | null; midrag_rating: number | null; midrag_reviews: number | null;
+  facebook_url: string | null; facebook_recommend: number | null; facebook_reviews: number | null;
 };
 
 /** The signed-in mover, or a redirect to the login page. Forces the first-login password change. */

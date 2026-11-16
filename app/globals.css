@@ -578,6 +578,7 @@ input.input[type='date']::-webkit-date-and-time-value, input.input[type='time']:
 .mv-rating { display: inline-flex; align-items: baseline; gap: 4px; font-size: 14px; color: var(--color-text); text-decoration: none; }
 a.mv-rating:hover .mv-src { text-decoration: underline; }
 .mv-star { color: #e6a700; align-self: center; }
+.mv-thumb { color: #1877f2; align-self: center; }
 .mv-of, .mv-rev { font-size: 12px; color: var(--color-neutral-600); }
 .mv-src { font-weight: 600; color: var(--color-accent-700); }
 .mv-ratings.compact .mv-rating { font-size: 13px; }
