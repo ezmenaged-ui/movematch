@@ -21,12 +21,13 @@ export async function POST(req: NextRequest) {
   // anything we can't read in the note for the operator.
   const unread: string[] = [];
   const url = (k: string, label: string) => { const raw = str(k, 1000); const v = cleanUrl(raw); if (v === null) unread.push(`${label} (לא זוהה כקישור): ${raw}`); return v || ''; };
-  const google_url = url('google_url', 'Google'), midrag_url = url('midrag_url', 'מדרג');
+  const google_url = url('google_url', 'Google'), midrag_url = url('midrag_url', 'מדרג'), facebook_url = url('facebook_url', 'Facebook');
   if (company.length < 2) return NextResponse.json({ error: 'company' }, { status: 422 });
   if (!/^0\d{8,9}$/.test(phone)) return NextResponse.json({ error: 'phone' }, { status: 422 });
   // Self-reported ratings (optional). The operator checks them against the links before approving the mover.
   const num = (k: string, max: number) => { const v = Number(str(k, 8).replace(',', '.')); return str(k, 8) && Number.isFinite(v) && v >= 0 && v <= max ? Math.round(v * 10) / 10 : null; };
   const int = (k: string) => { const v = Number(str(k, 8).replace(/[^\d]/g, '')); return str(k, 8) && Number.isInteger(v) && v >= 0 && v < 1000000 ? v : null; };
+  const pct = (k: string) => { const v = Number(str(k, 8).replace(/[%\s]/g, '').replace(',', '.')); return str(k, 8) && Number.isFinite(v) && v >= 0 && v <= 100 ? Math.round(v) : null; };
   const areas = cleanAreas(f.getAll('areas').map(String));
   if (!areas.length) return NextResponse.json({ error: 'areas' }, { status: 422 });
   if (!str('consent')) return NextResponse.json({ error: 'consent' }, { status: 422 });
@@ -40,8 +41,9 @@ export async function POST(req: NextRequest) {
     logo = `data:${file.type};base64,${Buffer.from(await file.arrayBuffer()).toString('base64')}`;
   }
 
-  const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, note: [str('note', 1000), ...unread].filter(Boolean).join('\n').slice(0, 1000), terms_version: LEGAL.moverTermsVersion,
-    google_rating: num('google_rating', 5), google_reviews: int('google_reviews'), midrag_rating: num('midrag_rating', 10), midrag_reviews: int('midrag_reviews') };
+  const p = { company, name: str('name', 120), phone, email: str('email', 200), google_url, midrag_url, facebook_url, note: [str('note', 1000), ...unread].filter(Boolean).join('\n').slice(0, 1000), terms_version: LEGAL.moverTermsVersion,
+    google_rating: num('google_rating', 5), google_reviews: int('google_reviews'), midrag_rating: num('midrag_rating', 10), midrag_reviews: int('midrag_reviews'),
+    facebook_recommend: pct('facebook_recommend'), facebook_reviews: int('facebook_reviews') };
   // v2 = the original sign-up plus the mover's service areas, in one transaction (migration 013).
   let { error } = await db().rpc('mm_mover_signup_v2', { p, p_logo: logo, p_areas: areas });
   // Until migration 013 is applied, v2 doesn't exist: save the mover the old way and keep the areas in the note,
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
     [`מוביל חדש נרשם ל-MoveMatch וממתין לאישור.`, `חברה: ${company}`, p.name ? `איש קשר: ${p.name}` : '', `טלפון: ${phone}`, `אזורי שירות: ${areas.join(', ')}`,
       p.email ? `אימייל: ${p.email}` : '', google_url ? `Google: ${google_url}` : '', p.google_rating != null ? `Google לפי המוביל: ${p.google_rating} כוכבים, ${p.google_reviews ?? '?'} ביקורות (לאמת מול הקישור)` : '',
       midrag_url ? `מדרג: ${midrag_url}` : '', p.midrag_rating != null ? `מדרג לפי המוביל: ${p.midrag_rating}, ${p.midrag_reviews ?? '?'} חוות דעת (לאמת מול הקישור)` : '',
+      facebook_url ? `Facebook: ${facebook_url}` : '', p.facebook_recommend != null ? `Facebook לפי המוביל: ${p.facebook_recommend}% ממליצים, ${p.facebook_reviews ?? '?'} ביקורות (לאמת מול הקישור)` : '',
       p.note ? `הערה: ${p.note}` : '', logo ? 'צירף לוגו' : 'בלי לוגו', `אישר את הסכם המובילים (גרסה ${LEGAL.moverTermsVersion}), כולל עמלה של 10%, והסכים להודעות וואטסאפ`, `לאישור: ${siteUrl()}/admin/movers`].filter(Boolean).join('\n'),
     { event: 'mover_signup', phone },
   ));

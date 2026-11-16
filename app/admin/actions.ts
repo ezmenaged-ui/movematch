@@ -39,11 +39,12 @@ export async function saveMover(form: FormData) {
   };
   const int = (k: string) => { const v = String(form.get(k) || '').replace(/[^\d]/g, ''); return v ? String(Math.min(1000000, Number(v))) : ''; };
   const url = (k: string) => cleanUrl(String(form.get(k) || '')) || '';
-  for (const k of ['google_url', 'midrag_url']) if (cleanUrl(String(form.get(k) || '')) === null) redirect('/admin/movers?err=url');
+  for (const k of ['google_url', 'midrag_url', 'facebook_url']) if (cleanUrl(String(form.get(k) || '')) === null) redirect('/admin/movers?err=url');
   const p = {
     name, company, phone,
     google_url: url('google_url'), google_rating: num('google_rating', 5), google_reviews: int('google_reviews'),
     midrag_url: url('midrag_url'), midrag_rating: num('midrag_rating', 10), midrag_reviews: int('midrag_reviews'),
+    facebook_url: url('facebook_url'), facebook_recommend: (() => { const v = num('facebook_recommend', 100); return v && String(Math.round(Number(v))); })(), facebook_reviews: int('facebook_reviews'),
   };
   const { error } = await db().rpc('mm_admin_save_mover', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p, p_logo: logo });
   if (error) { console.error('[saveMover]', error); redirect('/admin/movers?err=db'); }

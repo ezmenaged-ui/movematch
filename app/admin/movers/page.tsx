@@ -15,7 +15,8 @@ export const metadata = { title: 'Movers · MoveMatch', robots: { index: false }
 
 type Mover = { id: string; name: string; company_name: string; phone: string; active: boolean; created_at: string; opted_out_at: string | null; has_logo: boolean;
   status: 'pending' | 'approved'; email: string | null; signup_note: string | null; auth_user_id: string | null; must_change_password: boolean;
-  google_url: string | null; google_rating: number | null; google_reviews: number | null; midrag_url: string | null; midrag_rating: number | null; midrag_reviews: number | null };
+  google_url: string | null; google_rating: number | null; google_reviews: number | null; midrag_url: string | null; midrag_rating: number | null; midrag_reviews: number | null;
+  facebook_url: string | null; facebook_recommend: number | null; facebook_reviews: number | null };
 const MSG: Record<string, string> = {
   phone: 'מספר הטלפון לא תקין. כתבו אותו כמו 0501234567.',
   company: 'חסר שם חברה. הוא מופיע ללקוח על ההצעה.',
@@ -57,6 +58,9 @@ function MoverFields({ m }: { m?: Mover }) {
       <div className="field" style={{ margin: 0 }}><label htmlFor={`mu-${k}`}>קישור לעמוד במדרג</label><input id={`mu-${k}`} name="midrag_url" className="input" dir="ltr" placeholder="https://www.midrag.co.il/..." defaultValue={m?.midrag_url || ''} /></div>
       <div className="field" style={{ margin: 0 }}><label htmlFor={`mr-${k}`}>דירוג מדרג (מתוך 10)</label><input id={`mr-${k}`} name="midrag_rating" className="input" dir="ltr" inputMode="decimal" placeholder="9.4" defaultValue={m?.midrag_rating ?? ''} /></div>
       <div className="field" style={{ margin: 0 }}><label htmlFor={`mn-${k}`}>מספר ביקורות מדרג</label><input id={`mn-${k}`} name="midrag_reviews" className="input" dir="ltr" inputMode="numeric" placeholder="85" defaultValue={m?.midrag_reviews ?? ''} /></div>
+      <div className="field" style={{ margin: 0 }}><label htmlFor={`fu-${k}`}>קישור לעמוד פייסבוק</label><input id={`fu-${k}`} name="facebook_url" className="input" dir="ltr" placeholder="https://www.facebook.com/..." defaultValue={m?.facebook_url || ''} /></div>
+      <div className="field" style={{ margin: 0 }}><label htmlFor={`fr-${k}`}>פייסבוק: % ממליצים</label><input id={`fr-${k}`} name="facebook_recommend" className="input" dir="ltr" inputMode="numeric" placeholder="100" defaultValue={m?.facebook_recommend ?? ''} /></div>
+      <div className="field" style={{ margin: 0 }}><label htmlFor={`fn-${k}`}>מספר ביקורות פייסבוק</label><input id={`fn-${k}`} name="facebook_reviews" className="input" dir="ltr" inputMode="numeric" placeholder="150" defaultValue={m?.facebook_reviews ?? ''} /></div>
       <div className="field" style={{ margin: 0 }}><label htmlFor={`lg-${k}`}>{m?.has_logo ? 'החלפת לוגו' : 'לוגו'} (PNG/JPG)</label><LogoInput id={`lg-${k}`} /></div>
     </>
   );
@@ -100,7 +104,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
       {pending.length > 0 && (
         <div id="pending" className="adm-box" style={{ margin: '14px 0', borderColor: '#e0a43a', background: '#fff6e5' }}>
           <h4>ממתינים לאישור ({pending.length})</h4>
-          <p className="small muted" style={{ margin: '0 0 10px' }}>לפני האישור כדאי להיכנס לקישורים, ולהוסיף בעריכה את הדירוגים ומספר הביקורות מ-Google וממדרג.</p>
+          <p className="small muted" style={{ margin: '0 0 10px' }}>לפני האישור כדאי להיכנס לקישורים, ולהוסיף בעריכה את הדירוגים ומספר הביקורות מ-Google, ממדרג ומפייסבוק.</p>
           <div className="adm-bids">
             {pending.map((m) => (
               <div key={m.id} className="adm-bid">
@@ -110,6 +114,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
                   {m.email && <span dir="ltr">{m.email}</span>}
                   {m.google_url && <a className="adm-tag" href={m.google_url} target="_blank" rel="noreferrer">Google ↗</a>}
                   {m.midrag_url && <a className="adm-tag" href={m.midrag_url} target="_blank" rel="noreferrer">מדרג ↗</a>}
+                  {m.facebook_url && <a className="adm-tag" href={m.facebook_url} target="_blank" rel="noreferrer">Facebook ↗</a>}
                   <span className="small muted">נרשם {new Date(m.created_at).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' })}</span>
                 </div>
                 {m.signup_note && <p className="small" style={{ margin: '6px 0 0' }}>“{m.signup_note}”</p>}
@@ -151,7 +156,8 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
               {!m.has_logo && <span className="adm-tag warn">אין לוגו</span>}
               {m.google_rating !== null && <a className="adm-tag" href={m.google_url || undefined} target="_blank" rel="noreferrer">Google ★ {Number(m.google_rating).toFixed(1)}{m.google_reviews ? ` (${m.google_reviews})` : ''}</a>}
               {m.midrag_rating !== null && <a className="adm-tag" href={m.midrag_url || undefined} target="_blank" rel="noreferrer">מדרג ★ {Number(m.midrag_rating).toFixed(1)}{m.midrag_reviews ? ` (${m.midrag_reviews})` : ''}</a>}
-              {m.google_rating === null && m.midrag_rating === null && <span className="adm-tag warn">אין דירוגים</span>}
+              {m.facebook_recommend !== null && <a className="adm-tag" href={m.facebook_url || undefined} target="_blank" rel="noreferrer">Facebook 👍 {m.facebook_recommend}%{m.facebook_reviews ? ` (${m.facebook_reviews})` : ''}</a>}
+              {m.google_rating === null && m.midrag_rating === null && m.facebook_recommend === null && <span className="adm-tag warn">אין דירוגים</span>}
               {m.auth_user_id ? <span className="adm-tag ok">גישה לפאנל{m.must_change_password ? ' · טרם נכנס' : ''}</span> : <span className="adm-tag">אין גישה לפאנל</span>}
             </div>
             <div className="adm-actions">
