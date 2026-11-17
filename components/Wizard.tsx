@@ -14,7 +14,7 @@ import { QrHandoff } from './QrHandoff';
 import { AddressFields } from './AddressFields';
 import { CityDatalist, Field, PhoneField } from './fields';
 import { useUploads } from './useUploads';
-import { ClipList, VideoButtons } from './VideoUploader';
+import { ClipList, VideoButtons, VideoGuide } from './VideoUploader';
 import { Blueprint, Corners, MidragBadge, Spinner } from './ui';
 import { MoversScene } from './Illustrations';
 import { HAS_MOVERS_PHOTO, MoversTrustRow } from './MoversVisual';
@@ -31,14 +31,15 @@ const fmtMin = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)
 /**
  * Funnels B and D, after the shared first step: from → to → when → items (picked from the room list, or added by the client).
  * B ends there: from → to → when → items → done.
- * D adds an optional video step: from → to → when → items → videos → done.
- * E has one information page instead: from → to → when → info (a full 3-minute video OR the item list; the other is optional) → done.
+ * D: from → to → when → video (required) → items (optional, earns the ₪50 discount) → done.
+ * E has one information page instead: from → to → when → info (a full 3-minute video OR the item list; the other is optional
+ * and earns the ₪50 discount) → done. The ₪50 discount = a video of the apartment AND the full item list (see /terms §11).
  */
 export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   const isD = funnel === 'd', isE = funnel === 'e';
-  const LABELS = isD ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סרטונים', 'סיום'] : isE ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'מה עובר', 'סיום'] : ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סיום'];
-  const S_ITEMS = isE ? -1 : 5, S_INFO = isE ? 5 : -1, S_VIDEO = isD ? 6 : -1, S_DONE = isD ? 7 : 6, TOTAL = S_DONE, S_LAST = S_DONE - 1;
-  const STORE = isD ? 'mm_wizard_d1' : isE ? 'mm_wizard_e1' : 'mm_wizard_b5';
+  const LABELS = isD ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'סרטון', 'פריטים', 'סיום'] : isE ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'מה עובר', 'סיום'] : ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סיום'];
+  const S_ITEMS = isE ? -1 : isD ? 6 : 5, S_INFO = isE ? 5 : -1, S_VIDEO = isD ? 5 : -1, S_DONE = isD ? 7 : 6, TOTAL = S_DONE, S_LAST = S_DONE - 1;
+  const STORE = isD ? 'mm_wizard_d2' : isE ? 'mm_wizard_e1' : 'mm_wizard_b5';
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [theme, setTheme] = useState<FlowTheme>('photo');
@@ -68,7 +69,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   const up = useUploads();
 
   // One funnel_step event each time a step is shown (from step 2; steps 0-1 are tracked on the landing page).
-  const STEP_NAMES = isD ? ['contact', 'from', 'to', 'when', 'items', 'video', 'done'] : isE ? ['contact', 'from', 'to', 'when', 'info', 'done'] : ['contact', 'from', 'to', 'when', 'items', 'done'];
+  const STEP_NAMES = isD ? ['contact', 'from', 'to', 'when', 'video', 'items', 'done'] : isE ? ['contact', 'from', 'to', 'when', 'info', 'done'] : ['contact', 'from', 'to', 'when', 'items', 'done'];
   useEffect(() => {
     if (ready && step >= 2) trackStep(funnel, theme, step, STEP_NAMES[step - 1] || `step${step}`, isE && step === S_DONE && mode ? { info_choice: mode } : {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -182,7 +183,20 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       setWhenErr(er.date || '');
       if (er.date) return;
       if (ref) updateLead(ref, { move_when: when, priority, furthest_step: S_WHEN }).catch(() => {});
-      go(isE ? S_INFO : S_ITEMS);
+      go(isE ? S_INFO : isD ? S_VIDEO : S_ITEMS);
+      return;
+    }
+    if (step === S_VIDEO) {
+      if (!(up.usable.length > 0 || remote > 0)) { setFail('צלמו או העלו סרטון של הדירה. בלי סרטון המובילים לא יכולים לתת מחיר מדויק.'); return; }
+      // Same soft warning as E: under 3 minutes of known length, warn once, then let them continue.
+      const known = !remote && up.usable.every((c) => c.duration != null);
+      if (known && up.totalDuration < E_VIDEO_TARGET_S && !shortWarn) {
+        setShortWarn(true);
+        requestAnimationFrame(() => document.getElementById('e-short')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+        return;
+      }
+      if (ref) updateLead(ref, { furthest_step: S_VIDEO }).catch(() => {});
+      go(S_ITEMS);
       return;
     }
     if (step === S_INFO) {
@@ -209,17 +223,12 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
         return;
       }
     }
-    if (step === S_ITEMS) {
+    if (step === S_ITEMS && !(isD && !items.list.length)) { // D: the list is optional (an empty list goes straight on)
       if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
       if (!asmAnswered(items)) {
         setFlagsMissing(true);
         setFail('סמנו אילו פריטים צריכים פירוק או הרכבה, או סמנו שאף פריט לא צריך.');
         requestAnimationFrame(() => document.getElementById('it-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-        return;
-      }
-      if (isD) {
-        if (ref) updateLead(ref, { items, furthest_step: S_ITEMS }).catch(() => {});
-        go(S_VIDEO);
         return;
       }
     }
@@ -230,7 +239,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       if (Object.keys(toErr).length) { go(3); setAddrErr(toErr); return; }
       if (validateWhen(when).date) { go(S_WHEN); setWhenErr(validateWhen(when).date || ''); return; }
       // (Funnel E's last step is its own info step, checked just above.)
-      if (S_ITEMS > 0 && (!items.list.length || !asmAnswered(items))) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
+      if (isD && !up.usable.length && !remote) { go(S_VIDEO); setFail('צלמו או העלו סרטון של הדירה.'); return; }
+      if (!isD && S_ITEMS > 0 && (!items.list.length || !asmAnswered(items))) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
       setBusy(true);
       try {
         // send every detail again: if the lead was re-opened (see liveHandoff), the earlier step saves went to the old one
@@ -320,31 +330,36 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                 </>
               )}
 
+              {isD && step === S_ITEMS && (
+                <p className="vid-bonus" role="note">🎁 <b>ממלאים את רשימת הפריטים המלאה? מקבלים 50 ₪ הנחה</b> על התשלום הסופי להובלה. רשות, לא חובה.</p>
+              )}
               {step === S_ITEMS && (
                 <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
               )}
 
               {isD && step === S_VIDEO && (
                 <>
-                  <h2>צלמו כמה סרטונים קצרים של הדירה</h2>
-                  <p className="vid-bonus" role="note">🎁 <b>מצלמים סרטון? מקבלים 50 ₪ הנחה</b> על התשלום הסופי להובלה.</p>
-                  <p className="vid-optional" role="note"><b>רשות, לא חובה.</b> סרטונים בדרך כלל מורידים את המחיר שתקבלו מהמובילים.</p>
+                  <h2>צלמו סרטון של הדירה</h2>
+                  <p className="lead-sub">חובה. לפי הסרטון המובילים נותנים מחיר מדויק, ולא הערכה.</p>
                   <div className="stack">
+                    <VideoGuide />
                     {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
-                    <div className="vid-guide" role="note">
-                      <b>מה לצלם: סרטון אחד או כמה, עד 4 דקות כל אחד</b>
-                      <ol>
-                        <li><b>חדר חדר:</b> סרטון נפרד לכל חדר. בדירה גדולה, יותר סרטונים.</li>
-                        <li><b>הרהיטים הגדולים מקרוב:</b> ארונות, מיטות, ספות ומוצרי חשמל.</li>
-                        <li><b>הבניין:</b> חדר מדרגות, מעלית, מעברים צרים.</li>
-                        <li><b>מה צריך פירוק,</b> ומה שביר או כבד (ספרו בקול).</li>
-                      </ol>
-                    </div>
-                    <ClipList clips={up.clips} onRemove={up.remove} />
+                    {up.usable.length > 0 && up.totalDuration > 0 && (
+                      <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
+                        <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00 מומלצות</span>
+                        <i><em style={{ width: `${Math.min(100, (up.totalDuration / E_VIDEO_TARGET_S) * 100)}%` }} /></i>
+                      </div>
+                    )}
+                    <ClipList clips={up.clips} onRemove={(k) => { up.remove(k); setShortWarn(false); }} />
                     {up.clips.some((c) => c.state === 'error') && (
                       <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
                     )}
-                    {up.usable.length > 0 && <VideoButtons onFiles={up.add} more />}
+                    {up.usable.length > 0 && <VideoButtons onFiles={(f) => { up.add(f); setShortWarn(false); }} more />}
+                    {shortWarn && (
+                      <div id="e-short" className="e-warn" role="alert">
+                        <b>הסרטון קצר מ-3 דקות ({fmtMin(up.totalDuration)}).</b> סרטון קצר עלול לא להראות למובילים את כל מה שעובר, ואז קשה להם לתת מחיר מדויק. מומלץ להוסיף סרטון של מה שחסר. אפשר גם להמשיך כך.
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -367,17 +382,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
 
                   {mode === 'video' && (
                     <div className="stack" style={{ marginTop: 18 }}>
-                      <div className="vid-guide e-guide" role="note">
-                        <b>מה אנחנו מצפים לקבל: סרטון מלא של כ-3 דקות</b>
-                        <ol>
-                          <li><b>חדר אחרי חדר:</b> עוברים על כל הדירה, בלי לדלג. גם מרפסת, מחסן וחניה.</li>
-                          <li><b>כל פריט, בקול:</b> מה הוא, האם צריך לפרק ולהרכיב אותו, והאם הוא כבד.</li>
-                          <li><b>מה מיוחד בדירה:</b> חדר מדרגות צר, אין מעלית או מעלית קטנה, מעברים צרים, חניה רחוקה, וכל דבר אחר שהמוביל צריך לדעת.</li>
-                          <li><b>תאורה טובה:</b> הדליקו את האורות ופתחו תריסים, כדי שהמוביל יראה בדיוק מה הוא מעביר.</li>
-                        </ol>
-                        <p className="e-guide-key">הפרטים כאן קריטיים: לפיהם המוביל קובע את המחיר. ככל שהסרטון מלא וברור יותר, ההצעה מדויקת יותר.</p>
-                        <small>אפשר סרטון אחד ארוך (עד 4 דקות) או כמה סרטונים, למשל אחד לכל חדר.</small>
-                      </div>
+                      <p className="lead-sub" style={{ margin: 0 }}><b>מה אנחנו מצפים לקבל: סרטון מלא של כ-3 דקות.</b></p>
+                      <VideoGuide />
                       {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
                       {up.usable.length > 0 && up.totalDuration > 0 && (
                         <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
@@ -396,7 +402,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                         </div>
                       )}
                       <details className="e-extra" open={extraOpen} onToggle={(e) => setExtraOpen((e.target as HTMLDetailsElement).open)}>
-                        <summary>רוצים להוסיף גם רשימת פריטים? <span>(רשות)</span></summary>
+                        <summary>🎁 הוסיפו גם רשימת פריטים מלאה וקבלו 50 ₪ הנחה <span>(רשות)</span></summary>
                         {extraOpen && <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />}
                       </details>
                     </div>
@@ -406,10 +412,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <div className="stack" style={{ marginTop: 18 }}>
                       <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
                       <details className="e-extra" open={extraOpen} onToggle={(e) => setExtraOpen((e.target as HTMLDetailsElement).open)}>
-                        <summary>רוצים להוסיף גם סרטון של הדירה? <span>(רשות)</span></summary>
+                        <summary>🎁 הוסיפו גם סרטון של הדירה וקבלו 50 ₪ הנחה <span>(רשות)</span></summary>
                         {extraOpen && (
                           <div className="stack" style={{ marginTop: 12 }}>
-                            <p className="small" style={{ margin: 0 }}>סרטון עוזר למובילים לראות את הפריטים ואת הבניין (מדרגות, מעלית, מעברים). צלמו באור טוב וספרו בקול מה צריך פירוק ומה כבד. עד 4 דקות לכל סרטון.</p>
+                            <VideoGuide compact />
                             <ClipList clips={up.clips} onRemove={up.remove} />
                             {up.clips.some((c) => c.state === 'error') && (
                               <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
@@ -430,8 +436,8 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                   <p className="muted" style={{ maxWidth: 420, marginInline: 'auto' }}>
                     {isE
                       ? `שלחנו את ${[(up.usable.length || remote || savedVideos) && 'הסרטון', items.list.length && 'רשימת הפריטים'].filter(Boolean).join(' ואת ') || 'הפרטים'} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
-                      : isD && (up.usable.length || remote || savedVideos)
-                      ? 'שלחנו את רשימת הפריטים והסרטונים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'
+                      : isD
+                      ? `שלחנו את הסרטון${items.list.length ? ' ואת רשימת הפריטים' : ''} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
                       : 'שלחנו את רשימת הפריטים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'}
                   </p>
                   {uploading && <p className="small" style={{ color: 'var(--color-accent-700)' }}>הסרטונים עדיין עולים. השאירו את הדף פתוח עד שההעלאה תסתיים.</p>}
@@ -455,16 +461,16 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <>
                       <div className={`vid-d-row ${up.usable.length || remote ? 'has' : ''}`}>
                         {!up.usable.length && !remote && <VideoButtons compact onFiles={(f) => { up.add(f); setFail(''); }} />}
-                        <button type="submit" className={`btn ${up.usable.length || remote ? 'btn-primary' : 'btn-secondary'} btn-lg blueprint`} disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {up.usable.length || remote ? 'שליחה וקבלת הצעות' : 'שליחה בלי סרטון'}</button>
+                        {(up.usable.length > 0 || remote > 0) && <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn ? 'המשך בכל זאת' : 'המשך'}</button>}
                       </div>
                       <button type="button" className="btn-link" onClick={() => go(step - 1)}>חזרה</button>
                     </>
                   ) : step === S_INFO ? (
                     <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy || !mode} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn && mode === 'video' ? 'שליחה בכל זאת' : 'שלחו לי 5 הצעות'}{mode === 'items' && itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
-                  ) : !isD && step === S_ITEMS ? (
-                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} שלחו לי 5 הצעות{itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
+                  ) : step === S_ITEMS ? (
+                    <button type="submit" className={`btn ${isD && !items.list.length ? 'btn-secondary' : 'btn-primary'} btn-lg blueprint`} disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {isD && !items.list.length ? 'שליחה בלי רשימה (בלי ההנחה)' : 'שלחו לי 5 הצעות'}{itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
                   ) : (
-                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} המשך{step === S_ITEMS && itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
+                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} המשך</button>
                   )}
                 </div>
               )}

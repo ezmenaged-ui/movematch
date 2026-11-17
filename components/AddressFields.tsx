@@ -1,6 +1,6 @@
 'use client';
 import type { Address } from '@/lib/validate';
-import { CityField, ElevatorChoice, ElevatorTypePicker, Field } from './fields';
+import { CityField, CranePicker, ElevatorChoice, ElevatorTypePicker, Field, ParkingPicker } from './fields';
 
 export function AddressFields({ value, onChange, errors = {} }: {
   value: Address; onChange: (a: Address) => void; errors?: Partial<Record<keyof Address, string>>;
@@ -18,6 +18,8 @@ export function AddressFields({ value, onChange, errors = {} }: {
       </div>
       <ElevatorChoice value={value.elevator} onChange={(v) => onChange({ ...value, elevator: v, elevator_type: v ? value.elevator_type || '' : '' })} />
       {value.elevator === true && <ElevatorTypePicker value={value.elevator_type} onChange={(t) => set('elevator_type', t)} error={errors.elevator_type} />}
+      <CranePicker value={value.crane} onChange={(v) => set('crane', v)} error={errors.crane} />
+      <ParkingPicker value={value.parking} onChange={(v) => set('parking', v)} error={errors.parking} />
     </div>
   );
 }

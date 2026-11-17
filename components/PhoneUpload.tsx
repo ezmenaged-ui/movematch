@@ -3,7 +3,7 @@ import { ArrowRight, Check, Monitor } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { track, updateLead } from '@/lib/client';
 import { useUploads } from './useUploads';
-import { Checklist, ClipList, VideoButtons, VideoRules } from './VideoUploader';
+import { ClipList, VideoButtons, VideoGuide } from './VideoUploader';
 import { Blueprint, Corners, Header, Spinner } from './ui';
 
 type Status = { count: number; status: 'partial' | 'complete'; ready: boolean };
@@ -54,15 +54,14 @@ export function PhoneUpload({ id, token, tender }: { id: string; token: string; 
           <Blueprint className="wiz-card">
             <h1 className="phone-add-h">הוספת סרטון למכרז שלך</h1>
             <div className="stack">
-              <p className="muted" style={{ margin: 0 }}>צלמו סרטון קצר של החדרים והרהיטים. הוא יתווסף למכרז ויוצג למובילים, כדי שיוכלו לתת מחיר מדויק.</p>
+              <p className="muted" style={{ margin: 0 }}>צלמו סרטון של הדירה, חדר אחרי חדר. הוא יתווסף למכרז ויוצג למובילים, כדי שיוכלו לתת מחיר מדויק.</p>
               {done > 0 && !uploading && (
                 <div className="phone-done">
                   <span className="done-icon blueprint" style={{ margin: 0, width: 44, height: 44 }}><Corners /><Check size={22} strokeWidth={1.5} /></span>
                   <span><b>{done === 1 ? 'הסרטון נוסף למכרז.' : `${done} סרטונים נוספו למכרז.`}</b><br />אפשר להוסיף עוד, או לחזור לדף המכרז.</span>
                 </div>
               )}
-              <VideoRules />
-              <Checklist />
+              <VideoGuide />
               <ClipList clips={up.clips} onRemove={up.remove} />
               {up.clips.some((c) => c.state === 'error') && <button type="button" className="btn-link" onClick={up.retryFailed}>נסו להעלות שוב</button>}
               <VideoButtons onFiles={up.add} more={up.usable.length > 0} />
@@ -96,7 +95,7 @@ export function PhoneUpload({ id, token, tender }: { id: string; token: string; 
       <Header />
       <main className="wiz">
         <Blueprint className="wiz-card">
-          <h2>צלמו סרטון קצר</h2>
+          <h2>צלמו סרטון של הדירה</h2>
           <div className="stack">
             {total > 0 && !uploading && (
               st?.ready ? (
@@ -112,8 +111,7 @@ export function PhoneUpload({ id, token, tender }: { id: string; token: string; 
                 </div>
               )
             )}
-            <VideoRules />
-            <Checklist />
+            <VideoGuide />
             <ClipList clips={up.clips} onRemove={up.remove} />
             {up.clips.some((c) => c.state === 'error') && <button type="button" className="btn-link" onClick={up.retryFailed}>נסו להעלות שוב</button>}
             <VideoButtons onFiles={up.add} more={up.usable.length > 0} />

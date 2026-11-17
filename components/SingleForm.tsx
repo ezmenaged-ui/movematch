@@ -12,7 +12,7 @@ import { QrHandoff } from './QrHandoff';
 import { AddressFields } from './AddressFields';
 import { CityDatalist } from './fields';
 import { useUploads } from './useUploads';
-import { Checklist, ClipList, VideoButtons, VideoRules } from './VideoUploader';
+import { ClipList, VideoButtons, VideoGuide, VideoRules } from './VideoUploader';
 import { Blueprint, Corners, Spinner } from './ui';
 
 /** Funnel C, after the shared first step: from, to and video on one page, one submit. */
@@ -116,7 +116,7 @@ export function SingleForm() {
           <div className="f-head f-head-next">
             <div className="saved-line"><Check size={15} strokeWidth={2} /> {name ? `תודה ${name.split(' ')[0]}, ` : ''}שמרנו את הפרטים. נחזור אליכם בכל מקרה.</div>
             <h1>עוד דקה ומקבלים 5 הצעות מחיר אמיתיות</h1>
-            <p>ספרו לנו מאיפה ולאן עוברים וצרפו סרטון קצר, כדי שהמובילים יתנו מחיר מדויק ולא הערכה.</p>
+            <p>ספרו לנו מאיפה ולאן עוברים וצרפו סרטון של הדירה, כדי שהמובילים יתנו מחיר מדויק ולא הערכה.</p>
           </div>
           <div className="f-grid">
             <Blueprint as="section" className="f-sec">
@@ -133,9 +133,10 @@ export function SingleForm() {
               <PriorityScale value={priority} onChange={setPriority} />
             </Blueprint>
             <Blueprint as="section" className="f-sec full">
-              <h2><span className="f-num">4</span> סרטון של מה שעובר</h2>
+              <h2><span className="f-num">4</span> סרטון של הדירה</h2>
               {ref && <div style={{ marginBottom: 18 }}><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={(n) => { onRemote(n); if (n) setErrs((e) => ({ ...e, video: '' })); }} onCompleted={() => { setDone(true); window.scrollTo({ top: 0 }); }} /></div>}
               <div className="f-video">
+                <VideoGuide />
                 <div className={`drop ${errs.video ? 'invalid' : ''}`}>
                   <VideoRules />
                   <ClipList clips={up.clips} onRemove={up.remove} />
@@ -144,10 +145,6 @@ export function SingleForm() {
                     ? <div className="skip-box"><PhoneCall size={18} strokeWidth={1.5} aria-hidden /><span>אין בעיה. נחזור אליכם טלפונית כדי לקבל את הסרטון. <button type="button" className="btn-link" style={{ padding: 0, minHeight: 0 }} onClick={() => setSkipped(false)}>בעצם, אצלם עכשיו</button></span></div>
                     : !up.usable.length && !remote && <button type="button" className="btn-link" onClick={() => { setSkipped(true); setErrs((e) => ({ ...e, video: '' })); }}>אין סרטון עכשיו? דלגו ונחזור אליכם לקבלת הסרטון</button>}
                   {errs.video && <div className="field-error" role="alert">{errs.video}</div>}
-                </div>
-                <div>
-                  <div className="small" style={{ fontWeight: 700, marginBottom: 10 }}>מה חשוב לצלם</div>
-                  <Checklist />
                 </div>
               </div>
             </Blueprint>

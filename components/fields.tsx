@@ -1,7 +1,7 @@
 'use client';
 import { Check } from 'lucide-react';
 import React, { useId, useMemo, useState } from 'react';
-import { CITIES, ELEVATOR_TYPES, ElevatorType } from '@/lib/validate';
+import { CITIES, Crane, CRANE_OPTIONS, ELEVATOR_TYPES, ElevatorType, Parking, PARKING_OPTIONS } from '@/lib/validate';
 import { Corners } from './ui';
 
 type FieldProps = {
@@ -99,7 +99,7 @@ export function ElevatorTypePicker({ value, onChange, error }: { value: Elevator
       <div className={`elev-tiles ${error ? 'invalid' : ''}`}>
         {ELEVATOR_TYPES.map((t) => (
           <button key={t.v} type="button" role="radio" aria-checked={value === t.v} className={`time-tile ${value === t.v ? 'on' : ''}`} onClick={() => onChange(t.v)}>
-            <b>{value === t.v ? '✓ ' : ''}{t.label}</b><small style={{ direction: 'rtl' }}>{t.hint}</small>
+            <b>{value === t.v ? '✓ ' : ''}{t.label}</b>
           </button>
         ))}
       </div>
@@ -122,6 +122,42 @@ export function ElevatorChoice({ value, onChange, error }: { value: boolean | nu
         </div>
         {error && <div className="field-error" role="alert">{error}</div>}
       </div>
+    </div>
+  );
+}
+
+/** Can a crane be used at this address? Asked for both addresses. */
+export function CranePicker({ value, onChange, error }: { value: Crane | '' | undefined; onChange: (v: Crane) => void; error?: string }) {
+  return (
+    <div className="elev-type" role="radiogroup" aria-label="אפשר להשתמש במנוף בכתובת הזו?">
+      <div className="small" style={{ marginBottom: 4, color: 'var(--color-neutral-700)' }}>אפשר להשתמש במנוף בכתובת הזו?</div>
+      <div className="small muted" style={{ marginBottom: 8, fontSize: 13 }}>בדרך כלל יודעים מההובלה הקודמת. תלוי בעצים ובחוטי חשמל מול החלון או המרפסת.</div>
+      <div className={`elev-tiles ${error ? 'invalid' : ''}`}>
+        {CRANE_OPTIONS.map((t) => (
+          <button key={t.v} type="button" role="radio" aria-checked={value === t.v} className={`time-tile ${value === t.v ? 'on' : ''}`} onClick={() => onChange(t.v)}>
+            <b>{value === t.v ? '✓ ' : ''}{t.label}</b>
+          </button>
+        ))}
+      </div>
+      {error && <div className="field-error" role="alert">{error}</div>}
+    </div>
+  );
+}
+
+/** Distance from where the truck can park to the building entrance: one of the biggest price factors. */
+export function ParkingPicker({ value, onChange, error }: { value: Parking | '' | undefined; onChange: (v: Parking) => void; error?: string }) {
+  return (
+    <div className="elev-type" role="radiogroup" aria-label="מה המרחק מהמקום הקרוב שבו המשאית יכולה לחנות ועד הכניסה לבניין?">
+      <div className="small" style={{ marginBottom: 4, color: 'var(--color-neutral-700)' }}>מה המרחק מהמקום הקרוב שבו המשאית יכולה לחנות ועד הכניסה לבניין?</div>
+      <div className="small" style={{ marginBottom: 8, fontSize: 13, color: 'var(--color-text)' }}><b>זה משנה את המחיר מאוד:</b> משאית שעומדת 10 מטר מהכניסה זה דבר אחר לגמרי ממשאית שעומדת במרחק 100 מטר, או שאין לה איפה לעצור.</div>
+      <div className={`elev-tiles park-tiles ${error ? 'invalid' : ''}`}>
+        {PARKING_OPTIONS.map((t) => (
+          <button key={t.v} type="button" role="radio" aria-checked={value === t.v} className={`time-tile ${value === t.v ? 'on' : ''}`} onClick={() => onChange(t.v)}>
+            <b>{value === t.v ? '✓ ' : ''}{t.label}</b>
+          </button>
+        ))}
+      </div>
+      {error && <div className="field-error" role="alert">{error}</div>}
     </div>
   );
 }

@@ -14,8 +14,13 @@ type Addr = Record<string, unknown> | null | undefined;
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 const T = {
-  he: { floor: 'קומה', apt: 'דירה', elev: 'יש מעלית', stairs: 'בלי מעלית', from: 'מאיפה', to: 'לאן', items: 'רשימת פריטים', none: 'אין לך עבודות מתוכננות', hi: 'היי', sched: 'הלו״ז שלך ל', noTime: 'שעה תתואם', job: 'עבודה' },
-  ru: { floor: 'этаж', apt: 'кв.', elev: 'есть лифт', stairs: 'без лифта', from: 'Откуда', to: 'Куда', items: 'Список вещей', none: 'Нет запланированных работ на', hi: 'Привет', sched: 'Твой график на', noTime: 'время уточняется', job: 'Работа' },
+  he: { floor: 'קומה', apt: 'דירה', elev: 'יש מעלית', stairs: 'בלי מעלית', crane: 'אפשר מנוף', park: 'חניה למשאית', from: 'מאיפה', to: 'לאן', items: 'רשימת פריטים', none: 'אין לך עבודות מתוכננות', hi: 'היי', sched: 'הלו״ז שלך ל', noTime: 'שעה תתואם', job: 'עבודה' },
+  ru: { floor: 'этаж', apt: 'кв.', elev: 'есть лифт', stairs: 'без лифта', crane: 'можно кран', park: 'парковка грузовика', from: 'Откуда', to: 'Куда', items: 'Список вещей', none: 'Нет запланированных работ на', hi: 'Привет', sched: 'Твой график на', noTime: 'время уточняется', job: 'Работа' },
+};
+
+const PARK: Record<Lang, Record<string, string>> = {
+  he: { p10: 'עד 10 מ׳', p30: '10 עד 30 מ׳', p60: '30 עד 60 מ׳', p100: '60 עד 100 מ׳', far: 'מעל 100 מ׳ / אין חניה' },
+  ru: { p10: 'до 10 м', p30: '10–30 м', p60: '30–60 м', p100: '60–100 м', far: 'более 100 м / нет парковки' },
 };
 
 /** "דיזנגוף 100, תל אביב · קומה 3, דירה 7 · יש מעלית" (labels in the chosen language; street/city as the client typed them). */
@@ -25,7 +30,9 @@ export function addrLine(a: Addr, text: string, lang: Lang) {
   const place = [str(a.address), str(a.city)].filter(Boolean).join(', ');
   const fl = [str(a.floor) && `${t.floor} ${str(a.floor)}`, str(a.apartment) && `${t.apt} ${str(a.apartment)}`].filter(Boolean).join(', ');
   const el = a.elevator === true ? t.elev : a.elevator === false ? t.stairs : '';
-  return [place, fl, el].filter(Boolean).join(' · ');
+  const cr = a.crane === 'yes' ? t.crane : '';
+  const pk = PARK[lang][a.parking as string] ? `${t.park} ${PARK[lang][a.parking as string]}` : '';
+  return [place, fl, el, cr, pk].filter(Boolean).join(' · ');
 }
 
 export const hours = (j: Pick<DayJob, 'start' | 'end'>, lang: Lang) => (j.start ? `${j.start}${j.end ? `–${j.end}` : ''}` : T[lang].noTime);

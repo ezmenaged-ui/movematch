@@ -5,7 +5,7 @@ import { db, LeadRow } from '@/lib/db';
 import { tenderRef } from '@/lib/publicLead';
 import { ItemsTable } from '@/components/ItemsTable';
 import { LeadsFilter } from '@/components/LeadsFilter';
-import { elevatorText, whenText } from '@/lib/validate';
+import { craneText, elevatorText, parkingText, whenText } from '@/lib/validate';
 import { CloseCard, CopyButton } from '@/components/CopyButton';
 import { setBidHidden, setHandled } from './actions';
 
@@ -34,6 +34,8 @@ function Addr({ title, a, fallback }: { title: string; a: Record<string, unknown
           <dt>כתובת</dt><dd>{(a?.address as string) || '—'}</dd>
           <dt>קומה / דירה</dt><dd>{(a?.floor as string) || '—'} / {(a?.apartment as string) || '—'}</dd>
           <dt>מעלית</dt><dd>{elevatorText(a) || elev(a?.elevator)}</dd>
+          <dt>מנוף</dt><dd>{craneText(a) || '—'}</dd>
+          <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || '—'}</dd>
         </dl>
       )}
     </div>

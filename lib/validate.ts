@@ -2,14 +2,38 @@ export type Variant = 'a' | 'wizard' | 'form' | 'items' | 'choice';
 
 export type ElevatorType = 'small' | 'regular' | 'large';
 /** Elevator size: what movers need to know (does a sofa / fridge fit?). */
-export const ELEVATOR_TYPES: { v: ElevatorType; label: string; hint: string }[] = [
-  { v: 'small', label: 'קטנה', hint: 'עד 4 אנשים' },
-  { v: 'regular', label: 'רגילה', hint: '5–8 אנשים' },
-  { v: 'large', label: 'גדולה / משא', hint: 'נכנסת ספה או מקרר' },
+export const ELEVATOR_TYPES: { v: ElevatorType; label: string }[] = [
+  { v: 'small', label: 'קטנה' },
+  { v: 'regular', label: 'בינונית' },
+  { v: 'large', label: 'גדולה' },
 ];
 export const elevatorText = (a: { elevator?: unknown; elevator_type?: unknown } | null | undefined) =>
   a?.elevator === true ? `יש מעלית${ELEVATOR_TYPES.find((t) => t.v === a.elevator_type) ? ` (${ELEVATOR_TYPES.find((t) => t.v === a.elevator_type)!.label})` : ''}`
   : a?.elevator === false ? 'רק מדרגות' : '';
+
+/** Can a crane (מנוף) be used at this address? Clients usually know from an earlier move (trees, power lines). */
+export type Crane = 'yes' | 'no' | 'unknown';
+export const CRANE_OPTIONS: { v: Crane; label: string }[] = [
+  { v: 'yes', label: 'כן, אפשר' },
+  { v: 'no', label: 'לא' },
+  { v: 'unknown', label: 'לא יודעים' },
+];
+export const craneText = (a: { crane?: unknown } | null | undefined) =>
+  a?.crane === 'yes' ? 'אפשר מנוף' : a?.crane === 'no' ? 'אי אפשר מנוף' : a?.crane === 'unknown' ? 'מנוף: לא ידוע' : '';
+
+/** Distance from the nearest spot where the truck can park to the building entrance. Changes the price a lot. */
+export type Parking = 'p10' | 'p30' | 'p60' | 'p100' | 'far';
+export const PARKING_OPTIONS: { v: Parking; label: string }[] = [
+  { v: 'p10', label: 'עד 10 מ׳' },
+  { v: 'p30', label: '10 עד 30 מ׳' },
+  { v: 'p60', label: '30 עד 60 מ׳' },
+  { v: 'p100', label: '60 עד 100 מ׳' },
+  { v: 'far', label: 'מעל 100 מ׳ / אין חניה' },
+];
+export const parkingText = (a: { parking?: unknown } | null | undefined) => {
+  const o = PARKING_OPTIONS.find((p) => p.v === a?.parking);
+  return o ? `חניה למשאית: ${o.label}` : '';
+};
 
 export type Address = {
   city: string;
@@ -18,9 +42,11 @@ export type Address = {
   apartment: string;
   elevator: boolean | null;
   elevator_type?: ElevatorType | '';
+  crane?: Crane | '';
+  parking?: Parking | '';
 };
 
-export const emptyAddress = (): Address => ({ city: '', address: '', floor: '', apartment: '', elevator: null });
+export const emptyAddress = (): Address => ({ city: '', address: '', floor: '', apartment: '', elevator: null, crane: '', parking: '' });
 
 /** Normalise to 05XXXXXXXX. Accepts spaces, dashes, +972 / 972 prefixes. */
 export function normalizePhone(raw: string): string {
@@ -41,6 +67,8 @@ export const MSG = {
   floor: 'נא למלא קומה',
   elevator: 'נא לבחור',
   video: 'נא לצרף סרטון, או לבחור לדלג ונחזור אליכם לקבלת הסרטון',
+  crane: 'נא לבחור',
+  parking: 'נא לבחור את המרחק',
 };
 
 /** Shown when this phone number already opened a tender in the last 30 days. `until` is YYYY-MM-DD. */
@@ -56,6 +84,8 @@ export function validateAddress(a: Address): Partial<Record<keyof Address, strin
   if (!a.address.trim()) e.address = MSG.address;
   if (!a.floor.trim()) e.floor = MSG.floor;
   if (a.elevator === true && !a.elevator_type) e.elevator_type = 'נא לבחור את גודל המעלית';
+  if (!a.crane) e.crane = MSG.crane;
+  if (!a.parking) e.parking = MSG.parking;
   return e;
 }
 
