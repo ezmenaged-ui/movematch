@@ -12,7 +12,7 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 2 | A · art | `/a/art` | none | Same as A, illustrated design. |
 | 3 | B · photo | `/b/photo` | `/b/steps` | Step-by-step wizard: from → to → when → items (picked from the room list, or added by the client). No video. |
 | 4 | B · art | `/b/art` | `/b/steps` | Same as B, illustrated design. |
-| 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video (**required**, no skip; no item list). |
+| 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video (can be skipped: "we'll call you for the video"; no item list). |
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
 | 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
