@@ -2,6 +2,7 @@
 import { Check, Clock, Copy, Upload, Video, X } from 'lucide-react';
 import { useRef } from 'react';
 import { fmtDuration, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS_TOLERANCE } from '@/lib/client';
+import '@/app/items.css';
 
 export type Clip = {
   key: string; file: File; name: string; size: number; duration: number | null;
@@ -22,6 +23,27 @@ export function Checklist() {
         <li key={b}><span className="n">{String(i + 1).padStart(2, '0')}</span><span><b>{b}</b>{t && (b === 'כל הפריטים' ? ' ' : ': ')}{t}</span></li>
       ))}
     </ol>
+  );
+}
+
+/**
+ * How to film the apartment, shown on every video step (C, D, E and the phone upload page /u).
+ * Why it matters: a clear, full video is what keeps the price, the work and the insurance aligned with the movers.
+ */
+export function VideoGuide({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="vid-guide vid-guide-full" role="note">
+      <p className="vid-why"><b>סרטון ברור ומפורט הוא החלק הכי חשוב בבקשה.</b> לפיו המובילים יודעים בדיוק מה מובילים, מה מפרקים ומה מרכיבים, וכמה זה עולה. ככה אין הפתעות במחיר ואין אי־נעימויות ביום ההובלה. עדיף סרטון ארוך וברור מאשר קצר וחלקי.</p>
+      <b>איך מצלמים</b>
+      <ol>
+        <li><b>מתחילים מהכניסה לבית,</b> ואם אפשר גם מהכניסה לבניין.</li>
+        <li><b>עוברים חדר אחרי חדר, פריט אחרי פריט,</b> לאט ובלי לדלג.</li>
+        <li><b>אומרים בקול על כל פריט:</b> האם הוא עובר, האם צריך לפרק אותו, האם צריך להרכיב אותו מחדש בבית החדש, ומה אסור לפרק.</li>
+        <li><b>מצלמים את כל המסדרונות, הדלתות והפתחים</b> בין החדרים, כדי שהמובילים יראו אם משהו יתקשה לצאת מחדר או להיכנס אליו.</li>
+      </ol>
+      {!compact && <p className="vid-for-you"><b>זה לטובתכם:</b> סרטון טוב מבטיח שלא יהיו הפתעות במחיר, שההובלה תיעשה נכון, ושהחפצים שלכם יבוטחו כמו שצריך.</p>}
+      <small>כל סרטון עד 4 דקות. אפשר להעלות כמה סרטונים, למשל אחד לכל חדר.</small>
+    </div>
   );
 }
 

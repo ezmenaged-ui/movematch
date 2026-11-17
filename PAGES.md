@@ -12,16 +12,20 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 2 | A · art | `/a/art` | none | Same as A, illustrated design. |
 | 3 | B · photo | `/b/photo` | `/b/steps` | Step-by-step wizard: from → to → when → items (picked from the room list, or added by the client). No video. |
 | 4 | B · art | `/b/art` | `/b/steps` | Same as B, illustrated design. |
-| 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video. |
+| 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video (**required**, no skip; no item list). |
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
-| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard and item list as B, plus a video step (optional). |
+| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
-| 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. No ₪50 offer. |
+| 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
 **Homepage `/`** shows **D · photo** (same page as `/d/photo`).
 
-Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`).
+Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`). Every video step shows the same filming guide (`VideoGuide` in `components/VideoUploader.tsx`).
+
+**₪50 discount** = the client sent both a video of the apartment and the full item list (`/terms` §11, `/movers/terms` §5). Mover lead pages show a note when a lead qualifies.
+
+**Every address (from and to)** asks: floor, apartment, elevator (yes / stairs only, then size: small / medium / large), **crane possible?** (yes / no / don't know) and **distance from truck parking to the entrance** (up to 10 m, 10–30, 30–60, 60–100, over 100 m / no parking). Stored in `move_from` / `move_to` as `crane` and `parking`.
 
 Short addresses forward automatically, and tracking parameters (`?utm_…`) are kept:
 `/a` → `/a/photo` · `/b` → `/b/photo` · `/c` → `/c/photo` · `/d` → `/d/photo` · `/e` → `/e/photo` · old `/wizard` → `/b/photo` · old `/form` → `/c/photo`.

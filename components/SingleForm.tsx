@@ -1,5 +1,5 @@
 'use client';
-import { Check, PhoneCall } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { funnelParams, LeadRef, track, trackStep, updateLead } from '@/lib/client';
@@ -12,7 +12,7 @@ import { QrHandoff } from './QrHandoff';
 import { AddressFields } from './AddressFields';
 import { CityDatalist } from './fields';
 import { useUploads } from './useUploads';
-import { Checklist, ClipList, VideoButtons, VideoRules } from './VideoUploader';
+import { ClipList, VideoButtons, VideoGuide, VideoRules } from './VideoUploader';
 import { Blueprint, Corners, Spinner } from './ui';
 
 /** Funnel C, after the shared first step: from, to and video on one page, one submit. */
@@ -27,7 +27,6 @@ export function SingleForm() {
   const [priority, setPriority] = useState(3);
   const [remote, setRemote] = useState(0);
   const onRemote = useCallback((n: number) => setRemote(n), []);
-  const [skipped, setSkipped] = useState(false);
   const [errs, setErrs] = useState<{ from?: Partial<Record<keyof Address, string>>; to?: Partial<Record<keyof Address, string>>; when?: string; video?: string }>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -65,7 +64,7 @@ export function SingleForm() {
     const w = validateWhen(when);
     if (w.date) er.when = w.date;
     const hasVideo = up.usable.length > 0 || remote > 0;
-    if (!hasVideo && !skipped) er.video = MSG.video;
+    if (!hasVideo) er.video = MSG.video;
     setErrs(er);
     if (Object.keys(er).length) {
       track('form_error', { ...funnelParams('c', theme), fields: Object.keys(er).join(',') });
@@ -80,7 +79,7 @@ export function SingleForm() {
     setBusy(true);
     try {
       await updateLead(ref, {
-        status: 'complete', furthest_step: 5, video_skipped: skipped && !hasVideo, move_when: when, priority,
+        status: 'complete', furthest_step: 5, video_skipped: false, move_when: when, priority,
         move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
       });
       track('lead_complete', funnelParams('c', theme));
@@ -101,7 +100,7 @@ export function SingleForm() {
           <Blueprint className="wiz-card done-wrap">
             <span className="done-icon blueprint"><Corners /><Check size={28} strokeWidth={1.5} /></span>
             <h2 style={{ marginBottom: 14 }}>קיבלנו. ההצעות בדרך.</h2>
-            <p className="muted">{skipped && !up.usable.length && !remote ? 'נחזור אליכם בקרוב כדי לקבל את הסרטון, ואז נשלח אותו למובילים מדורגים באזור שלכם.' : 'שלחנו את הסרטון למובילים מדורגים באזור שלכם.'} ההצעות יגיעו אליכם לטלפון.</p>
+            <p className="muted">שלחנו את הסרטון למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.</p>
             {uploading && <><p className="small" style={{ color: 'var(--color-accent-700)' }}>הסרטונים עדיין עולים. השאירו את הדף פתוח עד שההעלאה תסתיים.</p><ClipList clips={up.clips} onRemove={up.remove} /></>}
           </Blueprint>
         </div>
@@ -116,7 +115,7 @@ export function SingleForm() {
           <div className="f-head f-head-next">
             <div className="saved-line"><Check size={15} strokeWidth={2} /> {name ? `תודה ${name.split(' ')[0]}, ` : ''}שמרנו את הפרטים. נחזור אליכם בכל מקרה.</div>
             <h1>עוד דקה ומקבלים 5 הצעות מחיר אמיתיות</h1>
-            <p>ספרו לנו מאיפה ולאן עוברים וצרפו סרטון קצר, כדי שהמובילים יתנו מחיר מדויק ולא הערכה.</p>
+            <p>ספרו לנו מאיפה ולאן עוברים וצרפו סרטון של הדירה, כדי שהמובילים יתנו מחיר מדויק ולא הערכה.</p>
           </div>
           <div className="f-grid">
             <Blueprint as="section" className="f-sec">
@@ -133,21 +132,15 @@ export function SingleForm() {
               <PriorityScale value={priority} onChange={setPriority} />
             </Blueprint>
             <Blueprint as="section" className="f-sec full">
-              <h2><span className="f-num">4</span> סרטון של מה שעובר</h2>
+              <h2><span className="f-num">4</span> סרטון של הדירה <span className="small muted">(חובה)</span></h2>
               {ref && <div style={{ marginBottom: 18 }}><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={(n) => { onRemote(n); if (n) setErrs((e) => ({ ...e, video: '' })); }} onCompleted={() => { setDone(true); window.scrollTo({ top: 0 }); }} /></div>}
               <div className="f-video">
+                <VideoGuide />
                 <div className={`drop ${errs.video ? 'invalid' : ''}`}>
                   <VideoRules />
                   <ClipList clips={up.clips} onRemove={up.remove} />
-                  {!(skipped && !up.usable.length) && <VideoButtons onFiles={(f) => { up.add(f); setSkipped(false); setErrs((e) => ({ ...e, video: '' })); }} compact more={up.usable.length > 0} />}
-                  {skipped && !up.usable.length && !remote
-                    ? <div className="skip-box"><PhoneCall size={18} strokeWidth={1.5} aria-hidden /><span>אין בעיה. נחזור אליכם טלפונית כדי לקבל את הסרטון. <button type="button" className="btn-link" style={{ padding: 0, minHeight: 0 }} onClick={() => setSkipped(false)}>בעצם, אצלם עכשיו</button></span></div>
-                    : !up.usable.length && !remote && <button type="button" className="btn-link" onClick={() => { setSkipped(true); setErrs((e) => ({ ...e, video: '' })); }}>אין סרטון עכשיו? דלגו ונחזור אליכם לקבלת הסרטון</button>}
+                  <VideoButtons onFiles={(f) => { up.add(f); setErrs((e) => ({ ...e, video: '' })); }} compact more={up.usable.length > 0} />
                   {errs.video && <div className="field-error" role="alert">{errs.video}</div>}
-                </div>
-                <div>
-                  <div className="small" style={{ fontWeight: 700, marginBottom: 10 }}>מה חשוב לצלם</div>
-                  <Checklist />
                 </div>
               </div>
             </Blueprint>

@@ -51,7 +51,7 @@ export default async function TenderPage({ params }: { params: Promise<{ code: s
 
         {canResume && (
           <div className="tp-resume">
-            <div><b>נשאר צעד אחד כדי לקבל הצעות מדויקות</b><span>השלמת הכתובות, התאריך וסרטון קצר עוזרת למובילים לתת מחיר סופי.</span></div>
+            <div><b>נשאר צעד אחד כדי לקבל הצעות מדויקות</b><span>השלמת הכתובות, התאריך וסרטון של הדירה עוזרת למובילים לתת מחיר סופי.</span></div>
             <Link href={`/t/${code}/continue`} className="lp-btn">השלמת פרטים <ChevronLeft size={20} /></Link>
           </div>
         )}

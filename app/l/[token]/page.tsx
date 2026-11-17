@@ -4,7 +4,7 @@ import { BidForm } from '@/components/BidForm';
 import { ItemsTable } from '@/components/ItemsTable';
 import { Countdown } from '@/components/Countdown';
 import '@/app/tender.css';
-import { elevatorText, whenText } from '@/lib/validate';
+import { craneText, elevatorText, parkingText, whenText } from '@/lib/validate';
 import { getPublicLead, tenderRef } from '@/lib/publicLead';
 import { db } from '@/lib/db';
 import { MoverLogo } from '@/components/MoverLogo';
@@ -37,6 +37,8 @@ function AddressCard({ title, a, fallbackCity }: { title: string; a: A; fallback
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}</dd>
           <dt>דירה</dt><dd>{s(a?.apartment) || '—'}</dd>
           <dt>מעלית</dt><dd><Elevator v={a?.elevator} />{a?.elevator === true && elevatorText(a).includes('(') ? <span className="muted"> · {elevatorText(a).replace('יש מעלית ', '').replace(/[()]/g, '')}</span> : null}</dd>
+          <dt>מנוף</dt><dd>{craneText(a) || <span className="muted">לא צוין</span>}</dd>
+          <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || <span className="muted">לא צוין</span>}</dd>
         </dl>
       )}
     </Blueprint>
@@ -93,6 +95,7 @@ export default async function MoverLead({ params, searchParams }: { params: Prom
             <p className="small muted" style={{ margin: '10px 0 0' }}>הפרטים נמסרים לצורך הצעת מחיר ותיאום ההובלה הזו בלבד.</p>
           </Blueprint>
         )}
+        {lead.items?.list?.length && lead.videos.length > 0 ? <p className="ml-card" style={{ margin: 0 }}>🎁 הלקוח צירף גם סרטון וגם רשימת פריטים. אם יזמין אותך דרך MoveMatch, הוא זכאי ל-50 ₪ הנחה מהמחיר הסופי (סעיף 5 בהסכם המובילים).</p> : null}
         {lead.items?.list?.length ? (
           <Blueprint as="section" className="ml-card">
             <h2>רשימת הפריטים</h2>

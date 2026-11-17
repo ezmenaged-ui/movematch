@@ -8,7 +8,7 @@ import { ItemsTable } from '@/components/ItemsTable';
 import { MoverLogo } from '@/components/MoverLogo';
 import { BID_STATE_LABEL, bidState, moverDb, requireMe, tabOf, type MoverLeadFull } from '@/lib/mover';
 import { dayHe, hhmm, nis, routeText, stamp } from '@/lib/moverFormat';
-import { elevatorText, whenText } from '@/lib/validate';
+import { craneText, elevatorText, parkingText, whenText } from '@/lib/validate';
 import { tenderRef } from '@/lib/publicLead';
 import type { Crew } from '@/lib/crew';
 import { bookJob, setJobDone, unbookJob } from '../../actions';
@@ -38,6 +38,8 @@ function Stop({ title, a, fallbackCity }: { title: string; a: A; fallbackCity?: 
           <dt>כתובת</dt><dd>{s(a?.address) || '—'}</dd>
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}{s(a?.apartment) ? ` · דירה ${s(a?.apartment)}` : ''}</dd>
           <dt>מעלית</dt><dd>{a?.elevator === true ? <><Check size={14} /> {elevatorText(a)}</> : a?.elevator === false ? <><X size={14} /> רק מדרגות</> : 'לא צוין'}</dd>
+          <dt>מנוף</dt><dd>{craneText(a) || 'לא צוין'}</dd>
+          <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || 'לא צוין'}</dd>
         </dl>
       )}
     </div>
@@ -104,6 +106,7 @@ export default async function MoverLeadPage({ params, searchParams }: { params: 
         <p className="mv-meta" style={{ margin: '10px 0 0' }}>הפרטים נמסרים לצורך הצעת מחיר ותיאום ההובלה הזו בלבד.</p>
       </div>
 
+      {l.items?.list?.length && l.videos.length > 0 ? <p className="mv-card" style={{ margin: 0 }}>🎁 הלקוח צירף גם סרטון וגם רשימת פריטים. אם יזמין אותך דרך MoveMatch, הוא זכאי ל-50 ₪ הנחה מהמחיר הסופי (סעיף 5 בהסכם המובילים).</p> : null}
       {l.items?.list?.length ? <div className="mv-card"><h2>רשימת הפריטים</h2><ItemsTable items={l.items} /></div> : null}
 
       <div className="mv-card">

@@ -9,6 +9,8 @@ function addr(v: unknown) {
     city: s(a.city, 80) || '', address: s(a.address, 200) || '', floor: s(a.floor, 10) || '',
     apartment: s(a.apartment, 10) || '', elevator: typeof a.elevator === 'boolean' ? a.elevator : null,
     elevator_type: a.elevator === true && ['small', 'regular', 'large'].includes(a.elevator_type as string) ? a.elevator_type : '',
+    crane: ['yes', 'no', 'unknown'].includes(a.crane as string) ? a.crane : '',
+    parking: ['p10', 'p30', 'p60', 'p100', 'far'].includes(a.parking as string) ? a.parking : '',
   };
 }
 

@@ -609,6 +609,8 @@ a.mv-rating:hover .mv-src { text-decoration: underline; }
 .elev-type { margin-top: 12px; }
 .elev-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .elev-tiles.invalid .time-tile { border-color: var(--color-error); }
+.park-tiles { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+@media (max-width: 640px) { .park-tiles { grid-template-columns: repeat(2, 1fr); } .park-tiles .time-tile:last-child { grid-column: 1 / -1; } }
 /* Wizard progress: steps already reached are clickable to go back and edit */
 .progress-labeled .item-btn { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--color-accent); cursor: pointer; padding-bottom: 6px; min-height: 26px; border-radius: 4px; }
 .progress-labeled .item-btn:hover b span, .progress-labeled .item-btn:focus-visible b span { text-decoration: underline; text-underline-offset: 3px; }
