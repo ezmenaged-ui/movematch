@@ -2,6 +2,7 @@ import 'server-only';
 import type { LeadRow } from './db';
 import { elevatorText, whenText } from './validate';
 import { itemsSummary } from './items';
+import { logPaused, messagesPaused } from './pause';
 
 /**
  * Operator notifications. Every channel is optional and switches on when its
@@ -66,6 +67,7 @@ export async function notifyLead(event: LeadEvent, lead: LeadRow) {
 /** Send one message on every configured channel. */
 export async function sendAll(subject: string, text: string, payload: Record<string, unknown> = {}) {
   const env = process.env;
+  if (messagesPaused()) return logPaused(`notification "${subject}"`);
   const jobs: Promise<void>[] = [];
 
   if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) jobs.push(safe('gmail', async () => {
@@ -123,6 +125,7 @@ export async function sendAll(subject: string, text: string, payload: Record<str
 /** Email only (Gmail, else Resend) — for operator alerts that shouldn't go to every channel. */
 export async function sendEmail(subject: string, text: string) {
   const env = process.env;
+  if (messagesPaused()) return logPaused(`email "${subject}"`);
   if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) {
     const nodemailer = (await import('nodemailer')).default;
     const t = nodemailer.createTransport({ service: 'gmail', auth: { user: env.GMAIL_USER, pass: env.GMAIL_APP_PASSWORD } });

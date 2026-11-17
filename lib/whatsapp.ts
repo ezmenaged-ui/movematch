@@ -1,5 +1,6 @@
 import 'server-only';
 import TEMPLATES from './wa-templates.json';
+import { logPaused, messagesPaused } from './pause';
 
 /**
  * WhatsApp via Twilio.
@@ -22,7 +23,7 @@ const authPair = () => {
   return '';
 };
 
-export const waEnabled = () => !!(process.env.TWILIO_ACCOUNT_SID && authPair() && process.env.TWILIO_WHATSAPP_FROM);
+export const waEnabled = () => !messagesPaused() && !!(process.env.TWILIO_ACCOUNT_SID && authPair() && process.env.TWILIO_WHATSAPP_FROM);
 
 /** 05XXXXXXXX / 9725XXXXXXXX / +9725… → +9725XXXXXXXX */
 export function toE164(phone: string) {
@@ -41,6 +42,7 @@ export function fillTemplate(key: TemplateKey, vars: unknown[]) {
 /** Send one templated WhatsApp. Returns the Twilio message SID; throws on failure. */
 export async function sendWhatsApp(to: string, key: TemplateKey, vars: unknown[], opts: { statusCallback?: string } = {}) {
   const env = process.env;
+  if (messagesPaused()) { logPaused(`WhatsApp to ${toE164(to)}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   if (!waEnabled()) throw new Error('twilio not configured');
   await throttle(to, key);
   const form = new URLSearchParams({ From: `whatsapp:${toE164(env.TWILIO_WHATSAPP_FROM!)}`, To: `whatsapp:${toE164(to)}` });
@@ -57,6 +59,7 @@ export async function sendWhatsApp(to: string, key: TemplateKey, vars: unknown[]
 
 /** Free-form text: only delivered inside the 24h window after that person last wrote to us. */
 export async function sendWhatsAppText(to: string, body: string) {
+  if (messagesPaused()) { logPaused(`WhatsApp to ${toE164(to)}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   if (!waEnabled()) throw new Error('twilio not configured');
   await throttle(to, 'text');
   const form = new URLSearchParams({ From: `whatsapp:${toE164(process.env.TWILIO_WHATSAPP_FROM!)}`, To: `whatsapp:${toE164(to)}`, Body: body.slice(0, 1500) });
@@ -78,6 +81,7 @@ async function throttle(to: string, kind: string) {
 
 export async function twilioPost(form: URLSearchParams) {
   const env = process.env;
+  if (messagesPaused()) { logPaused(`Twilio message to ${form.get('To')}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`, {
     method: 'POST',
     headers: { Authorization: 'Basic ' + Buffer.from(authPair()).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -99,12 +103,13 @@ export async function trySendWhatsApp(label: string, to: string, key: TemplateKe
  * or a Twilio number. Hebrew SMS are billed per 70-character segment, so keep texts short.
  */
 export async function sendSms(to: string, body: string) {
+  if (messagesPaused()) { logPaused(`SMS to ${toE164(to)}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   if (!(process.env.TWILIO_ACCOUNT_SID && authPair())) throw new Error('twilio not configured');
   const from = process.env.TWILIO_SMS_FROM || 'MoveMatch';
   return twilioPost(new URLSearchParams({ From: from, To: toE164(to), Body: body }));
 }
 
-export const smsEnabled = () => !!(process.env.TWILIO_ACCOUNT_SID && authPair()) && process.env.SMS_ENABLED !== '0';
+export const smsEnabled = () => !messagesPaused() && !!(process.env.TWILIO_ACCOUNT_SID && authPair()) && process.env.SMS_ENABLED !== '0';
 
 export async function trySendSms(label: string, to: string, body: string) {
   if (!smsEnabled() || !to) return false;
