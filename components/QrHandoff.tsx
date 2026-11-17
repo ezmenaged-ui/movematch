@@ -8,7 +8,9 @@ import type { LeadRef } from '@/lib/client';
  *  plus a live count of videos that arrived from the phone. */
 /** `ownCount`: videos this page already uploaded itself. The lead's video count includes them, so they are subtracted:
  *  only videos that really came from the phone count as "from the phone". */
-export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0 }: { leadRef: LeadRef; onRemoteCount: (n: number) => void; onCompleted?: () => void; ownCount?: number }) {
+/** `returnToDesktop`: the video is not the last step (funnel D: the item list comes after it). The phone then only films,
+ *  and tells the client to come back to the computer to continue, instead of offering to finish there. */
+export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0, returnToDesktop = false }: { leadRef: LeadRef; onRemoteCount: (n: number) => void; onCompleted?: () => void; ownCount?: number; returnToDesktop?: boolean }) {
   const [svg, setSvg] = useState('');
   const [total, setTotal] = useState(0);
   const count = Math.max(0, total - ownCount);
@@ -19,9 +21,9 @@ export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0 }:
   const { id, token } = leadRef;
 
   useEffect(() => {
-    const url = `${window.location.origin}/u/${id}?k=${token}`;
+    const url = `${window.location.origin}/u/${id}?k=${token}${returnToDesktop ? '&b=1' : ''}`;
     QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#1d2d3d', light: '#ffffff' } }).then(setSvg).catch(() => {});
-  }, [id, token]);
+  }, [id, token, returnToDesktop]);
 
   useEffect(() => {
     let stop = false;
@@ -43,9 +45,9 @@ export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0 }:
       <div className="qr-box" role="img" aria-label="קוד QR לצילום בטלפון" dangerouslySetInnerHTML={{ __html: svg }} />
       <div className="qr-text">
         <b><Smartphone size={18} strokeWidth={1.5} aria-hidden /> נוח יותר לצלם בטלפון?</b>
-        <span>סרקו את הקוד עם מצלמת הטלפון וצלמו שם. אפשר לסיים בטלפון, או לחזור לכאן ולשלוח מהמחשב.</span>
+        <span>{returnToDesktop ? 'סרקו את הקוד עם מצלמת הטלפון וצלמו שם. אחרי הצילום חזרו לכאן, למחשב, כדי להמשיך.' : 'סרקו את הקוד עם מצלמת הטלפון וצלמו שם. אפשר לסיים בטלפון, או לחזור לכאן ולשלוח מהמחשב.'}</span>
         {count > 0
-          ? <span className="qr-got">✓ {count === 1 ? 'התקבל סרטון אחד' : `התקבלו ${count} סרטונים`}. אפשר לשלוח.</span>
+          ? <span className="qr-got">✓ {count === 1 ? 'התקבל סרטון אחד' : `התקבלו ${count} סרטונים`}. {returnToDesktop ? 'לחצו "המשך" למטה.' : 'אפשר לשלוח.'}</span>
           : <span className="qr-wait"><i className="qr-dot" /> ממתינים לסרטונים מהטלפון…</span>}
       </div>
     </div>

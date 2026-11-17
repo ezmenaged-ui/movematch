@@ -343,7 +343,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                   <p className="lead-sub">חובה. לפי הסרטון המובילים נותנים מחיר מדויק, ולא הערכה.</p>
                   <div className="stack">
                     <VideoGuide />
-                    {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
+                    {ref && <div className="qr-compact"><QrHandoff leadRef={ref} returnToDesktop ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
                     {up.usable.length > 0 && up.totalDuration > 0 && (
                       <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
                         <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00 מומלצות</span>

@@ -10,7 +10,7 @@ type Status = { count: number; status: 'partial' | 'complete'; ready: boolean };
 
 /** Opened by scanning the QR code on the desktop. Films/uploads straight into the same lead,
  *  and can finish the whole request from the phone (the desktop follows along). */
-export function PhoneUpload({ id, token, tender }: { id: string; token: string; tender?: string }) {
+export function PhoneUpload({ id, token, tender, backToDesktop = false }: { id: string; token: string; tender?: string; backToDesktop?: boolean }) {
   const up = useUploads();
   const [st, setSt] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
@@ -98,7 +98,13 @@ export function PhoneUpload({ id, token, tender }: { id: string; token: string; 
           <h2>צלמו סרטון של הדירה</h2>
           <div className="stack">
             {total > 0 && !uploading && (
-              st?.ready ? (
+              backToDesktop ? (
+                <div className="phone-finish" role="status">
+                  <span className="done-icon blueprint" style={{ margin: '0 auto', width: 52, height: 52 }}><Corners /><Monitor size={24} strokeWidth={1.5} /></span>
+                  <p style={{ margin: 0, fontSize: 20, textAlign: 'center' }}><b>{total === 1 ? 'הסרטון הגיע.' : `${total} סרטונים הגיעו.`} עכשיו חזרו למחשב</b></p>
+                  <p className="muted" style={{ margin: 0, textAlign: 'center' }}>במחשב לחצו &quot;המשך&quot; כדי להשלים את הבקשה. אפשר גם להוסיף כאן עוד סרטונים לפני כן.</p>
+                </div>
+              ) : st?.ready ? (
                 <div className="phone-finish">
                   <p style={{ margin: 0 }}><b>{total === 1 ? 'הסרטון הגיע.' : `${total} סרטונים הגיעו.`}</b> אפשר לסיים כאן, או לחזור למחשב ולשלוח משם.</p>
                   <button type="button" className="btn btn-primary btn-xl blueprint" onClick={finish} disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} שלחו לי 5 הצעות</button>
