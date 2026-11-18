@@ -6,7 +6,15 @@ const MOVER_PUBLIC = ['/movers/login', '/movers/forgot', '/movers/reset', '/move
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  // /QA, /Qa/... → /qa/... (the test area is lowercase; the owner shares it as /QA).
+  if (/^\/qa(\/|$)/i.test(path) && !path.startsWith('/qa')) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/qa' + path.slice(3);
+    return NextResponse.redirect(url);
+  }
   if (path.startsWith('/movers')) return moverGate(req, path);
+  // Only /admin is password-protected. The matcher is case-insensitive, so /qa also reaches here: let it through.
+  if (!path.startsWith('/admin')) return NextResponse.next();
 
   /** /admin requires the admin cookie (set once by /login, remembered for 180 days). */
   if (process.env.ADMIN_PASSWORD && req.cookies.get(ADMIN_COOKIE)?.value === (await adminToken())) {
@@ -43,4 +51,4 @@ async function moverGate(req: NextRequest, path: string) {
   return res;
 }
 
-export const config = { matcher: ['/admin/:path*', '/movers', '/movers/:path*'] };
+export const config = { matcher: ['/admin/:path*', '/movers', '/movers/:path*', '/QA', '/QA/:path*', '/Qa', '/Qa/:path*', '/qA', '/qA/:path*'] };

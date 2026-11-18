@@ -5,7 +5,7 @@ import { tenderRef } from './publicLead';
 import { elevatorText, whenText } from './validate';
 import { hasTemplate, sendWhatsApp, trySendSms, trySendWhatsApp, waEnabled, type TemplateKey } from './whatsapp';
 import { moverAlertSms, operatorAlertSms } from './alertSms';
-import { isTestLead } from './qa';
+import { isHomeHeld, isQaEntry, isTestLead } from './qa';
 import { areasOfCity, type Area } from './areas';
 
 type Addr = Record<string, unknown> | null | undefined;
@@ -35,8 +35,8 @@ function moveDetails(l: LeadRow) {
  * WhatsApp with an SMS backup: if Twilio refuses the WhatsApp now, SMS right away; if WhatsApp later reports it
  * couldn't deliver (e.g. sender disabled by Meta), /api/twilio/status sends the SMS then. Returns true if either went out.
  */
-export async function alertWithSmsBackup(label: string, to: string, key: TemplateKey, vars: unknown[], callback: Record<string, string>, sms: string, opts: { test?: boolean } = {}) {
-  if (!to) return false;
+export async function alertWithSmsBackup(label: string, to: string, key: TemplateKey, vars: unknown[], callback: Record<string, string>, sms: string, opts: { test?: boolean; silent?: boolean } = {}) {
+  if (!to || opts.silent) return false; // silent = /qa test area: no WhatsApp or SMS
   if (waEnabled() && !opts.test) { // test leads: SMS only, never WhatsApp
     try {
       await sendWhatsApp(to, key, vars, { statusCallback: `${siteUrl()}/api/twilio/status?${new URLSearchParams(callback)}` });
@@ -74,7 +74,11 @@ export async function onLeadComplete(l: LeadRow, opts: { pingMovers: boolean }) 
   let moversSent = 0;
   let routeNote = '';
 
-  if (opts.pingMovers) {
+  if (opts.pingMovers && isHomeHeld(l) && !isTestLead(l)) {
+    // Homepage while it is the owner's test area: no mover is alerted; the operator forwards real leads by hand.
+    console.warn(`[home] homepage lead ${tenderRef(l)}: not sent to movers (homepage is the test area until HOME_LEADS_LIVE=1)`);
+    routeNote = 'דף הבית: לא נשלח למובילים, להעביר ידנית';
+  } else if (opts.pingMovers) {
     const { data, error } = await db().rpc('mm_claim_mover_ping', { p_secret: secret(), p_id: l.id });
     if (error) console.error('[automations] claim movers', error);
     const active = (data || []) as { id: string; name: string; company_name: string; phone: string; token: string }[];
@@ -99,7 +103,7 @@ export async function onLeadComplete(l: LeadRow, opts: { pingMovers: boolean }) 
     alertWithSmsBackup('op-lead', operator(), 'op_lead', [
       `${l.name} · מכרז ${tenderRef(l)}`, l.phone, routeOf(l), when, String(l.videos?.length || 0) + (l.video_skipped ? ' (דילג, להתקשר)' : ''),
       opts.pingMovers ? `${moversSent}${routeNote ? ` (${routeNote})` : ''}` : '0 (משפך A, להתקשר ללקוח)', `${site}/admin`,
-    ], { kind: 'op_lead', lead: l.id }, operatorAlertSms(l, site), { test: isTestLead(l) }),
+    ], { kind: 'op_lead', lead: l.id }, operatorAlertSms(l, site), { test: isTestLead(l), silent: isQaEntry(l) }),
     notifyLead('complete', l),
   ]);
 }

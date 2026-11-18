@@ -44,6 +44,9 @@ export type LeadRow = {
   client_token?: string;
   tender_no: number | null;
   client_code: string | null;
+  /** 'home' = homepage while it is the test area, 'qa' = /qa test area, null = live funnel (migration 023). */
+  entry?: 'home' | 'qa' | null;
+  is_test?: boolean;
 };
 
 /** The DB refuses a phone number that opened a tender in the last 30 days (see migration 007). */

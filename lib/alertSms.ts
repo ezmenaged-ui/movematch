@@ -11,4 +11,4 @@ export const moverAlertSms = (l: LeadRow, m: { token: string }, site: string) =>
   [`MoveMatch: מכרז הובלה חדש ${tenderRef(l)}`, `${route(l)}${when(l) ? ` · ${when(l)}` : ''}`, `לפרטים ולהגשת הצעה: ${site}/l/${l.share_token}?m=${m.token}`].join('\n');
 
 export const operatorAlertSms = (l: LeadRow, site: string) =>
-  [`MoveMatch: ליד מלא ${tenderRef(l)}`, `${l.name} · ${l.phone}`, l.variant === 'a' ? `${l.city || '?'} · להתקשר ללקוח` : route(l), `${site}/admin`].join('\n');
+  [`MoveMatch: ליד מלא ${tenderRef(l)}${l.entry === 'home' ? ' (דף הבית, לא נשלח למובילים)' : ''}`, `${l.name} · ${l.phone}`, l.variant === 'a' ? `${l.city || '?'} · להתקשר ללקוח` : route(l), `${site}/admin`].join('\n');
