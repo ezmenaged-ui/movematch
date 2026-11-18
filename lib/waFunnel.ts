@@ -90,6 +90,7 @@ const OPENER: Record<Side, string> = {
 const WHEN_Q = '*מתי ההובלה?*\nאפשר תאריך (למשל 15/12), "סוף החודש" או "גמיש". אם יש העדפה לבוקר / צהריים / אחה״צ, כתבו גם.';
 const VIDEO_Q = '*כמעט סיימנו 🎥*\nצלמו סרטון קצר שעובר על כל החדרים (עד 3 דקות, עם ארונות פתוחים) ושלחו אותו כאן.\nכך המובילים נותנים מחיר מדויק בלי לבוא לראות את הדירה.';
 const NAME_Q = 'ועל איזה שם לרשום את הבקשה?';
+const TIME_Q = 'באיזה חלק של היום מתאים להתחיל? בוקר (7–11), צהריים (11–15), אחר הצהריים (15–19), או "לא משנה".';
 const LABEL: Record<AddrField, string> = { city: 'city', address: 'street and house number', floor: 'floor', elevator: 'elevator (and its size)', elevator_type: 'elevator size', crane: 'crane', parking: 'truck parking distance' };
 
 function missing(a: Partial<Address> | undefined): AddrField | null {
@@ -105,13 +106,14 @@ function missing(a: Partial<Address> | undefined): AddrField | null {
 
 // Closed questions are sent with tap buttons / a pick-list (Twilio Content, session-only: no Meta approval needed).
 // Created in Twilio on 18 Nov 2026 (friendly names mm_chat_*); the button ids come back as ButtonPayload / ListId.
-const BUTTONS: Partial<Record<AddrField, { sid: string; text: string }>> = {
+const BUTTONS: Partial<Record<AddrField | 'time', { sid: string; text: string }>> = {
   elevator: { sid: 'HXfddbc2c06c6da654f9b404874f5f7b86', text: 'יש מעלית בבניין?' },             // elev_yes / elev_no
   elevator_type: { sid: 'HXa5251204d878ae4fdbcdc72b7944d91a', text: 'מה גודל המעלית?' },           // size_small / size_regular / size_large
   crane: { sid: 'HX78c49363103cab8d4ac28c24e17d40d3', text: 'אפשר להשתמש במנוף בכתובת הזו?' },   // crane_yes / crane_no / crane_unknown
   parking: { sid: 'HXf73d12558cf6fb8f54fbf9550a2b723c', text: 'כמה רחוק המשאית יכולה לחנות מהכניסה לבניין? לחצו על "בחירת מרחק".' }, // park_p10 … park_far
+  time: { sid: 'HX4e8edb220bf99e3a8308861c8f943be1', text: 'באיזה חלק של היום מתאים להתחיל? לחצו על "בחירת שעה".' }, // time_morning / time_noon / time_afternoon / time_any
 };
-const buttonsFor = (ask: string | undefined) => BUTTONS[(ask || '').split('.')[1] as AddrField];
+const buttonsFor = (ask: string | undefined) => BUTTONS[(ask || '').split('.')[1] as AddrField | 'time'];
 
 /** Send the question the bot is waiting for, after an optional prefix (buttons when the question has them). */
 async function sayQuestion(digits: string, prefix: string, ask: string | undefined) {
@@ -129,10 +131,47 @@ function buttonAnswer(payload: string): Partial<Address> | null {
   if (k === 'park' && PARKING_OPTIONS.some((o) => o.v === v)) return { parking: v as Address['parking'] };
   return null;
 }
+const timeAnswer = (payload: string): Partial<When> | null =>
+  payload === 'time_any' ? { time: '', time_flexible: true }
+  : ['time_morning', 'time_noon', 'time_afternoon'].includes(payload) ? { time: payload.slice(5) as When['time'], time_flexible: false } : null;
+
+// ── Simple answers are read by plain code (no AI cost); only free text that doesn't fit goes to Claude ─────────────
+const tidy = (t: string) => t.trim().replace(/[.!,\s]+$/u, '').replace(/\s+/g, ' ');
+function quickAddress(field: AddrField, raw: string): Partial<Address> | null {
+  const t = tidy(raw);
+  if (field === 'floor') { const m = t.match(/^(?:קומה\s*)?(-?\d{1,2})$/); return m ? { floor: m[1] } : /^(קומת )?קרקע$/.test(t) ? { floor: '0' } : null; }
+  if (field === 'city') return (CITIES as string[]).includes(t) ? { city: t } : null; // abbreviations (ת"א) go to Claude, which writes the full name
+  if (field === 'address') return /^[א-ת"'׳״ .-]{2,30} \d{1,4}[א-ת]?$/.test(t) ? { address: t } : null;
+  if (field === 'elevator' || field === 'elevator_type') {
+    const sz = /^(מעלית )?(קטנה)$/.test(t) ? 'small' : /^(מעלית )?(בינונית|רגילה)$/.test(t) ? 'regular' : /^(מעלית )?(גדולה)$/.test(t) ? 'large' : null;
+    if (sz) return { elevator: true, elevator_type: sz };
+    if (field === 'elevator' && /^(כן|יש|יש מעלית)$/.test(t)) return { elevator: true };
+    if (field === 'elevator' && /^(לא|אין|אין מעלית|רק מדרגות|מדרגות)$/.test(t)) return { elevator: false, elevator_type: '' };
+    return null;
+  }
+  if (field === 'crane') return /^(כן|אפשר)$/.test(t) ? { crane: 'yes' } : /^(לא|אי אפשר)$/.test(t) ? { crane: 'no' } : /^לא יודע(ת|ים)?$/.test(t) ? { crane: 'unknown' } : null;
+  if (field === 'parking') { const m = t.match(/^[1-5]$/); return m ? { parking: PARKING_OPTIONS[Number(m[0]) - 1].v } : null; }
+  return null;
+}
+function quickWhen(raw: string): Partial<When> | null {
+  const t = tidy(raw);
+  if (/^(גמיש|גמישים|לא יודע(ת|ים)?( עדיין)?|עוד לא יודע(ת|ים)?)$/.test(t)) return { date: '', date_flexible: true, time: '', time_flexible: true };
+  return /^\d{1,2}[./]\d{1,2}([./]\d{2,4})?( (ב)?(בוקר|צהריים|אחה"?צ|אחר הצהריים))?$/.test(t) ? fallbackWhen(t) : null;
+}
+function quickTime(raw: string): Partial<When> | null {
+  const t = tidy(raw);
+  if (/^(ב)?בוקר$/.test(t)) return { time: 'morning', time_flexible: false };
+  if (/^(ב)?צהריים$/.test(t)) return { time: 'noon', time_flexible: false };
+  if (/^(אחה"?צ|אחר הצהריים|ערב)$/.test(t)) return { time: 'afternoon', time_flexible: false };
+  if (/^(לא משנה|גמיש|כל שעה|לא חשוב)$/.test(t)) return { time: '', time_flexible: true };
+  return null;
+}
+const quickName = (raw: string) => { const t = tidy(raw); return /^[\p{L}'"׳״ -]{2,40}$/u.test(t) && t.split(' ').length <= 4 ? t : null; };
 
 /** The text of the question the bot is waiting for (also used by reminders). */
 export function questionText(ask: string | undefined): string {
   if (!ask || ask === 'from' || ask === 'to') return OPENER[(ask as Side) || 'from'];
+  if (ask === 'when.time') return TIME_Q;
   const [side, field] = ask.split('.') as [Side, AddrField];
   if (field && FIELD_Q[field]) return FIELD_Q[field](side);
   return ask === 'when' ? WHEN_Q : ask === 'video' ? VIDEO_Q : ask === 'name' ? NAME_Q : OPENER.from;
@@ -376,6 +415,8 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   if (videos.length && !stored) reply = 'לא הצלחנו לשמור את הסרטון 😕 אפשר לנסות שוב, או לצלם סרטון קצר יותר.\n\n';
   else if (stored && st.step !== 'video') reply = 'קיבלנו את הסרטון 👍\n\n';
   let waitingForVideo = false;
+  // Voice notes aren't transcribed (yet): ask to type or tap instead.
+  if (!body.trim() && media.some((x) => x.type.startsWith('audio/'))) reply += 'כרגע אפשר לענות רק בהקלדה או בכפתורים 🙂\n\n';
 
   const text = body.trim();
   const ask = data.ask || st.step;
@@ -386,7 +427,8 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
     const side = st.step;
     const field = (ask.split('.')[1] as AddrField | undefined) || null;
     const tapped = m.payload ? buttonAnswer(m.payload) : null;
-    if (tapped) data[side] = { ...(data[side] || {}), ...tapped };
+    const quick = !tapped && field && text ? quickAddress(field, text) : null;
+    if (tapped || quick) data[side] = { ...(data[side] || {}), ...(tapped || quick) };
     else if (text) {
       const r = await readFor(`the ${side === 'from' ? 'origin (moving from)' : 'destination (moving to)'} address${field ? `, specifically: ${LABEL[field]}` : ''}`);
       const patch: Partial<AddrPatch> = r?.address ? r.address : r ? {} : fallbackAddress(text, field);
@@ -406,16 +448,31 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
       step(c, nextStep);
     }
   } else if (st.step === 'when') {
-    if (text) {
-      const r = await readFor('the moving date (and preferred time of day)');
-      const w: Partial<When> | null = r?.when ? { date: r.when.date || '', date_flexible: !!r.when.date_flexible, time: r.when.time || '', time_flexible: !!r.when.time_flexible } : r ? null : fallbackWhen(text);
-      if (w && (w.date || w.date_flexible)) {
-        data.when = w;
-        nextStep = data.videos ? 'name' : 'video';
-        data.ask = nextStep;
-        await updateLead(c, { move_when: w, furthest_step: STEP_NO[nextStep] });
-        step(c, nextStep);
+    let w: Partial<When> | null = null;
+    if (ask === 'when.time') { // the date is known; asking for the time of day
+      let t = m.payload ? timeAnswer(m.payload) : null;
+      if (!t && text) t = quickTime(text);
+      if (!t && text) {
+        const r = await readFor('the preferred time of day for the move (morning / noon / afternoon, or no preference)');
+        if (r?.when && (r.when.time || r.when.time_flexible)) t = { time: r.when.time || '', time_flexible: !r.when.time };
       }
+      if (t) w = { ...(data.when || {}), ...t };
+    } else if (text) {
+      w = quickWhen(text);
+      if (!w) {
+        const r = await readFor('the moving date (and preferred time of day)');
+        w = r?.when ? { date: r.when.date || '', date_flexible: !!r.when.date_flexible, time: r.when.time || '', time_flexible: !!r.when.time_flexible } : r ? null : fallbackWhen(text);
+      }
+      if (w && !(w.date || w.date_flexible)) w = null;
+      // A date without a time of day: ask for the time once (buttons) before moving on.
+      if (w && w.date && !w.time && !w.time_flexible) { data.when = w; data.ask = 'when.time'; await updateLead(c, { move_when: w }); w = null; }
+    }
+    if (w) {
+      data.when = w;
+      nextStep = data.videos ? 'name' : 'video';
+      data.ask = nextStep;
+      await updateLead(c, { move_when: w, furthest_step: STEP_NO[nextStep] });
+      step(c, nextStep);
     }
   } else if (st.step === 'video') {
     if (stored) {
@@ -424,8 +481,9 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
       await updateLead(c, { furthest_step: STEP_NO.name });
       step(c, 'name');
     } else if (text) {
-      const r = await readFor('a walk-through video of the apartment (the customer should send a video file)');
-      const declined = r ? r.intent === 'decline_video' : /אין|לא יכול|לא רוצה|בלי סרטון|אחר כך|מאוחר/.test(text);
+      const plainNo = /^(בלי סרטון|אין לי סרטון|אין סרטון|לא רוצה|לא יכול(ה)?|אין)$/.test(tidy(text));
+      const r = plainNo ? null : await readFor('a walk-through video of the apartment (the customer should send a video file)');
+      const declined = plainNo || (r ? r.intent === 'decline_video' : /אין|לא יכול|לא רוצה|בלי סרטון|אחר כך|מאוחר/.test(text));
       if (declined) {
         data.video_refusals = (data.video_refusals || 0) + 1;
         if (data.video_refusals >= 2 || /בלי סרטון/.test(text)) {
@@ -442,9 +500,10 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
     }
   } else if (st.step === 'name') {
     if (text) {
-      const r = await readFor("the customer's name");
+      const simple = quickName(text);
+      const r = simple ? null : await readFor("the customer's name");
       // The name only: drop anything in brackets and extra remarks ("עזרא מנגד (זה ליד לא אמיתי)").
-      const name = cleanName(r?.name || text.replace(/\(.*?\)|\[.*?\]/g, ' ').split(/[,.\n-]/)[0]).split(' ').slice(0, 4).join(' ');
+      const name = cleanName(simple || r?.name || text.replace(/\(.*?\)|\[.*?\]/g, ' ').split(/[,.\n-]/)[0]).split(' ').slice(0, 4).join(' ');
       if (name.length >= 2) {
         data.name = name;
         nextStep = 'done';
@@ -482,7 +541,6 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   if (rd?.intent === 'question' && rd.reply) reply += rd.reply + '\n\n';
   else if (waitingForVideo) reply += 'מחכים לסרטון 🙂\n\n';
   else if (nextStep === st.step && data.ask === ask && text && !stored) reply += 'לא הבנתי עד הסוף 🙂 ';
-  else if (nextStep === 'to' && st.step === 'from') reply += 'מעולה ✅\n'; // once, when moving on to the second address
   await finish(c, data, nextStep, reply, now);
 }
 
@@ -510,3 +568,6 @@ export async function sendDueReminders() {
   return { due: due.length, sent };
 }
 
+
+/** For local checks of the plain-code answer readers. */
+export const __test = { quickAddress, quickWhen, quickTime, quickName };

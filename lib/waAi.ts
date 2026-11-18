@@ -4,7 +4,8 @@ import { CITIES } from './validate';
 
 /**
  * Claude reads the customer's free-text answers in the WhatsApp funnel (funnel F) and turns them into the same fields
- * the web funnels collect. Needs ANTHROPIC_API_KEY in Vercel. Model: WA_AI_MODEL (default claude-opus-5-5).
+ * the web funnels collect. Needs ANTHROPIC_API_KEY in Vercel. Model: WA_AI_MODEL (default claude-haiku-5-5: short field
+ * extraction, ~40x cheaper than Opus). Simple answers never get here (lib/waFunnel.ts reads them with plain code).
  * If the key is missing or a call fails, lib/waFunnel.ts falls back to a simple parser, so the chat never stalls.
  */
 
@@ -86,13 +87,12 @@ export async function readAnswer(args: { asking: string; question: string; messa
   if (!aiEnabled()) return null;
   client ??= new Anthropic({ timeout: 20_000, maxRetries: 1 });
   try {
-    const r = await client.beta.messages.create({
-      model: process.env.WA_AI_MODEL || 'claude-opus-5-5',
-      max_tokens: 2000,
+    const r = await client.messages.create({
+      model: process.env.WA_AI_MODEL || 'claude-haiku-5-5',
+      max_tokens: 1000,
+      // Plain extraction: no thinking needed (allowed on Haiku 5.5 at effort high or below), lowest effort.
+      thinking: { type: 'disabled' },
       output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },
-      // If the model declines (safety classifier), the API re-runs the request on a fallback model.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{
         role: 'user',
