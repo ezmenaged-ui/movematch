@@ -55,6 +55,19 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 
 Old `/mover/…` links forward to `/movers/…`.
 
+## 4. Our movers (public, low-key)
+
+| Page | What it is |
+|---|---|
+| `/our-movers` | Directory of the movers: logo, people, tagline, ratings, areas. Linked only from the footer ("המובילים שלנו") of the landing pages, the legal pages and the client tender pages. |
+| `/our-movers/<slug>` | One mover's profile: who they are, facts, about, promises, services, customer quotes, links. "Show phone": the client leaves name + mobile, we log it in `movematch.mover_reveals` (attribution) and show the number. **Nothing is sent** on a reveal. |
+
+A profile is shown only when the mover is **active, approved, not a demo, has a slug and the profile switch is on** (migration 023).
+The admin edits everything in `/admin/movers` → "פרופיל ציבורי"; movers edit their own tagline, names, intro, about and services in `/movers/profile`
+(phone numbers and links are stripped). Reveals are listed at the bottom of `/admin/movers`.
+**Prospects** (`status = 'prospect'`): companies that haven't joined yet. Hidden, inactive, never get leads. When they sign up at `/movers/join`
+with the same phone, the sign-up fills that row (profile kept) and it goes to approval.
+
 ## Pages opened from links in messages (not landing pages)
 
 | Page | Who opens it | What it is |
