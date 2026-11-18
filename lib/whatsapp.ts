@@ -61,14 +61,18 @@ export async function sendWhatsApp(to: string, key: TemplateKey, vars: unknown[]
  * Free-form text (optionally with one image/file): only delivered inside the 24h window after that person last wrote to us.
  * mediaUrl must be a public https URL Twilio can fetch (see lib/inbox.ts → mediaProxyUrl).
  */
-export async function sendWhatsAppText(to: string, body: string, opts: { mediaUrl?: string; statusCallback?: string; kind?: string; chat?: boolean } = {}) {
+export async function sendWhatsAppText(to: string, body: string, opts: { mediaUrl?: string; statusCallback?: string; kind?: string; chat?: boolean; contentSid?: string } = {}) {
   if (messagesPaused()) { logPaused(`WhatsApp to ${toE164(to)}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   if (!waEnabled()) throw new Error('twilio not configured');
   // chat = a bot answer to a message the customer just sent (WhatsApp funnel F): one answer per customer message,
   // so the conversation needs more room than alerts do. Still capped (WA_CHAT_MAX per WA_WINDOW_SEC).
   await throttle(to, opts.kind || 'text', opts.chat ? WA_CHAT_MAX : WA_MAX);
   const form = new URLSearchParams({ From: `whatsapp:${toE164(process.env.TWILIO_WHATSAPP_FROM!)}`, To: `whatsapp:${toE164(to)}` });
-  if (body) form.set('Body', body.slice(0, 1500));
+  // contentSid = a session-only interactive message (buttons / list, lib/waButtons.ts) whose text is variable {{1}}.
+  if (opts.contentSid) {
+    form.set('ContentSid', opts.contentSid);
+    form.set('ContentVariables', JSON.stringify({ 1: body.replace(/\s*\n+\s*/g, ' ').trim().slice(0, 1000) }));
+  } else if (body) form.set('Body', body.slice(0, 1500));
   if (opts.mediaUrl) form.set('MediaUrl', opts.mediaUrl);
   if (opts.statusCallback) form.set('StatusCallback', opts.statusCallback);
   return twilioPost(form);
