@@ -87,7 +87,9 @@
 .om-cta h2 { color: #fff; font-size: 18px; margin: 0 0 6px; }
 .om-cta p { color: #c8d3e3; font-size: 14px; margin: 0 0 12px; }
 
-.om-hero .mv-ratings { margin-top: 10px; }
+.om-hero .mv-ratings { margin-top: 16px; }
+/* .om-hero p resets margins, so the intro needs its own gap below the tagline/ratings. */
+.om-hero .om-intro { margin-top: 22px; }
 /* Phones: the contact card comes right after the header; the compare card closes the page. */
 .om-side { order: -1; }
 .om-desk { display: none; }
