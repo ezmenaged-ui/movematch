@@ -17,7 +17,8 @@ These rules exist so that never happens again.
 2. **Every test lead must be a test lead.** Use a name starting with `QA` (e.g. `QA משפך B צילום`) and/or `?utm_source=qa`.
    `lib/qa.ts` (`isTestLead`) then guarantees: **no WhatsApp to anyone, no message of any kind to movers**; the client "tender opened"
    and the operator alert go by **SMS only**. Never remove or bypass this guard, and never test with a non-QA name.
-3. **Client phone in tests = the owner's number 054-6677361** (it is exempt from the 30-day duplicate rule). Never use made-up
+3. **Client phone in tests = the owner's number 054-6677361**, or the owner's second QA number 050-2612664 (both are exempt from the
+   30-day duplicate rule, table `movematch.phone_cooldown_exempt`). Never use made-up
    numbers: they can belong to real people, and messages to numbers without WhatsApp are a spam signal.
 4. **Pace production tests.** At most one funnel at a time with at least 2 minutes between submissions; never loop or retry sends.
    `lib/whatsapp.ts` also throttles to 4 WhatsApp messages per recipient per 10 minutes (`mm_wa_allow`), and that must stay on.
