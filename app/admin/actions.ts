@@ -182,3 +182,14 @@ export async function addProspect(form: FormData) {
   revalidatePath('/admin/movers');
   redirect('/admin/movers?ok=1#prospects');
 }
+
+/** /admin/inbox: reply to a WhatsApp conversation from the business number (lib/inbox.ts enforces the 24h window). */
+export async function sendInboxReply(form: FormData) {
+  const { sendReply } = await import('@/lib/inbox');
+  const phone = String(form.get('phone') || '').replace(/\D/g, '');
+  const body = String(form.get('body') || '').slice(0, 1500);
+  if (!phone) redirect('/admin/inbox');
+  const r = await sendReply(phone, body, { via: 'admin' });
+  revalidatePath('/admin/inbox');
+  redirect(`/admin/inbox?p=${phone}&${r.ok ? 'sent=1' : `err=${r.reason}`}#end`);
+}

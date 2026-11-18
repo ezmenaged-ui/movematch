@@ -13,6 +13,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
   if (path.startsWith('/movers')) return moverGate(req, path);
+  // Only /admin is password-protected. The matcher is case-insensitive, so /qa also reaches here: let it through.
+  if (!path.startsWith('/admin')) return NextResponse.next();
 
   /** /admin requires the admin cookie (set once by /login, remembered for 180 days). */
   if (process.env.ADMIN_PASSWORD && req.cookies.get(ADMIN_COOKIE)?.value === (await adminToken())) {

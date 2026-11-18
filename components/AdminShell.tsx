@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { ChartColumn, ExternalLink, Inbox, Truck, UserPlus, Wallet } from 'lucide-react';
+import { ChartColumn, ExternalLink, Inbox, MessageCircle, Truck, UserPlus, Wallet } from 'lucide-react';
 import '../app/admin.css';
 
-type Active = 'leads' | 'movers' | 'money' | 'funnels';
+type Active = 'leads' | 'inbox' | 'movers' | 'money' | 'funnels';
 
 /** Admin frame: green sidebar (right, RTL) + main area. Matches the "סביבת מובילים" design. */
 export function AdminShell({ active, title, counts = {}, children }: {
@@ -10,6 +10,7 @@ export function AdminShell({ active, title, counts = {}, children }: {
 }) {
   const nav = [
     { key: 'leads', href: '/admin', label: 'לידים', icon: Inbox, n: counts.leads },
+    { key: 'inbox', href: '/admin/inbox', label: 'הודעות ווטסאפ', icon: MessageCircle, n: undefined },
     { key: 'movers', href: '/admin/movers', label: 'מובילים', icon: Truck, n: counts.movers },
     { key: 'money', href: '/admin/money', label: 'כספים ועמלות', icon: Wallet, n: undefined },
     { key: 'funnels', href: '/admin/funnels', label: 'ביצועי משפכים', icon: ChartColumn, n: undefined },

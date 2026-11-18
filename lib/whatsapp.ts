@@ -16,7 +16,7 @@ import { logPaused, messagesPaused } from './pause';
 
 export type TemplateKey = keyof typeof TEMPLATES;
 
-const authPair = () => {
+export const authPair = () => {
   const e = process.env;
   if (e.TWILIO_API_KEY && e.TWILIO_API_SECRET) return `${e.TWILIO_API_KEY}:${e.TWILIO_API_SECRET}`;
   if (e.TWILIO_AUTH_TOKEN) return `${e.TWILIO_ACCOUNT_SID}:${e.TWILIO_AUTH_TOKEN}`;
@@ -57,12 +57,18 @@ export async function sendWhatsApp(to: string, key: TemplateKey, vars: unknown[]
   return twilioPost(form);
 }
 
-/** Free-form text: only delivered inside the 24h window after that person last wrote to us. */
-export async function sendWhatsAppText(to: string, body: string) {
+/**
+ * Free-form text (optionally with one image/file): only delivered inside the 24h window after that person last wrote to us.
+ * mediaUrl must be a public https URL Twilio can fetch (see lib/inbox.ts → mediaProxyUrl).
+ */
+export async function sendWhatsAppText(to: string, body: string, opts: { mediaUrl?: string; statusCallback?: string; kind?: string } = {}) {
   if (messagesPaused()) { logPaused(`WhatsApp to ${toE164(to)}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   if (!waEnabled()) throw new Error('twilio not configured');
-  await throttle(to, 'text');
-  const form = new URLSearchParams({ From: `whatsapp:${toE164(process.env.TWILIO_WHATSAPP_FROM!)}`, To: `whatsapp:${toE164(to)}`, Body: body.slice(0, 1500) });
+  await throttle(to, opts.kind || 'text');
+  const form = new URLSearchParams({ From: `whatsapp:${toE164(process.env.TWILIO_WHATSAPP_FROM!)}`, To: `whatsapp:${toE164(to)}` });
+  if (body) form.set('Body', body.slice(0, 1500));
+  if (opts.mediaUrl) form.set('MediaUrl', opts.mediaUrl);
+  if (opts.statusCallback) form.set('StatusCallback', opts.statusCallback);
   return twilioPost(form);
 }
 

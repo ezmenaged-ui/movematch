@@ -43,6 +43,7 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 | Page | What it is |
 |---|---|
 | `/admin` | All leads, mover offers, sending tenders to movers and clients. |
+| `/admin/inbox` | WhatsApp inbox: messages sent to the business number (with images) and replies from the business number (24h window). |
 | `/admin/movers` | Mover roster, sign-up approvals, ratings, panel logins (send access by email). |
 | `/login` | Admin password page (remembered for 180 days). |
 
