@@ -94,7 +94,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
       {!waEnabled() && !messagesPaused() && <p className="adm-tag warn" style={{ display: 'inline-block', padding: '6px 10px' }}>וואטסאפ עדיין לא מחובר (חסרות הגדרות Twilio). אפשר כבר להוסיף מובילים.</p>}
       {ar.error && <p className="adm-tag warn" style={{ display: 'block', padding: '6px 10px' }}>אזורי השירות לא נטענו: צריך להריץ את מיגרציה 013 (supabase/migrations/013_mover_service_areas.sql). עד אז מכרזים לא יישלחו למובילים.</p>}
       {err && <p className="adm-tag warn" style={{ display: 'block', padding: '6px 10px' }}>{MSG[err] || 'שגיאה'}</p>}
-      {ok && <p className="adm-tag ok" style={{ display: 'block', padding: '6px 10px' }}>{ok === 'test' ? 'הודעת בדיקה נשלחה.' : ok === 'login' ? 'הגישה לפאנל נשמרה. העתיקו ושלחו למוביל את ההודעה עם הסיסמה.' : ok === 'sent' ? `הגישה נשמרה ונשלח מייל עם פרטי הכניסה${to ? ` אל ${to}` : ''}.` : 'נשמר.'}</p>}
+      {ok && <p className="adm-tag ok" style={{ display: 'block', padding: '6px 10px' }}>{ok === 'test' ? 'הודעת בדיקה נשלחה.' : ok === 'login' ? 'הגישה נשמרה וההודעה הועתקה. הדביקו ושלחו אותה למוביל כמו שהיא (אל תעתיקו שוב מהכרטיס: זו תהיה סיסמה אחרת).' : ok === 'sent' ? `הגישה נשמרה ונשלח מייל עם פרטי הכניסה${to ? ` אל ${to}` : ''}.` : 'נשמר.'}</p>}
 
       <div className="adm-box" style={{ margin: '14px 0' }}>
         <h4>קישור הרשמה למובילים</h4>
