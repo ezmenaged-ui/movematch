@@ -19,7 +19,7 @@ const FUNNELS = [
 const RANGES = [{ d: '7', label: '7 ימים' }, { d: '30', label: '30 יום' }, { d: '90', label: '90 יום' }, { d: 'all', label: 'הכול' }];
 const THEME: Record<string, string> = { photo: 'צילום', art: 'איור' };
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '—');
-const isTest = (l: Lead) => /^\s*QA\b/i.test(l.name || '') || (l.utm_source || '').toLowerCase() === 'qa';
+const isTest = (l: Lead) => /^\s*QA\b/i.test(l.name || '') || (l.utm_source || '').toLowerCase() === 'qa' || l.entry === 'qa';
 
 /**
  * Funnel performance: for each of the 5 funnels (and its photo / art design), how many people left their details,

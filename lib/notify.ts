@@ -32,6 +32,8 @@ export function leadText(event: LeadEvent, l: LeadRow, siteUrl: string) {
     ? (l.status === 'complete' ? '🚚 ליד חדש (מלא)' : '🚚 ליד חדש')
     : event === 'complete' ? '✅ ליד הושלם' : '🎥 סרטון הועלה';
   const lines = [
+    l.entry === 'qa' ? '🧪 סביבת בדיקות (/qa): לא נשלח דבר ללקוח או למובילים' : '',
+    l.entry === 'home' ? '🏠 דף הבית (סביבת בדיקות): לא נשלח למובילים. ליד אמיתי? להעביר ידנית מ-/admin' : '',
     `${head} — MoveMatch${l.tender_no ? ` · מכרז ${l.tender_no}` : ''}`,
     `שם: ${l.name}`,
     `טלפון: ${l.phone}`,
@@ -60,7 +62,8 @@ export const siteUrl = () => process.env.SITE_URL || (process.env.VERCEL_PROJECT
 
 export async function notifyLead(event: LeadEvent, lead: LeadRow) {
   const text = leadText(event, lead, siteUrl());
-  const subject = text.split('\n')[0] + ` · ${lead.name} · ${lead.phone}`;
+  const tag = lead.entry === 'qa' ? '[QA] ' : lead.entry === 'home' ? '[דף הבית] ' : '';
+  const subject = tag + text.split('\n').find((x) => x.includes('MoveMatch')) + ` · ${lead.name} · ${lead.phone}`;
   await sendAll(subject, text, { event, lead });
 }
 

@@ -1,6 +1,7 @@
 'use client';
 import type { FlowTheme } from '@/lib/handoff';
 import { Logo } from './Logo';
+import { QaBanner } from '../QaBanner';
 import '../../app/landing.css';
 
 /** Page frame for the follow-up pages (/b/steps, /c/details) so they keep the landing page's theme. */
@@ -8,6 +9,7 @@ export function FlowShell({ theme, progress, children }: { theme: FlowTheme | nu
   if (!theme) return <div className="fl-blank" />;
   return (
     <div className={`lp lp-${theme} lp-flow`}>
+      <QaBanner />
       <div className="fl-bg" aria-hidden>
         {theme === 'photo' ? (
           <picture>

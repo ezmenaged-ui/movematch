@@ -4,7 +4,7 @@ import { notifyLead } from '@/lib/notify';
 import { hasTemplate, sendWhatsApp, trySendSms, trySendWhatsApp, waEnabled } from '@/lib/whatsapp';
 import { alertWithSmsBackup } from '@/lib/automations';
 import { operatorAlertSms } from '@/lib/alertSms';
-import { isTestLead } from '@/lib/qa';
+import { homeLeadsLive, isQaEntry, isTestLead } from '@/lib/qa';
 import { siteUrl } from '@/lib/notify';
 import { cleanLeadInput } from '@/lib/sanitize';
 import { isValidName, isValidPhone } from '@/lib/validate';
@@ -26,6 +26,7 @@ function tenderOpenedSms(l: LeadRow) {
  * /api/twilio/status sends the SMS then.
  */
 async function sendTenderOpened(l: LeadRow) {
+  if (isQaEntry(l)) return; // /qa test area: no WhatsApp or SMS to anyone
   // v2 (Utility, link written in the template) once approved; until then the original template, if configured.
   const v2 = hasTemplate('client_tender_opened_v2');
   if (waEnabled() && (v2 || hasTemplate('client_tender_opened')) && !isTestLead(l)) { // test leads: SMS only
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid' }, { status: 422 });
   }
   p.variant = variant;
+  // Where the lead came in: 'home' (homepage, held from movers until HOME_LEADS_LIVE=1), 'qa' (/qa test area), else a live funnel.
+  if (body.entry === 'qa' || (body.entry === 'home' && !homeLeadsLive())) p.entry = body.entry;
   p.user_agent = (req.headers.get('user-agent') || '').slice(0, 400);
 
   const { data, error } = await db().rpc('mm_create_lead', { p });
@@ -70,7 +73,7 @@ export async function POST(req: NextRequest) {
       notifyLead('new', l),
       l.status === 'complete' && alertWithSmsBackup('op-lead', process.env.OPERATOR_WHATSAPP || '', 'op_lead', [
         l.name, l.phone, l.city || '?', 'לא צוין', '0', '0 (משפך A, להתקשר ללקוח)', `${siteUrl()}/admin`,
-      ], { kind: 'op_lead', lead: l.id }, operatorAlertSms(l, siteUrl()), { test: isTestLead(l) }),
+      ], { kind: 'op_lead', lead: l.id }, operatorAlertSms(l, siteUrl()), { test: isTestLead(l), silent: isQaEntry(l) }),
     ]);
   });
   return NextResponse.json({ id, token });

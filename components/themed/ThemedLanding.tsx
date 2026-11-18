@@ -5,6 +5,8 @@ import { LeadCard } from './LeadCard';
 import { Logo, Swoosh } from './Logo';
 import '../../app/landing.css';
 import { LEGAL } from '@/lib/legal';
+import type { Entry } from '@/lib/client';
+import { QaBanner } from '../QaBanner';
 
 const HOW = [
   ['2 דקות של פרטים', 'מספרים לנו מאיפה, לאן ומתי עוברים. חינם ובלי התחייבות.'],
@@ -48,7 +50,7 @@ function Below() {
   );
 }
 
-function ArtLanding({ funnel }: { funnel: Funnel }) {
+function ArtLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
   return (
     <div className="lp lp-art" id="top">
       <section className="lp-hero">
@@ -58,7 +60,7 @@ function ArtLanding({ funnel }: { funnel: Funnel }) {
           <Logo />
           <h1>משווים מחירי הובלה <span className="lp-hl">וחוסכים<Swoosh /></span></h1>
           <p className="lp-sub">ממלאים פרטים פעם אחת ומקבלים עד 5 הצעות מחיר ממובילים אמינים באזורכם</p>
-          <LeadCard funnel={funnel} theme="art" />
+          <LeadCard funnel={funnel} theme="art" entry={entry} />
         </div>
         <div className="art-scene" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -81,7 +83,7 @@ function Points({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-function PhotoLanding({ funnel }: { funnel: Funnel }) {
+function PhotoLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
   return (
     <div className="lp lp-photo" id="top">
       <section className="lp-hero">
@@ -101,7 +103,7 @@ function PhotoLanding({ funnel }: { funnel: Funnel }) {
             <p className="lp-sub">קבלו עד 5 הצעות מחיר ממובילים אמינים ומדורגים, ללא עלות וללא התחייבות</p>
             <Points />
           </div>
-          <div className="ph-card"><LeadCard funnel={funnel} theme="photo" /></div>
+          <div className="ph-card"><LeadCard funnel={funnel} theme="photo" entry={entry} /></div>
           <Points mobile />
         </div>
       </section>
@@ -124,6 +126,15 @@ function PhotoLanding({ funnel }: { funnel: Funnel }) {
   );
 }
 
-export function ThemedLanding({ funnel, theme }: { funnel: Funnel; theme: Theme }) {
-  return <main>{theme === 'art' ? <ArtLanding funnel={funnel} /> : <PhotoLanding funnel={funnel} />}</main>;
+/**
+ * entry: 'home' on the homepage (owner's test area: leads are not sent to movers, see lib/qa.ts),
+ * 'qa' on the /qa test area (nothing is sent; a banner says so), nothing on the live funnels.
+ */
+export function ThemedLanding({ funnel, theme, entry = null }: { funnel: Funnel; theme: Theme; entry?: Entry }) {
+  return (
+    <main>
+      {entry === 'qa' && <QaBanner always />}
+      {theme === 'art' ? <ArtLanding funnel={funnel} entry={entry} /> : <PhotoLanding funnel={funnel} entry={entry} />}
+    </main>
+  );
 }
