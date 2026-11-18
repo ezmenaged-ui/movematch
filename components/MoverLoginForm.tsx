@@ -1,5 +1,5 @@
 'use client';
-import { Check, Copy, KeyRound, Mail, RefreshCw } from 'lucide-react';
+import { Check, Copy, Mail, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 
 const gen = () => {
@@ -26,11 +26,18 @@ export function MoverLoginForm({ id, email, hasLogin, panelUrl, firstName, actio
           <button type="button" className="btn btn-secondary adm-btn" onClick={() => setPw(gen())} aria-label="סיסמה אקראית חדשה" title="סיסמה אקראית חדשה"><RefreshCw size={14} /></button></div></div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', gridColumn: '1 / -1' }}>
         <button className="btn btn-primary adm-btn" type="submit" name="send" value="1"><Mail size={14} /> {hasLogin ? 'איפוס סיסמה ושליחה במייל' : 'פתיחת גישה ושליחה במייל'}</button>
-        <button className="btn btn-secondary adm-btn" type="submit"><KeyRound size={14} /> שמירה בלי מייל</button>
-        <button type="button" className="btn btn-secondary adm-btn" onClick={async () => { try { await navigator.clipboard.writeText(msg); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch { /* ignore */ } }}>
-          {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'הועתק' : 'העתקת הודעה למוביל'}</button>
+        {/* Copy and save are ONE action: the copied message always carries the password that gets saved.
+            (Copying and saving separately let the two drift apart, and movers got "invalid login".) */}
+        <button type="button" className="btn btn-secondary adm-btn" onClick={async (e) => {
+          const form = e.currentTarget.form;
+          if (!form || !form.reportValidity()) return;
+          try { await navigator.clipboard.writeText(msg); } catch { alert('ההעתקה נכשלה, הסיסמה לא נשמרה. נסו שוב.'); return; }
+          setCopied(true);
+          form.requestSubmit();
+        }}>
+          {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'הועתק ונשמר' : 'שמירה והעתקת הודעה למוביל'}</button>
       </div>
-      <p className="small muted" style={{ margin: 0, gridColumn: '1 / -1' }}>הכפתור הראשי שומר ושולח למוביל מייל עם הקישור, המשתמש והסיסמה. מעדיפים וואטסאפ? העתיקו את ההודעה ושמרו בלי מייל. אחרי השמירה הסיסמה לא מוצגת שוב.</p>
+      <p className="small muted" style={{ margin: 0, gridColumn: '1 / -1' }}>הכפתור הראשי שומר ושולח למוביל מייל. מעדיפים וואטסאפ? &quot;שמירה והעתקת הודעה&quot; שומר את הסיסמה ומעתיק את ההודעה באותה לחיצה, ואז מדביקים ושולחים. אל תעתיקו הודעה מכרטיס שכבר נשמר: לחיצה נוספת יוצרת סיסמה חדשה.</p>
     </form>
   );
 }
