@@ -54,6 +54,23 @@ const CODE = /#([A-Za-z]{1,3}\d{0,3})\b/;
 export const isStarter = (body: string) => CODE.test(body) || (/הובל/.test(body) && /(הצע|מחיר)/.test(body) && body.length <= 120);
 const isQaStarter = (body: string) => /^\s*QA\b/i.test(body);
 
+/**
+ * Which ad the chat came from, saved on the lead as utm_campaign. The three Google Ads starters differ only in their ending:
+ *   "היי, אני רוצה הצעת מחיר להובלה!"       → F1
+ *   "היי, אני רוצה הצעת מחיר להובלה."       → F2
+ *   "היי, אני רוצה הצעת מחיר להובלה בבקשה"  → F3
+ * A "#code" in the starter (e.g. #G1) also works. Anything else: null (unknown).
+ */
+export function starterSource(body: string): string | null {
+  const code = body.match(CODE)?.[1];
+  if (code) return code.toUpperCase();
+  const t = body.replace(/^\s*QA\b/i, '').trim();
+  if (/בבקשה[.!]?$/.test(t)) return 'F3';
+  if (/!$/.test(t)) return 'F1';
+  if (/\.$/.test(t)) return 'F2';
+  return null;
+}
+
 /** Is this message for the bot? Returns the chat state to continue (or a fresh one to start), null for the normal inbox. */
 export async function funnelFor(digits: string, body: string): Promise<FunnelState | null> {
   const { data, error } = await db().rpc('mm_wa_funnel_get', { p_secret: secret(), p_phone: digits });
@@ -370,7 +387,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
 
   if (fresh || !st || st.status !== 'active') {
     const test = isQaStarter(body) || !!m.operator;
-    st = await save(digits, { reset: true, step: 'from', status: 'active', test, source: body.match(CODE)?.[1]?.toUpperCase() || null,
+    st = await save(digits, { reset: true, step: 'from', status: 'active', test, source: starterSource(body),
       data: { ask: 'from', profile: m.name }, last_in: now, reminders: 0, next_reminder_at: null });
     if (!st) return;
     const c: Ctx = { digits, local, st, profile: m.name };
