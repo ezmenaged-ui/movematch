@@ -2,7 +2,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { db, LeadRow } from '@/lib/db';
 import { siteUrl } from '@/lib/notify';
-import { trySendSms } from '@/lib/whatsapp';
+import { sendWhatsAppText, trySendSms } from '@/lib/whatsapp';
+import { displayPhone, inboxLink } from '@/lib/inbox';
 import { moverAlertSms, operatorAlertSms } from '@/lib/alertSms';
 
 /**
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
   const status = params.get('MessageStatus') || '';
   const lead = req.nextUrl.searchParams.get('lead') || '';
   const kind = req.nextUrl.searchParams.get('kind') || '';
+  if (kind === 'inbox_out' || kind === 'inbox_alert') return inboxStatus(kind, status, params, req.nextUrl.searchParams.get('p') || '');
   if (!['tender_open', 'mover_ping', 'op_lead'].includes(kind) || !UUID.test(lead) || !['failed', 'undelivered'].includes(status)) return new NextResponse(null, { status: 204 });
   console.warn(`[status] WhatsApp ${kind} not delivered`, status, params.get('ErrorCode'), '→ SMS');
 
@@ -56,6 +58,36 @@ export async function POST(req: NextRequest) {
       `${siteUrl()}/t/${l.client_code}`,
       'צוות MoveMatch',
     ].join('\n'));
+  }
+  return new NextResponse(null, { status: 204 });
+}
+
+/**
+ * Inbox (lib/inbox.ts):
+ *  inbox_out   — a reply to a customer: save its status (shown in /admin/inbox); if it failed, tell the operator.
+ *  inbox_alert — an alert to the operator about a new message failed: SMS the operator instead.
+ */
+async function inboxStatus(kind: string, status: string, params: URLSearchParams, phone: string) {
+  const failed = ['failed', 'undelivered'].includes(status);
+  const op = process.env.OPERATOR_WHATSAPP || '';
+  const code = params.get('ErrorCode') || '';
+  if (kind === 'inbox_alert') {
+    if (failed && /^\d{6,15}$/.test(phone)) {
+      console.warn('[status] inbox alert not delivered', status, code, '→ SMS');
+      await trySendSms('inbox-alert-fallback', op, `הודעת ווטסאפ חדשה מ-${displayPhone(phone)}.\nלקריאה ותשובה: ${inboxLink(phone)}`);
+    }
+    return new NextResponse(null, { status: 204 });
+  }
+  const sid = params.get('MessageSid') || '';
+  const { data } = await db().rpc('mm_inbox_set_status', { p_secret: process.env.MM_ADMIN_SECRET, p_sid: sid, p_status: status, p_error: code });
+  const m = data as { phone: string; name: string | null; body: string; via: string } | null;
+  if (failed && m) {
+    console.warn('[status] inbox reply not delivered', status, code);
+    const why = code === '63016' ? 'עברו 24 שעות מההודעה האחרונה של הלקוח' : code === '63024' ? 'למספר אין ווטסאפ' : `קוד ${code || '?'}`;
+    const text = `⚠️ התשובה ל-${m.name || displayPhone(m.phone)} לא נמסרה (${why}): "${m.body.slice(0, 60)}"\n${inboxLink(m.phone)}`;
+    // The operator just wrote to us (their reply), so WhatsApp normally reaches them; SMS if not.
+    try { if (m.via !== 'whatsapp') throw new Error('admin reply'); await sendWhatsAppText(op, text, { kind: 'inbox_alert' }); }
+    catch { await trySendSms('inbox-reply-failed', op, text); }
   }
   return new NextResponse(null, { status: 204 });
 }

@@ -65,7 +65,9 @@ export async function notifyLead(event: LeadEvent, lead: LeadRow) {
 }
 
 /** Send one message on every configured channel. */
-export async function sendAll(subject: string, text: string, payload: Record<string, unknown> = {}) {
+export type MailAttachment = { filename: string; content: Buffer; contentType: string };
+
+export async function sendAll(subject: string, text: string, payload: Record<string, unknown> = {}, opts: { attachments?: MailAttachment[] } = {}) {
   const env = process.env;
   if (messagesPaused()) return logPaused(`notification "${subject}"`);
   const jobs: Promise<void>[] = [];
@@ -73,14 +75,15 @@ export async function sendAll(subject: string, text: string, payload: Record<str
   if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) jobs.push(safe('gmail', async () => {
     const nodemailer = (await import('nodemailer')).default;
     const t = nodemailer.createTransport({ service: 'gmail', auth: { user: env.GMAIL_USER, pass: env.GMAIL_APP_PASSWORD } });
-    await t.sendMail({ from: `MoveMatch <${env.GMAIL_USER}>`, to: env.NOTIFY_EMAIL || env.GMAIL_USER, subject, text });
+    await t.sendMail({ from: `MoveMatch <${env.GMAIL_USER}>`, to: env.NOTIFY_EMAIL || env.GMAIL_USER, subject, text, attachments: opts.attachments });
   }));
 
   if (env.RESEND_API_KEY && env.NOTIFY_EMAIL) jobs.push(safe('resend', async () => {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: env.RESEND_FROM || 'MoveMatch <onboarding@resend.dev>', to: [env.NOTIFY_EMAIL], subject, text }),
+      body: JSON.stringify({ from: env.RESEND_FROM || 'MoveMatch <onboarding@resend.dev>', to: [env.NOTIFY_EMAIL], subject, text,
+        attachments: opts.attachments?.map((a) => ({ filename: a.filename, content: a.content.toString('base64') })) }),
     });
     if (!r.ok) throw new Error(`resend ${r.status} ${await r.text()}`);
   }));
@@ -123,19 +126,20 @@ export async function sendAll(subject: string, text: string, payload: Record<str
 }
 
 /** Email only (Gmail, else Resend) — for operator alerts that shouldn't go to every channel. */
-export async function sendEmail(subject: string, text: string) {
+export async function sendEmail(subject: string, text: string, opts: { attachments?: MailAttachment[] } = {}) {
   const env = process.env;
   if (messagesPaused()) return logPaused(`email "${subject}"`);
   if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) {
     const nodemailer = (await import('nodemailer')).default;
     const t = nodemailer.createTransport({ service: 'gmail', auth: { user: env.GMAIL_USER, pass: env.GMAIL_APP_PASSWORD } });
-    await t.sendMail({ from: `MoveMatch <${env.GMAIL_USER}>`, to: env.NOTIFY_EMAIL || env.GMAIL_USER, subject, text });
+    await t.sendMail({ from: `MoveMatch <${env.GMAIL_USER}>`, to: env.NOTIFY_EMAIL || env.GMAIL_USER, subject, text, attachments: opts.attachments });
     return;
   }
   if (env.RESEND_API_KEY && env.NOTIFY_EMAIL) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: env.RESEND_FROM || 'MoveMatch <onboarding@resend.dev>', to: [env.NOTIFY_EMAIL], subject, text }),
+      body: JSON.stringify({ from: env.RESEND_FROM || 'MoveMatch <onboarding@resend.dev>', to: [env.NOTIFY_EMAIL], subject, text,
+        attachments: opts.attachments?.map((a) => ({ filename: a.filename, content: a.content.toString('base64') })) }),
     });
     if (!r.ok) throw new Error(`resend ${r.status}`);
     return;
