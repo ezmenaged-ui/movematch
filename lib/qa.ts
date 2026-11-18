@@ -20,5 +20,11 @@ export const isQaEntry = (l: L) => !!l && l.entry === 'qa';
  */
 export const isHomeHeld = (l: L) => !!l && l.entry === 'home';
 
+/**
+ * Funnel F (WhatsApp chat) is held from movers until WA_FUNNEL_LIVE=1 in Vercel: its leads are stored with entry = 'home'
+ * (so real movers don't see them in their panel, migration 023) and no mover is alerted; the operator forwards real ones by hand.
+ */
+export const waFunnelLive = () => ['1', 'true', 'yes', 'on'].includes((process.env.WA_FUNNEL_LIVE || '').trim().toLowerCase());
+
 /** HOME_LEADS_LIVE=1 in Vercel makes the homepage a live funnel (its new leads go to movers like /d/photo). */
 export const homeLeadsLive = () => ['1', 'true', 'yes', 'on'].includes((process.env.HOME_LEADS_LIVE || '').trim().toLowerCase());

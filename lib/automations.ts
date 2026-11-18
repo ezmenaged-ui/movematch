@@ -5,7 +5,7 @@ import { tenderRef } from './publicLead';
 import { elevatorText, whenText } from './validate';
 import { hasTemplate, sendWhatsApp, trySendSms, trySendWhatsApp, waEnabled, type TemplateKey } from './whatsapp';
 import { moverAlertSms, operatorAlertSms } from './alertSms';
-import { isHomeHeld, isQaEntry, isTestLead } from './qa';
+import { isHomeHeld, isQaEntry, isTestLead, waFunnelLive } from './qa';
 import { areasOfCity, type Area } from './areas';
 
 type Addr = Record<string, unknown> | null | undefined;
@@ -74,7 +74,11 @@ export async function onLeadComplete(l: LeadRow, opts: { pingMovers: boolean }) 
   let moversSent = 0;
   let routeNote = '';
 
-  if (opts.pingMovers && isHomeHeld(l) && !isTestLead(l)) {
+  if (opts.pingMovers && l.variant === 'chat' && !waFunnelLive()) {
+    // Funnel F (WhatsApp chat) while it is being tested: no mover is alerted (test or not); the operator forwards real leads by hand.
+    console.warn(`[wa-funnel] chat lead ${tenderRef(l)}: not sent to movers (funnel F is held until WA_FUNNEL_LIVE=1)`);
+    routeNote = 'משפך F בבדיקה: לא נשלח למובילים, להעביר ידנית';
+  } else if (opts.pingMovers && isHomeHeld(l) && !isTestLead(l)) {
     // Homepage while it is the owner's test area: no mover is alerted; the operator forwards real leads by hand.
     console.warn(`[home] homepage lead ${tenderRef(l)}: not sent to movers (homepage is the test area until HOME_LEADS_LIVE=1)`);
     routeNote = 'דף הבית: לא נשלח למובילים, להעביר ידנית';

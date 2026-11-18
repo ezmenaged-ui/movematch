@@ -71,7 +71,7 @@ Fields:
 - when (when the bot is asking about the moving date): date as YYYY-MM-DD (resolve relative dates against today's date given below; a date without a year is the next such date).
   "גמיש" / "לא יודע עדיין" → date_flexible true. A month or "סוף החודש" → a representative date plus date_flexible true.
   time: morning (בוקר, 7–11), noon (צהריים, 11–15), afternoon (אחה"צ, 15–19). "לא משנה" for the hour → time_flexible true.
-- name: the customer's name when the bot asked for it (as written, without titles).
+- name: the customer's name when the bot asked for it: the name only (as written, without titles, remarks or anything in brackets).
 - intent: answer (the message answers the question, fully or partly); question (they ask something instead: price, how it works, who we are);
   human (they want a person / representative / to talk on the phone); decline_video (asked for a video, they say they can't or won't send one); other.
 - reply: only for intent "question": a short, friendly Hebrew answer (1–2 sentences, no promises about prices or dates).
