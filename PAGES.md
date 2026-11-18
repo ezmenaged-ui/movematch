@@ -19,7 +19,15 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
-**Homepage `/`** shows **D · photo** (same page as `/d/photo`).
+**Homepage `/`** shows **D · photo** (same page as `/d/photo`), but for now it is the owner's **test area**: the client gets the
+usual "tender opened" message and the operator gets the alert (phone + email), but **no mover is alerted** and real movers don't
+see the lead in their panel (`entry = 'home'`, migration 023). Real ones are forwarded by hand from `/admin`.
+To make the homepage live: set `HOME_LEADS_LIVE=1` in Vercel and redeploy.
+
+**Test area `/qa`** (also `/QA`): a menu of all 10 funnels at `/qa/<funnel>/<theme>` (e.g. `/qa/b/art`; `/qa/b` → photo).
+Safe to send to anyone: the lead is saved as a test lead (`entry = 'qa'`), the operator gets the **email only**, and **no WhatsApp
+or SMS goes to anyone** (not the phone entered, not movers, not the operator). It skips the 30-day phone rule, sends no
+GA4 / Google Ads events, and every page shows a purple "סביבת בדיקות" strip. Not indexed by Google.
 
 Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`). Every video step shows the same filming guide (`VideoGuide` in `components/VideoUploader.tsx`).
 

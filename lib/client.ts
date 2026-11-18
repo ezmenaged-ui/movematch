@@ -15,6 +15,21 @@ export function getUtm(): Record<string, string> {
   } catch { return fresh; }
 }
 
+/**
+ * Where this visit's lead comes in: 'home' (homepage while it is the test area), 'qa' (/qa test area) or null (live funnel).
+ * Set by the landing page and kept for the session, so the follow-up pages (/b/steps …) keep it.
+ */
+export type Entry = 'home' | 'qa' | null;
+const ENTRY_KEY = 'mm_entry';
+export function setEntry(e: Entry) {
+  try { if (e) sessionStorage.setItem(ENTRY_KEY, e); else sessionStorage.removeItem(ENTRY_KEY); } catch { /* private mode */ }
+}
+export function getEntry(): Entry {
+  if (typeof window === 'undefined') return null;
+  if (window.location.pathname === '/qa' || window.location.pathname.startsWith('/qa/')) return 'qa';
+  try { const e = sessionStorage.getItem(ENTRY_KEY); return e === 'home' || e === 'qa' ? e : null; } catch { return null; }
+}
+
 export type LeadRef = { id: string; token: string };
 
 /** Thrown when this phone number already opened a tender in the last 30 days. */
@@ -37,7 +52,7 @@ async function leadFail(r: Response, msg: string): Promise<never> {
 export async function createLead(variant: Variant, fields: Record<string, unknown>, honeypot = ''): Promise<LeadRef> {
   const r = await fetch('/api/leads', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ variant, ...getUtm(), ...fields, website: honeypot }),
+    body: JSON.stringify({ variant, ...getUtm(), ...fields, entry: getEntry(), website: honeypot }),
   });
   if (!r.ok) await leadFail(r, 'create failed');
   return r.json();
@@ -73,6 +88,7 @@ export function trackStep(funnel: string, theme: string | null | undefined, n: n
 
 /** Analytics events: pushed to the GTM dataLayer, and sent to GA4 / Meta Pixel when loaded directly. */
 export function track(event: string, data: Record<string, unknown> = {}) {
+  if (getEntry() === 'qa') return; // /qa test area: keep GA4 reports and Google Ads conversions clean
   const w = window as unknown as { dataLayer?: unknown[]; gtag?: (...a: unknown[]) => void; fbq?: (...a: unknown[]) => void };
   w.dataLayer = w.dataLayer || [];
   w.dataLayer.push({ event, ...data });

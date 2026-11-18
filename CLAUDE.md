@@ -10,6 +10,8 @@ On 12 Nov 2026 a QA run of all 8 funnels (there are now 10) on production sent *
 Meta **disabled the WhatsApp Business account** (998316793318931, sender +972533891029) for "breach of Terms of Acceptable Use".
 These rules exist so that never happens again.
 
+0. **Use `/qa` for manual tests** (`/qa/<funnel>/<theme>`): nothing is sent except the lead email to the operator.
+   The homepage `/` is also held from movers until `HOME_LEADS_LIVE=1` (see PAGES.md); `/a` … `/e` are live.
 1. **Prefer local QA.** Run the site locally (`next build && next start`) against the same database. Locally there are no Twilio/Gmail
    credentials, so nothing is sent. Run production funnel tests only when the owner asks for them.
 2. **Every test lead must be a test lead.** Use a name starting with `QA` (e.g. `QA משפך B צילום`) and/or `?utm_source=qa`.
