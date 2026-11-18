@@ -84,13 +84,14 @@ const FIELD_Q: Record<AddrField, (s: Side) => string> = {
   parking: () => PARKING_Q,
 };
 const OPENER: Record<Side, string> = {
-  from: '*מאיפה עוברים?*\nכתבו בהודעה אחת: עיר, רחוב ומספר, והאם יש מעלית.',
-  to: '*ולאן עוברים?*\nעיר, רחוב ומספר, והאם יש מעלית.',
+  // Questions that ask for several things: one item per line, each with its own emoji (easier to read on a phone).
+  from: '*מאיפה עוברים?*\nכתבו בהודעה אחת:\n🏙️ עיר\n📍 רחוב ומספר\n🛗 האם יש מעלית',
+  to: '*ולאן עוברים?*\nכתבו בהודעה אחת:\n🏙️ עיר\n📍 רחוב ומספר\n🛗 האם יש מעלית',
 };
-const WHEN_Q = '*מתי ההובלה?*\nאפשר תאריך (למשל 15/12), "סוף החודש" או "גמיש". אם יש העדפה לבוקר / צהריים / אחה״צ, כתבו גם.';
-const VIDEO_Q = '*כמעט סיימנו 🎥*\nצלמו סרטון קצר שעובר על כל החדרים (עד 3 דקות, עם ארונות פתוחים) ושלחו אותו כאן.\nכך המובילים נותנים מחיר מדויק בלי לבוא לראות את הדירה.';
+const WHEN_Q = '*מתי ההובלה?*\n📅 תאריך (למשל 15/12), "סוף החודש" או "גמיש"\n🕗 ואם יש העדפה: בוקר / צהריים / אחה״צ';
+const VIDEO_Q = '*כמעט סיימנו 🎥*\nצלמו סרטון קצר ושלחו אותו כאן:\n🚪 עוברים על כל החדרים\n🗄️ עם ארונות פתוחים\n⏱️ עד 3 דקות\n\nכך המובילים נותנים מחיר מדויק בלי לבוא לראות את הדירה.';
 const NAME_Q = 'ועל איזה שם לרשום את הבקשה?';
-const TIME_Q = 'באיזה חלק של היום מתאים להתחיל? בוקר (7–11), צהריים (11–15), אחר הצהריים (15–19), או "לא משנה".';
+const TIME_Q = 'באיזה חלק של היום מתאים להתחיל?\n🌅 בוקר (7–11)\n☀️ צהריים (11–15)\n🌇 אחר הצהריים (15–19)\n🤷 לא משנה';
 const LABEL: Record<AddrField, string> = { city: 'city', address: 'street and house number', floor: 'floor', elevator: 'elevator (and its size)', elevator_type: 'elevator size', crane: 'crane', parking: 'truck parking distance' };
 
 function missing(a: Partial<Address> | undefined): AddrField | null {
@@ -378,7 +379,9 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
     // Two messages: the welcome (with consent and how to opt out), then the first question on its own.
     await say(digits, [
       `היי${hi ? ` ${hi}` : ''}! 👋 כאן MoveMatch.`,
-      'כמה שאלות פשוטות (בערך 4 דקות), ותקבלו כאן הצעות מחיר ממובילים מאומתים באזור שלכם. השירות בחינם וללא התחייבות.',
+      '⏱️ כמה שאלות פשוטות, בערך 4 דקות',
+      '💬 הצעות מחיר ממובילים מאומתים באזור שלכם, ישירות לכאן',
+      '✅ בחינם וללא התחייבות',
       '',
       'בהמשך השיחה אתם מאשרים ש-MoveMatch תעביר את הפרטים שתמסרו כאן למובילים ותשלח לכם עדכונים בוואטסאפ. להפסקה בכל שלב: כתבו "הסר".',
     ].join('\n'));
