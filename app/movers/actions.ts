@@ -24,7 +24,10 @@ export async function login(form: FormData) {
   const email = s(form, 'email').toLowerCase();
   const password = String(form.get('password') || '');
   const next = safeNext(s(form, 'next', 300));
-  const t = email && password ? await authToken('password', { email, password }) : null;
+  let t = email && password ? await authToken('password', { email, password }) : null;
+  // Passwords pasted from WhatsApp/SMS on a phone often carry a stray space or line break. Retry once without it.
+  const trimmed = password.replace(/^[\s‎‏‪-‮⁦-⁩]+|[\s‎‏‪-‮⁦-⁩]+$/g, '');
+  if (!t && email && trimmed && trimmed !== password) t = await authToken('password', { email, password: trimmed });
   if (!t) {
     await new Promise((r) => setTimeout(r, 500));
     redirect(`/movers/login?error=1&email=${encodeURIComponent(email)}`);
