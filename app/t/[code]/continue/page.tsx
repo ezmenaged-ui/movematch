@@ -10,5 +10,5 @@ export default async function Continue({ params }: { params: Promise<{ code: str
   const { code } = await params;
   const t = await getTender(code);
   if (!t || !t.resume || t.variant === 'a') redirect(`/t/${code}`);
-  return <ResumeLead funnel={t.variant === 'wizard' ? 'b' : t.variant === 'items' ? 'd' : t.variant === 'choice' ? 'e' : 'c'} lead={t.resume} />;
+  return <ResumeLead funnel={t.variant === 'wizard' ? 'b' : t.variant === 'items' ? 'd' : t.variant === 'choice' || t.variant === 'chat' ? 'e' : 'c'} lead={t.resume} />;
 }

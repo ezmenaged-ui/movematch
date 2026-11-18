@@ -19,6 +19,15 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
+**Funnel F · WhatsApp chat** (no page): the Google Ads WhatsApp button (message asset) opens a chat with a starter message
+already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1` (`#G1` = ad-group code, saved as the lead's `utm_campaign`). The customer taps
+send and the bot asks, one at a time: from → to → when → video → name (`lib/waFunnel.ts`; Claude reads the free-text answers, `lib/waAi.ts`).
+Each address gets the same details as the web funnels; only what is missing is asked again. Done = a normal complete lead (`variant = 'chat'`):
+tender opened, movers in the area alerted, the tender link sent in the chat. Reminders: at most 2 per chat, at 20:30 / 10:00, inside the
+24h window only (`/api/cron/wa-funnel`, every 5 min). "נציג" hands the chat to `/admin/inbox`; "הסר" stops it. Test: start the starter
+with `QA` (or send it from the operator's phone) → QA test lead, nothing to movers. Env: `ANTHROPIC_API_KEY` (without it a simple parser is used),
+optional `WA_AI_MODEL`, `WA_CHAT_MAX` (bot replies per 10 min per customer, default 20), `GA4_API_SECRET` (server-side GA4 events).
+
 **Homepage `/`** shows **D · photo** (same page as `/d/photo`), but for now it is the owner's **test area**: the client gets the
 usual "tender opened" message and the operator gets the alert (phone + email), but **no mover is alerted** and real movers don't
 see the lead in their panel (`entry = 'home'`, migration 023). Real ones are forwarded by hand from `/admin`.

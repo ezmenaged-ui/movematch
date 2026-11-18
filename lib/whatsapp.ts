@@ -61,10 +61,12 @@ export async function sendWhatsApp(to: string, key: TemplateKey, vars: unknown[]
  * Free-form text (optionally with one image/file): only delivered inside the 24h window after that person last wrote to us.
  * mediaUrl must be a public https URL Twilio can fetch (see lib/inbox.ts → mediaProxyUrl).
  */
-export async function sendWhatsAppText(to: string, body: string, opts: { mediaUrl?: string; statusCallback?: string; kind?: string } = {}) {
+export async function sendWhatsAppText(to: string, body: string, opts: { mediaUrl?: string; statusCallback?: string; kind?: string; chat?: boolean } = {}) {
   if (messagesPaused()) { logPaused(`WhatsApp to ${toE164(to)}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
   if (!waEnabled()) throw new Error('twilio not configured');
-  await throttle(to, opts.kind || 'text');
+  // chat = a bot answer to a message the customer just sent (WhatsApp funnel F): one answer per customer message,
+  // so the conversation needs more room than alerts do. Still capped (WA_CHAT_MAX per WA_WINDOW_SEC).
+  await throttle(to, opts.kind || 'text', opts.chat ? WA_CHAT_MAX : WA_MAX);
   const form = new URLSearchParams({ From: `whatsapp:${toE164(process.env.TWILIO_WHATSAPP_FROM!)}`, To: `whatsapp:${toE164(to)}` });
   if (body) form.set('Body', body.slice(0, 1500));
   if (opts.mediaUrl) form.set('MediaUrl', opts.mediaUrl);
@@ -78,11 +80,12 @@ export async function sendWhatsAppText(to: string, body: string, opts: { mediaUr
  * If the throttle check itself fails, the message is sent (an outage here must not silence lead alerts).
  */
 const WA_MAX = Number(process.env.WA_MAX || 4), WA_WINDOW_SEC = Number(process.env.WA_WINDOW_SEC || 600);
-async function throttle(to: string, kind: string) {
+const WA_CHAT_MAX = Number(process.env.WA_CHAT_MAX || 20);
+async function throttle(to: string, kind: string, max = WA_MAX) {
   const { db } = await import('./db');
-  const { data, error } = await db().rpc('mm_wa_allow', { p_secret: process.env.MM_ADMIN_SECRET, p_phone: to, p_kind: kind, p_max: WA_MAX, p_window_sec: WA_WINDOW_SEC });
+  const { data, error } = await db().rpc('mm_wa_allow', { p_secret: process.env.MM_ADMIN_SECRET, p_phone: to, p_kind: kind, p_max: max, p_window_sec: WA_WINDOW_SEC });
   if (error) { console.error('[whatsapp:throttle-check]', error.message); return; }
-  if (data === false) throw new Error(`throttled: ${toE164(to)} already got ${WA_MAX} WhatsApp messages in ${WA_WINDOW_SEC / 60} min`);
+  if (data === false) throw new Error(`throttled: ${toE164(to)} already got ${max} WhatsApp messages in ${WA_WINDOW_SEC / 60} min`);
 }
 
 export async function twilioPost(form: URLSearchParams) {

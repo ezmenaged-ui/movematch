@@ -44,11 +44,15 @@ These rules exist so that never happens again.
   with images attached. The operator answers by replying (long-press → Reply) to the alert: `OriginalRepliedMessageSid` maps it
   to the customer, and the reply goes out from the business number. Free-form replies only within 24h of the customer's last message.
   Only the first message of a conversation (per 24h) gets the automatic "thanks". Twilio media is served via the signed `/api/twilio/media`.
+- **Funnel F (WhatsApp chat, `lib/waFunnel.ts`)**: the bot only answers the customer's own messages (one reply per message, inside the 24h
+  window opened by their starter message, throttled by `WA_CHAT_MAX`), plus at most 2 reminders (20:30 / 10:00, inside the window). Never add
+  bot messages that start a conversation, and never send templates from the chat. Test only with a starter that begins with `QA`, from the
+  owner's phone, one chat at a time.
 - Every WhatsApp alert has an SMS backup (immediate on refusal, or via `/api/twilio/status` when Meta reports undelivered).
 
 ## Analytics (GA4 + Google Ads)
 
 `lib/client.ts` → `trackStep` sends one `funnel_step` event per step reached, with `funnel`, `theme`, `variant_id`,
 `step_number` and `step_name` (numbered, e.g. `3_to`). Steps: A `0_landing → 1_contact`; B `… 2_from 3_to 4_when 5_items 6_done` (before 13 Nov 2026: `5_video`);
-C `… 2_details 3_done`; D `… 2_from 3_to 4_when 5_video 6_items 7_done` (before 17 Nov 2026: `5_items 6_video`); E `… 2_from 3_to 4_when 5_info 6_done` (`6_done` carries `info_choice`: `video` or `items`; the choice itself also fires `info_choice`). Conversions: `generate_lead` (name + phone saved)
+C `… 2_details 3_done`; F (WhatsApp chat, sent from the server, `lib/gaServer.ts`) `1_start 2_to 3_when 4_video 5_name 6_done` with `ad_group`; D `… 2_from 3_to 4_when 5_video 6_items 7_done` (before 17 Nov 2026: `5_items 6_video`); E `… 2_from 3_to 4_when 5_info 6_done` (`6_done` carries `info_choice`: `video` or `items`; the choice itself also fires `info_choice`). Conversions: `generate_lead` (name + phone saved)
 and `lead_complete` (full details). Keep these names and parameters stable: GA4 reports and Google Ads conversions depend on them.
