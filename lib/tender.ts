@@ -10,7 +10,7 @@ export type TenderOffer = {
   facebook_url: string | null; facebook_recommend: number | null; facebook_reviews: number | null;
 };
 export type Tender = {
-  id: string; tender_no: number; created_at: string; status: 'partial' | 'complete'; variant: 'a' | 'wizard' | 'form' | 'items' | 'choice';
+  id: string; tender_no: number; created_at: string; status: 'partial' | 'complete'; variant: 'a' | 'wizard' | 'form' | 'items' | 'choice' | 'chat';
   name: string; city: string | null; move_from: Record<string, unknown> | null; move_to: Record<string, unknown> | null;
   move_when: Record<string, unknown> | null; videos: number; video_skipped: boolean;
   closes_at: string | null; now: string;

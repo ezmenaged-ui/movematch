@@ -18,7 +18,7 @@ import { logPaused, messagesPaused } from './pause';
 
 export type LeadEvent = 'new' | 'complete' | 'video';
 
-const VARIANT_LABEL: Record<string, string> = { a: 'משפך A (/)', wizard: 'משפך B (/b)', form: 'משפך C (/c)', items: 'משפך D (/d)', choice: 'משפך E (/e)' };
+const VARIANT_LABEL: Record<string, string> = { a: 'משפך A (/)', wizard: 'משפך B (/b)', form: 'משפך C (/c)', items: 'משפך D (/d)', choice: 'משפך E (/e)', chat: 'משפך F (צ׳אט וואטסאפ)' };
 
 function addr(a: Record<string, unknown> | null | undefined) {
   if (!a) return '';

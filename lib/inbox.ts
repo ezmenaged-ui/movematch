@@ -1,8 +1,8 @@
 import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { db } from './db';
-import { siteUrl } from './notify';
-import { authPair, sendWhatsAppText } from './whatsapp';
+import { sendAll, siteUrl } from './notify';
+import { authPair, sendWhatsAppText, trySendSms } from './whatsapp';
 
 /**
  * WhatsApp inbox (migration 024). Messages people send to the business number are saved, forwarded to the operator's
@@ -127,4 +127,50 @@ export function replyError(r: Exclude<ReplyResult, { ok: true }>, who: string, p
   if (r.reason === 'window') return `⚠️ לא נשלח ל-${who}: עברו 24 שעות מההודעה האחרונה שלו/ה, ווטסאפ לא מאפשר לכתוב חופשי. אפשר להתקשר: ${displayPhone(phone)}`;
   if (r.reason === 'throttled') return `⚠️ לא נשלח ל-${who}: יותר מדי הודעות ברצף (מגבלת הגנה על המספר). נסה/י שוב בעוד כמה דקות.`;
   return `⚠️ לא נשלח ל-${who}. ${r.detail ? `(${r.detail.slice(0, 120)})` : ''}`.trim();
+}
+
+export type InboxState = { last_in?: string; last_any?: string; op_last?: string };
+
+/**
+ * Tell the operator about a message to the business number: WhatsApp alert (only inside the operator's own 24h window;
+ * the operator answers by replying to it), else SMS once per burst; and an email with the images attached.
+ * `st` = the conversation state read before this message was saved.
+ */
+export async function forwardToOperator(m: { digits: string; name: string; body: string; media: Media[]; id: string | null; st: InboxState; note?: string }) {
+  const { digits, name, body, media, id, st } = m;
+  const op = (process.env.OPERATOR_WHATSAPP || '').replace(/\D/g, '');
+  const now = Date.now();
+  const firstInDay = !st.last_any || now - new Date(st.last_any).getTime() > 24 * 3600_000;
+  const quietTenMin = !st.last_in || now - new Date(st.last_in).getTime() > 10 * 60_000;
+  const who = name || displayPhone(digits);
+  const local = `0${digits.replace(/^972/, '')}`;
+  // 1. WhatsApp alert to the operator (only inside the operator's own 24h window; otherwise Meta refuses it).
+  const preview = [m.note, body || (media.length ? '📷 (קובץ מצורף)' : '(ללא טקסט)')].filter(Boolean).join('\n');
+  let alerted = false;
+  if (op && id && windowLeftMs(st.op_last) > 0) {
+    const text = [`💬 ${who} · ${displayPhone(digits)}`, preview, media.length > 1 ? `(+${media.length - 1} קבצים נוספים בתיבת ההודעות)` : '',
+      firstInDay || m.note ? '\n↩️ כדי לענות: לחיצה ארוכה על ההודעה הזו ← השב' : ''].filter(Boolean).join('\n');
+    try {
+      const alertSid = await sendWhatsAppText(op, text, {
+        kind: 'inbox_alert',
+        mediaUrl: media[0] ? mediaProxyUrl(media[0].url) : undefined,
+        statusCallback: `${siteUrl()}/api/twilio/status?kind=inbox_alert&p=${digits}`,
+      });
+      await db().rpc('mm_inbox_set_alert', { p_secret: secret(), p_id: id, p_alert_sid: alertSid });
+      alerted = true;
+    } catch (e) { console.error('[inbound:alert]', e instanceof Error ? e.message : e); }
+  }
+  // 2. No WhatsApp alert → SMS, once per burst (not for every message in a row from the same person).
+  if (!alerted && op && (quietTenMin || m.note)) {
+    await trySendSms('inbox-alert', op, [`הודעת ווטסאפ מ-${who} (${displayPhone(digits)}): ${preview.slice(0, 50)}`, `לקריאה ותשובה: ${inboxLink(digits)}`,
+      windowLeftMs(st.op_last) ? '' : 'כדי לקבל את ההודעות בווטסאפ, שלח/י הודעה כלשהי למספר העסקי.'].filter(Boolean).join('\n'));
+  }
+  // 3. Email with the images attached.
+  await sendAll(
+    `💬 הודעת וואטסאפ ל-MoveMatch · ${who} · ${displayPhone(digits)}`,
+    [m.note || '', `מאת: ${name || '—'} (${displayPhone(digits)})`, '', body || '(ללא טקסט)', media.length ? `\n+ ${media.length} קבצים מצורפים למייל` : '',
+      '', `לקריאה ותשובה מהמספר העסקי: ${inboxLink(digits)}`].filter((x, i) => i > 0 || x).join('\n'),
+    { event: 'inbound_whatsapp', from: local },
+    { attachments: media.length ? await mediaAttachments(media, `whatsapp-${digits}`) : undefined },
+  );
 }
