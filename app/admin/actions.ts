@@ -49,22 +49,26 @@ export async function saveMover(form: FormData) {
   const { error } = await db().rpc('mm_admin_save_mover', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p, p_logo: logo });
   if (error) { console.error('[saveMover]', error); redirect('/admin/movers?err=db'); }
   revalidatePath('/admin/movers');
+  revalidatePath('/our-movers', 'layout');
   redirect('/admin/movers?ok=1');
 }
 
 export async function clearMoverLogo(id: string) {
   await db().rpc('mm_admin_clear_mover_logo', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id });
   revalidatePath('/admin/movers');
+  revalidatePath('/our-movers', 'layout');
 }
 
 export async function setMoverActive(id: string, active: boolean) {
   await db().rpc('mm_admin_set_mover_active', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p_active: active });
   revalidatePath('/admin/movers');
+  revalidatePath('/our-movers', 'layout');
 }
 
 export async function deleteMover(id: string) {
   await db().rpc('mm_admin_delete_mover', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id });
   revalidatePath('/admin/movers');
+  revalidatePath('/our-movers', 'layout');
 }
 
 /** Send a test WhatsApp (mover template, with sample values) to one number. */
@@ -79,6 +83,7 @@ export async function testMover(phone: string) {
 export async function approveMover(id: string) {
   await db().rpc('mm_admin_approve_mover', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id });
   revalidatePath('/admin/movers');
+  revalidatePath('/our-movers', 'layout');
 }
 
 /** Give a mover panel access (email + first password), or reset their password. They must change it on first login. */
@@ -149,4 +154,31 @@ export async function setMoverAreas(form: FormData) {
   if (error) { console.error('[setMoverAreas]', error); redirect('/admin/movers?err=db'); }
   revalidatePath('/admin/movers');
   redirect('/admin/movers?ok=1');
+}
+
+/** Public profile of a mover (/our-movers/<slug>): slug, on/off switch and the content fields. */
+export async function saveMoverProfile(form: FormData) {
+  const { profileFromForm } = await import('@/lib/profileForm');
+  const id = String(form.get('id') || '');
+  const slug = String(form.get('slug') || '').trim().toLowerCase();
+  if (slug && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) redirect('/admin/movers?err=slug');
+  const { error } = await db().rpc('mm_admin_save_mover_profile', {
+    p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p_slug: slug, p_public: form.get('public') === 'on', p_profile: profileFromForm(form),
+  });
+  if (error) { console.error('[saveMoverProfile]', error); redirect(`/admin/movers?err=${/unique|duplicate/.test(error.message) ? 'slugused' : 'db'}`); }
+  revalidatePath('/admin/movers');
+  revalidatePath('/our-movers', 'layout');
+  redirect('/admin/movers?ok=profile');
+}
+
+/** A company that has not joined yet: hidden profile, no leads. It takes over this row when it signs up with the same phone. */
+export async function addProspect(form: FormData) {
+  const company = String(form.get('company') || '').trim();
+  const phone = String(form.get('phone') || '').replace(/\D/g, '').replace(/^972/, '0');
+  if (!/^0\d{8,9}$/.test(phone)) redirect('/admin/movers?err=phone');
+  if (company.length < 2) redirect('/admin/movers?err=company');
+  const { error } = await db().rpc('mm_admin_add_prospect', { p_secret: process.env.MM_ADMIN_SECRET, p_company: company, p_phone: phone });
+  if (error) { console.error('[addProspect]', error); redirect(`/admin/movers?err=${/unique|duplicate/.test(error.message) ? 'phoneused' : 'db'}`); }
+  revalidatePath('/admin/movers');
+  redirect('/admin/movers?ok=1#prospects');
 }

@@ -2,7 +2,7 @@ import { AdminHero } from '@/components/AdminShell';
 import { MoverShell } from '@/components/MoverShell';
 import { MoverLogo } from '@/components/MoverLogo';
 import { requireMe } from '@/lib/mover';
-import { saveProfile } from '../actions';
+import { saveAbout, saveProfile } from '../actions';
 import Link from 'next/link';
 import { LogoInput } from '@/components/LogoInput';
 
@@ -25,7 +25,7 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
   return (
     <MoverShell me={me} active="profile" title="פרופיל עסקי">
       <AdminHero kicker="העסק שלי" title="פרופיל עסקי" sub="השם והלוגו מופיעים ללקוחות על ההצעות שלכם." />
-      {sp.ok && <p className="mv-note ok" role="status">הפרופיל נשמר.</p>}
+      {sp.ok && <p className="mv-note ok" role="status">{sp.ok === 'about' ? 'הדף הציבורי עודכן.' : 'הפרופיל נשמר.'}</p>}
       {sp.error && <p className="mv-note warn" role="alert">{ERR[sp.error] || ERR.db}</p>}
       <form action={saveProfile} className="mv-card">
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}><MoverLogo id={me.id} hasLogo={me.has_logo} name={company} size={56} /><h2 style={{ margin: 0 }}>מיתוג</h2></div>
@@ -37,6 +37,23 @@ export default async function Profile({ searchParams }: { searchParams: Promise<
         </div>
 
         <button type="submit" className="btn btn-primary">שמירת פרופיל</button>
+      </form>
+
+      <form id="about" action={saveAbout} className="mv-card">
+        <h2>הדף הציבורי שלכם</h2>
+        <p className="mv-meta" style={{ margin: '0 0 10px' }}>
+          לקוחות רואים עליכם עמוד ב״המובילים שלנו״. ספרו מי אתם, במילים שלכם: אנשים בוחרים מוביל שהם מרגישים שהם מכירים.
+          {me.slug && me.profile_public && <> <a href={`/our-movers/${me.slug}`} target="_blank" rel="noreferrer">לצפייה בעמוד ↗</a></>}
+        </p>
+        <div className="mv-fields">
+          <F id="ab-tag" label="משפט פתיחה" name="tagline" value={me.profile?.tagline} maxLength={120} wide placeholder="למשל: שני אחים, משאית אחת, 12 שנה בשטח" />
+          <F id="ab-ppl" label="מי אתם (שמות)" name="people" value={me.profile?.people} maxLength={120} placeholder="למשל: דוד ומשה" />
+          <div className="field wide"><label htmlFor="ab-intro">משפט אישי מכם ללקוח</label><textarea id="ab-intro" name="intro" className="input" rows={2} maxLength={400} defaultValue={me.profile?.intro || ''} /></div>
+          <div className="field wide"><label htmlFor="ab-about">עלינו (פסקאות מופרדות בשורה ריקה)</label><textarea id="ab-about" name="about" className="input" rows={7} maxLength={3000} defaultValue={me.profile?.about || ''} /></div>
+          <div className="field wide"><label htmlFor="ab-srv">שירותים (אחד בכל שורה)</label><textarea id="ab-srv" name="services" className="input" rows={5} defaultValue={(me.profile?.services || []).join('\n')} /></div>
+        </div>
+        <p className="mv-meta" style={{ margin: '0 0 10px' }}>מספרי טלפון וקישורים לא יוצגו בטקסט. לקוחות מקבלים את המספר שלכם דרך הכפתור בעמוד.</p>
+        <button type="submit" className="btn btn-primary">שמירת הדף הציבורי</button>
       </form>
 
       <div className="mv-card">

@@ -44,7 +44,7 @@ export function Footer() {
       <div className="wrap">
         <span>© {new Date().getFullYear()} MoveMatch · {LEGAL.entityShort}, ח.פ. {LEGAL.companyId}</span>
         <span>השירות ללא עלות ללקוח. הפרטים שלכם מועברים רק למובילים לצורך הצעת מחיר, ועדכונים על המכרז וההצעות יישלחו אליכם ב-SMS ובוואטסאפ.</span>
-        <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a><a href="/movers/join">למובילים: הצטרפות</a></span>
+        <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a><a href="/our-movers">המובילים שלנו</a><a href="/movers/join">למובילים: הצטרפות</a></span>
       </div>
     </footer>
   );

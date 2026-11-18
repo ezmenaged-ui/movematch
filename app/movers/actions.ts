@@ -218,6 +218,17 @@ export async function saveProfile(form: FormData) {
   redirect('/movers/profile?ok=1');
 }
 
+/** The human part of the public profile (/our-movers/<slug>). Phone numbers and links are stripped in the database. */
+export async function saveAbout(form: FormData) {
+  const services = String(form.get('services') || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(0, 12);
+  const { error } = await (await moverDb()).rpc('mm_mover_save_about', {
+    p: { tagline: s(form, 'tagline', 120), people: s(form, 'people', 120), intro: s(form, 'intro', 400), about: String(form.get('about') ?? '').replace(/\r\n/g, '\n').trim().slice(0, 3000), services },
+  });
+  if (error) { console.error('[mover about]', error); redirect('/movers/profile?error=db#about'); }
+  revalidatePath('/our-movers', 'layout');
+  redirect('/movers/profile?ok=about#about');
+}
+
 // ── Calendar ─────────────────────────────────────────────────────────────────
 
 export type IcsEvent = { uid: string; date: string; time: string; title: string };

@@ -24,7 +24,7 @@ export function TenderShell({ tenderNo, children, hero }: { tenderNo: number; ch
       <footer className="tp-foot">
         <div className="lp-wrap">
           <span>© {new Date().getFullYear()} MoveMatch · {LEGAL.entityShort}, ח.פ. {LEGAL.companyId} · השירות ללא עלות ללקוח</span>
-          <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a></span>
+          <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a><a href="/our-movers">המובילים שלנו</a></span>
         </div>
       </footer>
     </div>

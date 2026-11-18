@@ -24,6 +24,7 @@ export type Me = {
   google_url: string | null; google_rating: number | null; google_reviews: number | null;
   midrag_url: string | null; midrag_rating: number | null; midrag_reviews: number | null;
   facebook_url: string | null; facebook_recommend: number | null; facebook_reviews: number | null;
+  slug?: string | null; profile_public?: boolean; profile?: { tagline?: string; people?: string; intro?: string; about?: string; services?: string[] };
 };
 
 /** The signed-in mover, or a redirect to the login page. Forces the first-login password change. */
