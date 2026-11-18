@@ -24,7 +24,8 @@ already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1`
 send and the bot asks, one at a time: from → to → when → video → name (`lib/waFunnel.ts`; Claude reads the free-text answers, `lib/waAi.ts`).
 Each address gets the same details as the web funnels; only what is missing is asked again. Done = a normal complete lead (`variant = 'chat'`):
 tender opened, movers in the area alerted, the tender link sent in the chat. Reminders: at most 2 per chat, at 20:30 / 10:00, inside the
-24h window only (`/api/cron/wa-funnel`, every 5 min). "נציג" hands the chat to `/admin/inbox`; "הסר" stops it. Test: start the starter
+24h window only (`/api/cron/wa-funnel`, every 5 min). "נציג" hands the chat to `/admin/inbox`; "הסר" stops it. **Held from movers until `WA_FUNNEL_LIVE=1`** in Vercel: until then chat leads are stored with `entry = 'home'`
+(real movers don't see them, no mover alert, the bot says the details are being passed on) and the operator forwards real ones by hand. Test: start the starter
 with `QA` (or send it from the operator's phone) → QA test lead, nothing to movers. Env: `ANTHROPIC_API_KEY` (without it a simple parser is used),
 optional `WA_AI_MODEL`, `WA_CHAT_MAX` (bot replies per 10 min per customer, default 20), `GA4_API_SECRET` (server-side GA4 events).
 

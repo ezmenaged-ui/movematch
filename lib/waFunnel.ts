@@ -8,6 +8,7 @@ import { CITIES, PARKING_OPTIONS, normalizePhone, type Address, type When } from
 import { fetchTwilioMedia, forwardToOperator, windowLeftMs, type InboxState, type Media } from './inbox';
 import { sendWhatsAppText } from './whatsapp';
 import { messagesPaused } from './pause';
+import { waFunnelLive } from './qa';
 import { readAnswer, type AddrPatch, type Reading } from './waAi';
 import { gaEvent } from './gaServer';
 
@@ -254,6 +255,8 @@ async function ensureLead(c: Ctx): Promise<'ok' | 'recent' | 'invalid'> {
     variant: 'chat', name, phone: c.local, status: 'partial', furthest_step: 1,
     utm_source: c.st.test ? 'qa' : 'whatsapp', utm_medium: 'google_ads_message', utm_campaign: c.st.source || null,
     user_agent: 'whatsapp-chat',
+    // Held from movers while funnel F is being tested (see lib/qa.ts → waFunnelLive).
+    ...(waFunnelLive() ? {} : { entry: 'home' }),
   } });
   if (phoneRecent(error)) return 'recent';
   if (error || !data) { console.error('[wa-funnel] create lead', error); return 'invalid'; }
@@ -440,7 +443,8 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   } else if (st.step === 'name') {
     if (text) {
       const r = await readFor("the customer's name");
-      const name = cleanName(r ? r.name : text);
+      // The name only: drop anything in brackets and extra remarks ("עזרא מנגד (זה ליד לא אמיתי)").
+      const name = cleanName(r?.name || text.replace(/\(.*?\)|\[.*?\]/g, ' ').split(/[,.\n-]/)[0]).split(' ').slice(0, 4).join(' ');
       if (name.length >= 2) {
         data.name = name;
         nextStep = 'done';
@@ -449,9 +453,12 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
           step(c, 'done');
           ga(c, 'lead_complete', {});
           const first = name.split(' ')[0];
+          const held = row.entry === 'home';
           await say(digits, [
             `תודה ${first}! 🎉 מכרז הובלה מס׳ ${row.tender_no} נפתח.`,
-            'המובילים באזור שלך מקבלים עכשיו את הפרטים. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:',
+            st.test ? '🧪 זו בדיקה (QA): הבקשה נשמרה כליד בדיקה ולא נשלחה לאף מוביל.'
+              : held ? 'אנחנו מעבירים את הפרטים למובילים באזור שלך. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:'
+              : 'המובילים באזור שלך מקבלים עכשיו את הפרטים. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:',
             `${siteUrl()}/t/${row.client_code}`,
             '',
             'צוות MoveMatch',
@@ -475,7 +482,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   if (rd?.intent === 'question' && rd.reply) reply += rd.reply + '\n\n';
   else if (waitingForVideo) reply += 'מחכים לסרטון 🙂\n\n';
   else if (nextStep === st.step && data.ask === ask && text && !stored) reply += 'לא הבנתי עד הסוף 🙂 ';
-  else if (nextStep === 'to') reply += 'מעולה ✅\n';
+  else if (nextStep === 'to' && st.step === 'from') reply += 'מעולה ✅\n'; // once, when moving on to the second address
   await finish(c, data, nextStep, reply, now);
 }
 
