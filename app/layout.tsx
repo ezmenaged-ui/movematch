@@ -25,6 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@600;700&family=Heebo:wght@400;500;600;700;800&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet" />
         {/* gtag() must exist before React hydrates: the landing page fires funnel_step 0_landing on mount,
             and with an afterInteractive stub that first event was silently dropped (w.gtag undefined). */}
+        {/* Organization logo for Google (search result favicon comes from app/favicon.ico + app/icon.svg). */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'Organization', name: 'MoveMatch', alternateName: 'מובמאץ׳', url: 'https://movematch.co.il', logo: 'https://movematch.co.il/logo.png' }) }} />
         {GA && <script dangerouslySetInnerHTML={{ __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${GA}');` }} />}
       </head>
       <body>
