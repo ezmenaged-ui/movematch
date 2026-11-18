@@ -39,6 +39,11 @@ These rules exist so that never happens again.
 - Avoid spam signals: bursts, identical repeats, invalid numbers, retries, and URLs inside template variables.
 - New or restored numbers: warm up. Real contacts message the number first, then volume grows slowly with real leads.
   Watch the quality rating in WhatsApp Manager.
+- **Inbox / replying by hand** (`lib/inbox.ts`, migration 024, `/admin/inbox`): messages to the business number are saved, forwarded
+  to the operator's WhatsApp (`OPERATOR_WHATSAPP`, only inside the operator's own 24h window, else SMS once per burst) and emailed
+  with images attached. The operator answers by replying (long-press → Reply) to the alert: `OriginalRepliedMessageSid` maps it
+  to the customer, and the reply goes out from the business number. Free-form replies only within 24h of the customer's last message.
+  Only the first message of a conversation (per 24h) gets the automatic "thanks". Twilio media is served via the signed `/api/twilio/media`.
 - Every WhatsApp alert has an SMS backup (immediate on refusal, or via `/api/twilio/status` when Meta reports undelivered).
 
 ## Analytics (GA4 + Google Ads)
