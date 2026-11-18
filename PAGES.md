@@ -26,8 +26,9 @@ Each address gets the same details as the web funnels; only what is missing is a
 tender opened, movers in the area alerted, the tender link sent in the chat. Reminders: at most 2 per chat, at 20:30 / 10:00, inside the
 24h window only (`/api/cron/wa-funnel`, every 5 min). "נציג" hands the chat to `/admin/inbox`; "הסר" stops it. **Held from movers until `WA_FUNNEL_LIVE=1`** in Vercel: until then chat leads are stored with `entry = 'home'`
 (real movers don't see them, no mover alert, the bot says the details are being passed on) and the operator forwards real ones by hand. Test: start the starter
-with `QA` (or send it from the operator's phone) → QA test lead, nothing to movers. Env: `ANTHROPIC_API_KEY` (without it a simple parser is used),
-optional `WA_AI_MODEL`, `WA_CHAT_MAX` (bot replies per 10 min per customer, default 20), `GA4_API_SECRET` (server-side GA4 events).
+with `QA` (or send it from the operator's phone) → QA test lead, nothing to movers. Closed questions use buttons; simple typed answers (a floor number, כן/לא, a city from the list, 15/12) are read by plain code,
+and only free text goes to Claude Haiku 5.5. A date without a time of day gets one time question. Voice notes: "please type". Env: `ANTHROPIC_API_KEY` (without it a simple parser is used),
+optional `WA_AI_MODEL` (default `claude-haiku-5-5`), `WA_CHAT_MAX` (bot replies per 10 min per customer, default 20), `GA4_API_SECRET` (server-side GA4 events).
 
 **Homepage `/`** shows **D · photo** (same page as `/d/photo`), but for now it is the owner's **test area**: the client gets the
 usual "tender opened" message and the operator gets the alert (phone + email), but **no mover is alerted** and real movers don't
