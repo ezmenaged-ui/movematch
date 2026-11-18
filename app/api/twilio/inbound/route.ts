@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
   const name = params.get('ProfileName') || '';
   const sid = params.get('MessageSid') || params.get('SmsMessageSid') || '';
   const media = mediaFromParams(params);
+  // Tap on a funnel button (quick reply) or pick-list item: the option id we set in Twilio Content.
+  const payload = params.get('ButtonPayload') || params.get('ListId') || '';
   const op = (process.env.OPERATOR_WHATSAPP || '').replace(/\D/g, '');
   const isOperator = op && digits === op;
   const secret = process.env.MM_ADMIN_SECRET;
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest) {
     const f = await funnelFor(digits, body);
     if (f && !(f as { afterDone?: boolean }).afterDone) {
       await db().rpc('mm_inbox_add', { p_secret: secret, p_phone: digits, p_name: null, p_dir: 'op', p_body: '', p_media: [], p_sid: sid, p_via: null });
-      after(() => handleFunnelMessage({ digits, name, body, media, inboxId: '', st: {}, state: f, operator: true }));
+      after(() => handleFunnelMessage({ digits, name, body, media, inboxId: '', st: {}, state: f, operator: true, payload }));
       return twiml();
     }
   }
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
   if (id) {
     const f = await funnelFor(digits, body);
     if (f) {
-      after(() => handleFunnelMessage({ digits, name, body, media, inboxId: String(id), st, state: f }));
+      after(() => handleFunnelMessage({ digits, name, body, media, inboxId: String(id), st, state: f, payload }));
       return twiml();
     }
   }

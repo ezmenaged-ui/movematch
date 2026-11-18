@@ -77,7 +77,7 @@ const FIELD_Q: Record<AddrField, (s: Side) => string> = {
   city: (s) => (s === 'from' ? 'מאיזו עיר עוברים?' : 'לאיזו עיר עוברים?'),
   address: () => 'מה הרחוב ומספר הבית?',
   floor: () => 'באיזו קומה הדירה? (קרקע = 0)',
-  elevator: () => 'יש מעלית בבניין? אם כן, היא קטנה, בינונית או גדולה?',
+  elevator: () => 'יש מעלית בבניין? (כן / לא) אם כן, היא קטנה, בינונית או גדולה?',
   elevator_type: () => 'מה גודל המעלית: קטנה, בינונית או גדולה?',
   crane: () => 'אפשר להשתמש במנוף בכתובת הזו? (כן / לא / לא יודעים)',
   parking: () => PARKING_Q,
@@ -99,6 +99,33 @@ function missing(a: Partial<Address> | undefined): AddrField | null {
   if (a.elevator && !a.elevator_type) return 'elevator_type';
   if (!a.crane) return 'crane';
   if (!a.parking) return 'parking';
+  return null;
+}
+
+// Closed questions are sent with tap buttons / a pick-list (Twilio Content, session-only: no Meta approval needed).
+// Created in Twilio on 18 Nov 2026 (friendly names mm_chat_*); the button ids come back as ButtonPayload / ListId.
+const BUTTONS: Partial<Record<AddrField, { sid: string; text: string }>> = {
+  elevator: { sid: 'HXfddbc2c06c6da654f9b404874f5f7b86', text: 'יש מעלית בבניין?' },             // elev_yes / elev_no
+  elevator_type: { sid: 'HXa5251204d878ae4fdbcdc72b7944d91a', text: 'מה גודל המעלית?' },           // size_small / size_regular / size_large
+  crane: { sid: 'HX78c49363103cab8d4ac28c24e17d40d3', text: 'אפשר להשתמש במנוף בכתובת הזו?' },   // crane_yes / crane_no / crane_unknown
+  parking: { sid: 'HXf73d12558cf6fb8f54fbf9550a2b723c', text: 'כמה רחוק המשאית יכולה לחנות מהכניסה לבניין? לחצו על "בחירת מרחק".' }, // park_p10 … park_far
+};
+const buttonsFor = (ask: string | undefined) => BUTTONS[(ask || '').split('.')[1] as AddrField];
+
+/** Send the question the bot is waiting for, after an optional prefix (buttons when the question has them). */
+async function sayQuestion(digits: string, prefix: string, ask: string | undefined) {
+  const b = buttonsFor(ask);
+  const plain = `${prefix}${questionText(ask)}`.trim(); // also the fallback if Twilio refuses the buttons
+  return b ? say(digits, `${prefix}${b.text}`.trim(), { sid: b.sid, fallback: plain }) : say(digits, plain);
+}
+
+/** Taps on the buttons / pick-list: the answer, without asking Claude. */
+function buttonAnswer(payload: string): Partial<Address> | null {
+  const [k, v] = payload.split('_');
+  if (k === 'elev') return v === 'yes' ? { elevator: true } : v === 'no' ? { elevator: false, elevator_type: '' } : null;
+  if (k === 'size' && ['small', 'regular', 'large'].includes(v)) return { elevator: true, elevator_type: v as Address['elevator_type'] };
+  if (k === 'crane' && ['yes', 'no', 'unknown'].includes(v)) return { crane: v as Address['crane'] };
+  if (k === 'park' && PARKING_OPTIONS.some((o) => o.v === v)) return { parking: v as Address['parking'] };
   return null;
 }
 
@@ -127,10 +154,16 @@ async function lock(digits: string) {
 }
 
 /** Bot message: sent as a reply in the open 24h window, and saved to the inbox (/admin/inbox shows the whole chat). */
-async function say(digits: string, text: string) {
+async function say(digits: string, text: string, buttons?: { sid: string; fallback: string }) {
   if (messagesPaused()) { console.warn('[paused] wa-funnel reply skipped'); return false; }
   try {
-    const sid = await sendWhatsAppText(digits, text, { kind: 'chat', chat: true, statusCallback: `${siteUrl()}/api/twilio/status?kind=inbox_out` });
+    const opts = { kind: 'chat', chat: true, statusCallback: `${siteUrl()}/api/twilio/status?kind=inbox_out` };
+    let sid = '';
+    if (buttons) {
+      try { sid = await sendWhatsAppText(digits, text, { ...opts, contentSid: buttons.sid }); }
+      catch (e) { console.error('[wa-funnel] buttons refused, sending text', e instanceof Error ? e.message : e); }
+    }
+    if (!sid) { text = buttons ? buttons.fallback : text; sid = await sendWhatsAppText(digits, text, opts); }
     await db().rpc('mm_inbox_add', { p_secret: secret(), p_phone: digits, p_name: null, p_dir: 'out', p_body: text, p_media: [], p_sid: sid, p_via: 'bot' });
     return true;
   } catch (e) { console.error('[wa-funnel] send', e instanceof Error ? e.message : e); return false; }
@@ -264,7 +297,7 @@ async function storeVideo(c: Ctx, m: Media) {
 }
 
 // ── The conversation ───────────────────────────────────────────────────────────────────────────────────────────────
-export async function handleFunnelMessage(m: { digits: string; name: string; body: string; media: Media[]; inboxId: string; st: InboxState; state: FunnelState; operator?: boolean }) {
+export async function handleFunnelMessage(m: { digits: string; name: string; body: string; media: Media[]; inboxId: string; st: InboxState; state: FunnelState; operator?: boolean; payload?: string }) {
   const { digits, body, media } = m;
   const local = normalizePhone('+' + digits);
   const fresh = (m.state as { isNew?: boolean }).isNew;
@@ -318,7 +351,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
 
   // Starter sent again in the middle of a chat (clicked the ad twice): just ask the current question again.
   if (isStarter(body) && !videos.length) {
-    await say(digits, `ממשיכים מאיפה שעצרנו 🙂\n\n${questionText(data.ask)}`);
+    await sayQuestion(digits, 'ממשיכים מאיפה שעצרנו 🙂\n\n', data.ask);
     await save(digits, { last_in: now, next_reminder_at: nextReminder(now, st.reminders) });
     return;
   }
@@ -349,7 +382,9 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   if (st.step === 'from' || st.step === 'to') {
     const side = st.step;
     const field = (ask.split('.')[1] as AddrField | undefined) || null;
-    if (text) {
+    const tapped = m.payload ? buttonAnswer(m.payload) : null;
+    if (tapped) data[side] = { ...(data[side] || {}), ...tapped };
+    else if (text) {
       const r = await readFor(`the ${side === 'from' ? 'origin (moving from)' : 'destination (moving to)'} address${field ? `, specifically: ${LABEL[field]}` : ''}`);
       const patch: Partial<AddrPatch> = r?.address ? r.address : r ? {} : fallbackAddress(text, field);
       const cur: Partial<Address> = { ...(data[side] || {}) };
@@ -445,7 +480,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
 }
 
 async function finish(c: Ctx, data: Data, nextStep: Step, prefix: string, now: string) {
-  await say(c.digits, `${prefix}${questionText(data.ask)}`.trim());
+  await sayQuestion(c.digits, prefix, data.ask);
   // At most 2 reminders per chat in total (they are not reset when the customer answers).
   await save(c.digits, { step: nextStep, data, last_in: now, next_reminder_at: nextReminder(now, c.st.reminders) });
 }
@@ -459,10 +494,10 @@ export async function sendDueReminders() {
   for (const f of due) {
     if (!windowLeftMs(f.last_in)) continue; // the 24h window closed: free-form is no longer allowed
     const hi = cleanName(f.data.name || f.data.profile).split(' ')[0];
-    const text = f.reminders <= 1
-      ? `היי${hi ? ` ${hi}` : ''} 👋 נשארו רק עוד כמה שאלות כדי לקבל הצעות מחיר להובלה.\n\n${questionText(f.data.ask)}`
-      : `תזכורת אחרונה מ-MoveMatch 🚚 אם עדיין מחפשים מוביל, אפשר להמשיך מכאן:\n\n${questionText(f.data.ask)}`;
-    if (await say(f.phone, text)) sent++;
+    const prefix = f.reminders <= 1
+      ? `היי${hi ? ` ${hi}` : ''} 👋 נשארו רק עוד כמה שאלות כדי לקבל הצעות מחיר להובלה.\n\n`
+      : 'תזכורת אחרונה מ-MoveMatch 🚚 אם עדיין מחפשים מוביל, אפשר להמשיך מכאן:\n\n';
+    if (await sayQuestion(f.phone, prefix, f.data.ask)) sent++;
     await save(f.phone, { next_reminder_at: nextReminder(f.last_in, f.reminders) });
   }
   return { due: due.length, sent };

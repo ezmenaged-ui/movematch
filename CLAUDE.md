@@ -44,7 +44,7 @@ These rules exist so that never happens again.
   with images attached. The operator answers by replying (long-press → Reply) to the alert: `OriginalRepliedMessageSid` maps it
   to the customer, and the reply goes out from the business number. Free-form replies only within 24h of the customer's last message.
   Only the first message of a conversation (per 24h) gets the automatic "thanks". Twilio media is served via the signed `/api/twilio/media`.
-- **Funnel F (WhatsApp chat, `lib/waFunnel.ts`)**: the bot only answers the customer's own messages (one reply per message, inside the 24h
+- **Funnel F (WhatsApp chat, `lib/waFunnel.ts`)**: closed questions (elevator, elevator size, crane, parking) go out as tap buttons / a pick-list (Twilio Content `mm_chat_*`, session-only; text fallback if refused). The bot only answers the customer's own messages (one reply per message, inside the 24h
   window opened by their starter message, throttled by `WA_CHAT_MAX`), plus at most 2 reminders (20:30 / 10:00, inside the window). Never add
   bot messages that start a conversation, and never send templates from the chat. Test only with a starter that begins with `QA`, from the
   owner's phone, one chat at a time.
