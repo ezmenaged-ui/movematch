@@ -84,8 +84,8 @@ const FIELD_Q: Record<AddrField, (s: Side) => string> = {
   parking: () => PARKING_Q,
 };
 const OPENER: Record<Side, string> = {
-  from: '*מאיפה עוברים?*\nכתבו בהודעה אחת: עיר, רחוב ומספר, קומה, והאם יש מעלית.',
-  to: '*ולאן עוברים?*\nעיר, רחוב ומספר, קומה, והאם יש מעלית.',
+  from: '*מאיפה עוברים?*\nכתבו בהודעה אחת: עיר, רחוב ומספר, והאם יש מעלית.',
+  to: '*ולאן עוברים?*\nעיר, רחוב ומספר, והאם יש מעלית.',
 };
 const WHEN_Q = '*מתי ההובלה?*\nאפשר תאריך (למשל 15/12), "סוף החודש" או "גמיש". אם יש העדפה לבוקר / צהריים / אחה״צ, כתבו גם.';
 const VIDEO_Q = '*כמעט סיימנו 🎥*\nצלמו סרטון קצר שעובר על כל החדרים (עד 3 דקות, עם ארונות פתוחים) ושלחו אותו כאן.\nכך המובילים נותנים מחיר מדויק בלי לבוא לראות את הדירה.';
@@ -96,9 +96,10 @@ const LABEL: Record<AddrField, string> = { city: 'city', address: 'street and ho
 function missing(a: Partial<Address> | undefined): AddrField | null {
   if (!a?.city) return 'city';
   if (!a.address) return 'address';
-  if (!a.floor) return 'floor';
+  // Elevator first: with an elevator we ask its size and skip the floor; stairs only → the floor matters.
   if (a.elevator == null) return 'elevator';
   if (a.elevator && !a.elevator_type) return 'elevator_type';
+  if (a.elevator === false && !a.floor) return 'floor';
   if (!a.crane) return 'crane';
   if (!a.parking) return 'parking';
   return null;
@@ -374,14 +375,14 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
     const c: Ctx = { digits, local, st, profile: m.name };
     step(c, 'from');
     const hi = cleanName(m.name).split(' ')[0];
+    // Two messages: the welcome (with consent and how to opt out), then the first question on its own.
     await say(digits, [
       `היי${hi ? ` ${hi}` : ''}! 👋 כאן MoveMatch.`,
-      'כמה שאלות קצרות, ותקבלו כאן הצעות מחיר ממובילים מאומתים באזור שלכם. השירות בחינם וללא התחייבות.',
+      'כמה שאלות פשוטות (בערך 4 דקות), ותקבלו כאן הצעות מחיר ממובילים מאומתים באזור שלכם. השירות בחינם וללא התחייבות.',
       '',
-      OPENER.from,
-      '',
-      '_בהמשך השיחה אתם מאשרים ש-MoveMatch תעביר את פרטי ההובלה למובילים ותשלח לכם עדכונים כאן. להפסקה: כתבו "הסר"._',
+      'בהמשך השיחה אתם מאשרים ש-MoveMatch תעביר את הפרטים שתמסרו כאן למובילים ותשלח לכם עדכונים בוואטסאפ. להפסקה בכל שלב: כתבו "הסר".',
     ].join('\n'));
+    await say(digits, OPENER.from);
     await save(digits, { next_reminder_at: nextReminder(now, 0) });
     return;
   }
