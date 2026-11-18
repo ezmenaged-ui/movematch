@@ -25,7 +25,12 @@ function validSignature(req: NextRequest, params: URLSearchParams) {
 
 export async function POST(req: NextRequest) {
   const params = new URLSearchParams(await req.text());
-  if (!validSignature(req, params)) return new NextResponse('forbidden', { status: 403 });
+  const key = process.env.TWILIO_WEBHOOK_KEY, k = req.nextUrl.searchParams.get('k') || '';
+  const keyOk = !!key && k.length === key.length && timingSafeEqual(Buffer.from(k), Buffer.from(key));
+  if (!keyOk && !validSignature(req, params)) {
+    console.warn('[status] refused', JSON.stringify({ key: !!k, sig: !!req.headers.get('x-twilio-signature') }));
+    return new NextResponse('forbidden', { status: 403 });
+  }
   const status = params.get('MessageStatus') || '';
   const lead = req.nextUrl.searchParams.get('lead') || '';
   const kind = req.nextUrl.searchParams.get('kind') || '';

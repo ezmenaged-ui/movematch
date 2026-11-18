@@ -88,6 +88,9 @@ async function throttle(to: string, kind: string) {
 export async function twilioPost(form: URLSearchParams) {
   const env = process.env;
   if (messagesPaused()) { logPaused(`Twilio message to ${form.get('To')}`); throw new Error('messages paused (MESSAGES_PAUSED)'); }
+  // Our webhooks accept a secret ?k= (TWILIO_WEBHOOK_KEY) as proof the call is from Twilio; add it to our status-callback URLs.
+  const cb = form.get('StatusCallback');
+  if (cb && env.TWILIO_WEBHOOK_KEY && !/[?&]k=/.test(cb)) form.set('StatusCallback', `${cb}${cb.includes('?') ? '&' : '?'}k=${encodeURIComponent(env.TWILIO_WEBHOOK_KEY)}`);
   const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${env.TWILIO_ACCOUNT_SID}/Messages.json`, {
     method: 'POST',
     headers: { Authorization: 'Basic ' + Buffer.from(authPair()).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
