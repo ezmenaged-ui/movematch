@@ -47,7 +47,12 @@ const twiml = (msg?: string) => new NextResponse(
 
 export async function POST(req: NextRequest) {
   const params = new URLSearchParams(await req.text());
-  if (!authorized(req, params)) return new NextResponse('forbidden', { status: 403 });
+  if (!authorized(req, params)) {
+    // No secrets in the log: just enough to see why Twilio's call was refused.
+    console.warn('[inbound] refused', JSON.stringify({ host: req.headers.get('x-forwarded-host') || req.headers.get('host'), key: req.nextUrl.searchParams.has('k'),
+      keySet: !!process.env.TWILIO_WEBHOOK_KEY, sig: !!req.headers.get('x-twilio-signature'), tokenSet: !!process.env.TWILIO_AUTH_TOKEN, from: (params.get('From') || '').slice(-4) }));
+    return new NextResponse('forbidden', { status: 403 });
+  }
 
   const from = (params.get('From') || '').replace(/^whatsapp:/, '');
   const digits = from.replace(/\D/g, '');
