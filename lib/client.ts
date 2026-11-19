@@ -146,7 +146,7 @@ export function track(event: string, data: Record<string, unknown> = {}) {
 }
 
 /**
- * Lead events that must count once per lead (lead_complete, qualified_lead): fired only the first time for this lead_id
+ * Lead events that must count once per lead (lead_complete, qualify_lead): fired only the first time for this lead_id
  * in this browser, so a reload, the Back button or a second submit doesn't count the same lead twice.
  * GA4 / Google Ads dedupe on top of this: every event carries lead_id, and the Ads conversion is set to count "One".
  */

@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 
 /**
- * GA4 events sent from the server (Measurement Protocol): funnel F (no browser), and booked_move (a mover marks the job
+ * GA4 events sent from the server (Measurement Protocol): funnel F (no browser), and close_convert_lead (a mover marks the job
  * booked, days after the visit). Needs NEXT_PUBLIC_GA_ID and GA4_API_SECRET (GA4 → Admin → Data streams → web stream →
  * Measurement Protocol API secrets). Without the secret nothing is sent.
  *

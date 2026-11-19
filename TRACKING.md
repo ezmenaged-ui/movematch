@@ -11,14 +11,14 @@ Last verified locally on 19 Nov 2026 (QA leads only, local server without Twilio
 | Contact saved | `generate_lead` | `generate_lead` | `generate_lead` | GA4 |
 | Questionnaire done | (same as submit) | (same as submit) | `wa_questionnaire_complete` | GA4 |
 | **Submitted lead** | `lead_complete` | `lead_complete` | `lead_complete` | GA4 → Ads (import) |
-| **Qualified lead** | `qualified_lead` | `qualified_lead` | `qualified_lead` | GA4 → Ads (import) + DB `qualified_at` |
-| **Booked move** | `booked_move` | `booked_move` | `booked_move` | GA4 (server) + Ads offline file |
+| **Qualified lead** | `qualify_lead` | `qualify_lead` | `qualify_lead` | GA4 → Ads (import) + DB `qualified_at` |
+| **Booked move** | `close_convert_lead` | `close_convert_lead` | `close_convert_lead` | GA4 (server) + Ads offline file |
 
 Every lead event carries `lead_id` (= the lead's id in `/admin`), `funnel` (`d`/`e`/`f`), `theme`, `variant_id`
 (`d-photo`, `e-art`, `f-whatsapp`…), `utm_source/medium/campaign/term/content` and `click_id_type` (`gclid`/`gbraid`/`wbraid`/`none`).
 E adds `info_choice` (`video`/`items`); F adds `ad_group` (`F2` for the one live WhatsApp ad, see §4).
 
-## 2. qualified_lead definition (lib/qualify.ts, same for all funnels)
+## 2. qualify_lead definition (lib/qualify.ts, same for all funnels)
 
 All of: saved complete by the backend · real lead (not QA) · real name · Israeli mobile 05XXXXXXXX ·
 origin city + street · destination city + street · moving date (or "flexible").
@@ -28,9 +28,9 @@ stricter rule can be added later without renaming the event. Candidate extra rul
 
 ## 3. Dedupe
 
-- `qualified_lead`: the database sets `leads.qualified_at` once (`mm_lead_mark`); only that first call fires the event. Verified: resubmitting a lead returns `new_qualified: false`.
-- `lead_complete` / `generate_lead`: fired once per `lead_id` per browser (`trackOnce`). The same lead finished on two devices (QR hand-off) can still produce two `lead_complete` events, which is why **`qualified_lead` should be the primary Ads conversion**.
-- `booked_move`: once per lead (`leads.booked_reported_at`), only if a booked bid exists.
+- `qualify_lead`: the database sets `leads.qualified_at` once (`mm_lead_mark`); only that first call fires the event. Verified: resubmitting a lead returns `new_qualified: false`.
+- `lead_complete` / `generate_lead`: fired once per `lead_id` per browser (`trackOnce`). The same lead finished on two devices (QR hand-off) can still produce two `lead_complete` events, which is why **`qualify_lead` should be the primary Ads conversion**.
+- `close_convert_lead`: once per lead (`leads.booked_reported_at`), only if a booked bid exists.
 - In Google Ads set each imported conversion to **Count: One**.
 
 ## 4. Funnel F and click ids (finding)
@@ -48,23 +48,23 @@ So an F lead **cannot be joined to an individual click**. What is reliable:
 
 1. Confirm the property: the site sends to **G-RTVGY3SM56** (Vercel `NEXT_PUBLIC_GA_ID`). The brief mentions G-DS7SFR0QWS. Check GA4 → Admin → Product links → Google Ads links on both; use the linked one (changing it is one Vercel variable plus a new `GA4_API_SECRET`).
 2. GA4 → Admin → Custom definitions: event-scoped dimensions `funnel`, `variant_id`, `lead_id`, `info_choice`, `ad_group`, `click_id_type`, `utm_term`, `utm_content`.
-3. GA4 → Key events: mark `qualified_lead` (primary) and `lead_complete`; optionally `booked_move`.
-4. Ads → Goals → Conversions → Import → GA4: `qualified_lead` = Primary, `lead_complete` = Secondary. Count: One.
+3. GA4 → Key events: mark `qualify_lead` (primary) and `lead_complete`; optionally `close_convert_lead`.
+4. Ads → Goals → Conversions → Import → GA4: `qualify_lead` = Primary, `lead_complete` = Secondary. Count: One.
 5. Booked moves into Ads: set `ADS_EXPORT_KEY` (any random 24+ chars) in Vercel, then Ads → Conversions → Uploads → Schedules → HTTPS:
    `https://movematch.co.il/api/ads/conversions?k=<key>` daily, with conversion actions named exactly **MM Booked Move** (and **MM Qualified Lead** only if you don't import it from GA4, to avoid counting it twice). Rows = real leads with a gclid.
 6. Ads auto-tagging must be ON (it adds the gclid).
 
-Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified lead = Ads cost ÷ `qualified_lead`, split by `funnel`
+Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified lead = Ads cost ÷ `qualify_lead`, split by `funnel`
 (D, E: per campaign; F: the F2 ad group).
 
 ## 6. Sample payloads (captured locally)
 
 ```json
-{"event":"qualified_lead","lead_id":"24029f92-…","funnel":"e","theme":"photo","variant_id":"e-photo","info_choice":"video",
+{"event":"qualify_lead","lead_id":"24029f92-…","funnel":"e","theme":"photo","variant_id":"e-photo","info_choice":"video",
  "has_video":true,"has_items":false,"has_inventory":true,"utm_source":"google","utm_medium":"cpc","utm_campaign":"mm-e-test",
  "utm_term":"hovala","utm_content":"ad1","click_id_type":"gclid"}
 {"event":"lead_complete","lead_id":"7283117a-…","funnel":"d","variant_id":"d-photo","has_video":true,"has_items":false,"click_id_type":"gclid", "...":"utm_*"}
-{"event":"qualified_lead","lead_id":"f4d64e1f-…","funnel":"f","variant_id":"f-whatsapp","ad_group":"F3","utm_source":"whatsapp",
+{"event":"qualify_lead","lead_id":"f4d64e1f-…","funnel":"f","variant_id":"f-whatsapp","ad_group":"F3","utm_source":"whatsapp",
  "utm_medium":"google_ads_message","utm_campaign":"F3","click_id_type":"none","has_inventory":false}
 ```
 
@@ -72,10 +72,10 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
 
 | Test | Result |
 |---|---|
-| E (item list): gclid + 5 UTMs + GA client/session id saved on the lead; `info_choice`, `lead_complete`, `qualified_lead` with `info_choice=items` | Pass |
+| E (item list): gclid + 5 UTMs + GA client/session id saved on the lead; `info_choice`, `lead_complete`, `qualify_lead` with `info_choice=items` | Pass |
 | E (video): same, `info_choice=video` | Pass |
 | D (required video, list skipped) | Pass |
-| Backend refuses the final save: no `lead_complete`, no `qualified_lead` | Pass |
+| Backend refuses the final save: no `lead_complete`, no `qualify_lead` | Pass |
 | Same lead submitted twice: second `new_qualified=false` | Pass |
 | Complete lead missing destination + date: `qualified=false`, `missing=[destination, move_date]` | Pass |
 | F chat (QA starter) → 5 events in order, lead complete, nothing to movers | Pass |
@@ -88,5 +88,5 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
 ## 8. After deploy: 10-minute check
 
 1. Open `https://movematch.co.il/e?utm_source=qa&gclid=TEST123` with Google Tag Assistant, finish as `QA …` with 054-6677361 (QA = no movers).
-2. GA4 DebugView: `generate_lead`, `info_choice`, `lead_complete`, `qualified_lead`, each with `lead_id`.
+2. GA4 DebugView: `generate_lead`, `info_choice`, `lead_complete`, `qualify_lead`, each with `lead_id`.
 3. In `/admin`, the lead shows the same id. Then delete the QA lead.

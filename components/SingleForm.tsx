@@ -84,7 +84,7 @@ export function SingleForm() {
         move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
       });
       trackOnce('lead_complete', ref.id, funnelParams('c', theme));
-      if (res?.new_qualified) trackOnce('qualified_lead', ref.id, { ...funnelParams('c', theme), has_inventory: !!res.has_inventory });
+      if (res?.new_qualified) trackOnce('qualify_lead', ref.id, { ...funnelParams('c', theme), has_inventory: !!res.has_inventory });
       trackStep('c', theme, 3, 'done');
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });

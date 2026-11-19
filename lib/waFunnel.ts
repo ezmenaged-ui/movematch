@@ -335,7 +335,7 @@ async function updateLead(c: Ctx, fields: Record<string, unknown>) {
  *   ad_group / utm_campaign = F1 / F2 / F3 (which starter message, i.e. which Google Ads message asset), click_id_type = 'none'
  *   (a WhatsApp message-asset click carries no gclid into the chat, see TRACKING.md).
  * Events: wa_conversation_start (first message of a chat) → funnel_step … → generate_lead (lead saved) →
- *   wa_questionnaire_complete (all answers in) → lead_complete (backend saved it complete) → qualified_lead (lib/qualify.ts, once per lead).
+ *   wa_questionnaire_complete (all answers in) → lead_complete (backend saved it complete) → qualify_lead (lib/qualify.ts, once per lead).
  */
 function ga(c: Ctx, event: string, params: Record<string, unknown>) {
   const all = {
@@ -548,7 +548,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
           step(c, 'done');
           ga(c, 'lead_complete', { has_video: (row.videos?.length || 0) > 0 });
           const q = await markQualified(row);
-          if (q.newly) ga(c, 'qualified_lead', { has_inventory: q.has_inventory });
+          if (q.newly) ga(c, 'qualify_lead', { has_inventory: q.has_inventory });
           else if (!q.qualified) console.warn(`[wa-funnel] lead ${row.id} complete but not qualified: ${q.missing.join(', ')}`);
           const first = name.split(' ')[0];
           const held = row.entry === 'home';

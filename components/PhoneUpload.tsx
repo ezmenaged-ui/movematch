@@ -41,7 +41,7 @@ export function PhoneUpload({ id, token, tender, backToDesktop = false }: { id: 
       // Finished on the phone (QR hand-off): same events as the desktop page, with the funnel the backend has for this lead.
       const ev = { ...funnelParams(r.funnel || 'unknown', r.theme), via: 'phone' };
       trackOnce('lead_complete', id, ev);
-      if (r.new_qualified) trackOnce('qualified_lead', id, { ...ev, has_inventory: !!r.has_inventory });
+      if (r.new_qualified) trackOnce('qualify_lead', id, { ...ev, has_inventory: !!r.has_inventory });
       setFinished(true);
     } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
   }

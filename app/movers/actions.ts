@@ -113,7 +113,7 @@ export async function bookJob(form: FormData) {
   const crew = form.getAll('crew').map(String).filter((x) => /^[0-9a-f-]{36}$/.test(x));
   const { error } = await (await moverDb()).rpc('mm_mover_book_job', { p_bid: bid, p_date: date, p_start: T5.test(start) ? start : null, p_end: T5.test(end) ? end : null, p_crew: crew });
   if (error) redirect(`/movers/leads/${lead}?error=book#booking`);
-  if (/^[0-9a-f-]{36}$/.test(lead)) after(() => reportBooked(lead)); // booked_move to GA4, once per lead (lib/booked.ts)
+  if (/^[0-9a-f-]{36}$/.test(lead)) after(() => reportBooked(lead)); // close_convert_lead to GA4, once per lead (lib/booked.ts)
   revalidatePath('/movers', 'layout');
   redirect(`/movers/leads/${lead}?ok=booked#booking`);
 }
