@@ -11,6 +11,7 @@ import { messagesPaused } from './pause';
 import { waFunnelLive } from './qa';
 import { readAnswer, type AddrPatch, type Reading } from './waAi';
 import { gaEvent } from './gaServer';
+import { markQualified } from './qualify';
 
 /**
  * Funnel F: the whole funnel as a WhatsApp chat.
@@ -329,9 +330,24 @@ async function updateLead(c: Ctx, fields: Record<string, unknown>) {
   return (data || null) as LeadRow | null;
 }
 
+/**
+ * GA4 events for funnel F (server-side, lib/gaServer.ts). Same names and parameters as the web funnels, plus:
+ *   ad_group / utm_campaign = F1 / F2 / F3 (which starter message, i.e. which Google Ads message asset), click_id_type = 'none'
+ *   (a WhatsApp message-asset click carries no gclid into the chat, see TRACKING.md).
+ * Events: wa_conversation_start (first message of a chat) → funnel_step … → generate_lead (lead saved) →
+ *   wa_questionnaire_complete (all answers in) → lead_complete (backend saved it complete) → qualified_lead (lib/qualify.ts, once per lead).
+ */
 function ga(c: Ctx, event: string, params: Record<string, unknown>) {
-  if (c.st.test) return; // keep GA4 reports clean
-  void gaEvent(c.digits, event, { funnel: 'f', theme: 'whatsapp', variant_id: 'f-whatsapp', ad_group: c.st.source || '', ...params });
+  const all = {
+    funnel: 'f', theme: 'whatsapp', variant_id: 'f-whatsapp', ad_group: c.st.source || '',
+    utm_source: 'whatsapp', utm_medium: 'google_ads_message', utm_campaign: c.st.source || '', click_id_type: 'none',
+    ...(c.st.lead_id ? { lead_id: c.st.lead_id } : {}), ...params,
+  };
+  if (c.st.test) { // keep GA4 reports clean; GA_DEBUG_LOG=1 shows what would have been sent (local tests)
+    if (process.env.GA_DEBUG_LOG === '1') console.info('[ga:mp:test-not-sent]', event, JSON.stringify(all));
+    return;
+  }
+  void gaEvent(c.digits, event, all);
 }
 const step = (c: Ctx, s: Step) => ga(c, 'funnel_step', { step_number: STEP_NO[s], step_name: `${STEP_NO[s]}_${GA_NAME[s]}` });
 
@@ -388,6 +404,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
       data: { ask: 'from', profile: m.name }, last_in: now, reminders: 0, next_reminder_at: null });
     if (!st) return;
     const c: Ctx = { digits, local, st, profile: m.name };
+    ga(c, 'wa_conversation_start', { starter_variant: st.source || 'unknown' });
     step(c, 'from');
     const hi = cleanName(m.name).split(' ')[0];
     // Two messages: the welcome (with consent and how to opt out), then the first question on its own.
@@ -525,10 +542,14 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
       if (name.length >= 2) {
         data.name = name;
         nextStep = 'done';
+        ga(c, 'wa_questionnaire_complete', { has_video: (data.videos || 0) > 0 });
         const row = await updateLead(c, { name: (st.test ? 'QA ' : '') + name, status: 'complete', furthest_step: STEP_NO.done });
         if (row) {
           step(c, 'done');
-          ga(c, 'lead_complete', {});
+          ga(c, 'lead_complete', { has_video: (row.videos?.length || 0) > 0 });
+          const q = await markQualified(row);
+          if (q.newly) ga(c, 'qualified_lead', { has_inventory: q.has_inventory });
+          else if (!q.qualified) console.warn(`[wa-funnel] lead ${row.id} complete but not qualified: ${q.missing.join(', ')}`);
           const first = name.split(' ')[0];
           const held = row.entry === 'home';
           await say(digits, [

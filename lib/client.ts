@@ -2,17 +2,65 @@
 import type { Variant } from './validate';
 
 const UTM_KEY = 'mm_utm';
+const ATTR_KEY = 'mm_attr';
+const ATTR_DAYS = 90; // Google Ads' default click-through conversion window
+const UTM_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'] as const;
+const CLICK_FIELDS = ['gclid', 'gbraid', 'wbraid'] as const;
 
-/** First-touch UTM params, kept for the session so they survive step changes. */
-export function getUtm(): Record<string, string> {
+export type Attribution = Partial<Record<(typeof UTM_FIELDS)[number] | (typeof CLICK_FIELDS)[number] | 'landing_path', string>>;
+
+/**
+ * Ad attribution for this visitor: UTM fields + Google Ads click ids (gclid / gbraid / wbraid) + the landing path.
+ * A visit whose URL carries any of them replaces what was stored (the latest ad click wins, like Google Ads' last click);
+ * otherwise the stored values are used for 90 days, so a visitor who comes back later (or opens the follow-up page
+ * in a new tab) still carries the click. The short addresses (/d → /d/photo) keep the query string, see next.config.mjs.
+ */
+export function getAttribution(): Attribution {
   if (typeof window === 'undefined') return {};
   const q = new URLSearchParams(window.location.search);
-  const fresh: Record<string, string> = {};
-  for (const k of ['utm_source', 'utm_medium', 'utm_campaign']) { const v = q.get(k); if (v) fresh[k] = v; }
+  const fresh: Attribution = {};
+  for (const k of [...UTM_FIELDS, ...CLICK_FIELDS]) { const v = q.get(k); if (v) fresh[k] = v.slice(0, 200); }
   try {
-    if (Object.keys(fresh).length) { sessionStorage.setItem(UTM_KEY, JSON.stringify(fresh)); return fresh; }
-    return JSON.parse(sessionStorage.getItem(UTM_KEY) || '{}');
-  } catch { return fresh; }
+    if (Object.keys(fresh).length) {
+      fresh.landing_path = window.location.pathname.slice(0, 200);
+      localStorage.setItem(ATTR_KEY, JSON.stringify({ ...fresh, t: Date.now() }));
+      sessionStorage.setItem(UTM_KEY, JSON.stringify(fresh));
+      return fresh;
+    }
+    const s = JSON.parse(sessionStorage.getItem(UTM_KEY) || 'null') || JSON.parse(localStorage.getItem(ATTR_KEY) || 'null');
+    if (s && (!s.t || Date.now() - s.t < ATTR_DAYS * 864e5)) { const { t: _t, ...a } = s; return a as Attribution; }
+  } catch { /* private mode */ }
+  return { landing_path: window.location.pathname.slice(0, 200) };
+}
+
+/** UTM fields only (older callers). */
+export function getUtm(): Record<string, string> {
+  const a = getAttribution();
+  const out: Record<string, string> = {};
+  for (const k of UTM_FIELDS) if (a[k]) out[k] = a[k]!;
+  return out;
+}
+
+/** Parameters added to every lead event in GA4, so leads can be split by ad, campaign and click type. */
+export function attributionParams(): Record<string, string> {
+  const a = getAttribution();
+  const out: Record<string, string> = {};
+  for (const k of UTM_FIELDS) if (a[k]) out[k] = a[k]!;
+  out.click_id_type = a.gclid ? 'gclid' : a.gbraid ? 'gbraid' : a.wbraid ? 'wbraid' : 'none';
+  return out;
+}
+
+/** The visitor's GA4 client_id and session_id (asked from gtag, at most 800 ms), saved on the lead for server-side events. */
+async function gaIds(): Promise<{ ga_client_id?: string; ga_session_id?: string }> {
+  const w = window as unknown as { gtag?: (...a: unknown[]) => void };
+  const id = process.env.NEXT_PUBLIC_GA_ID;
+  if (!w.gtag || !id) return {};
+  const get = (field: string) => new Promise<string | undefined>((res) => {
+    const t = setTimeout(() => res(undefined), 800);
+    try { w.gtag!('get', id, field, (v: unknown) => { clearTimeout(t); res(v == null ? undefined : String(v)); }); } catch { clearTimeout(t); res(undefined); }
+  });
+  const [c, s] = await Promise.all([get('client_id'), get('session_id')]);
+  return { ...(c ? { ga_client_id: c } : {}), ...(s ? { ga_session_id: s } : {}) };
 }
 
 /**
@@ -52,7 +100,7 @@ async function leadFail(r: Response, msg: string): Promise<never> {
 export async function createLead(variant: Variant, fields: Record<string, unknown>, honeypot = ''): Promise<LeadRef> {
   const r = await fetch('/api/leads', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ variant, ...getUtm(), ...fields, entry: getEntry(), website: honeypot }),
+    body: JSON.stringify({ variant, ...getAttribution(), ...(await gaIds()), ...fields, entry: getEntry(), website: honeypot }),
   });
   if (!r.ok) await leadFail(r, 'create failed');
   return r.json();
@@ -95,6 +143,18 @@ export function track(event: string, data: Record<string, unknown> = {}) {
   w.gtag?.('event', event, data);
   if (event === 'lead_created') w.fbq?.('track', 'Lead', data);
   if (event === 'lead_complete') w.fbq?.('track', 'CompleteRegistration', data);
+}
+
+/**
+ * Lead events that must count once per lead (lead_complete, qualified_lead): fired only the first time for this lead_id
+ * in this browser, so a reload, the Back button or a second submit doesn't count the same lead twice.
+ * GA4 / Google Ads dedupe on top of this: every event carries lead_id, and the Ads conversion is set to count "One".
+ */
+export function trackOnce(event: string, leadId: string, data: Record<string, unknown> = {}) {
+  const key = `mm_fired:${event}:${leadId}`;
+  try { if (localStorage.getItem(key)) return false; localStorage.setItem(key, '1'); } catch { /* private mode: still send */ }
+  track(event, { lead_id: leadId, ...attributionParams(), ...data });
+  return true;
 }
 
 /** Each clip may be at most 4 minutes (small tolerance for metadata rounding). */

@@ -3,6 +3,7 @@ import { db, LeadRow, phoneRecent } from '@/lib/db';
 import { notifyLead } from '@/lib/notify';
 import { onLeadComplete } from '@/lib/automations';
 import { cleanLeadInput } from '@/lib/sanitize';
+import { funnelOf, markQualified } from '@/lib/qualify';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -23,5 +24,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   if (p.status === 'complete') after(() => onLeadComplete(row, { pingMovers: row.variant !== 'a' }));
   else if (p.add_video && row.status === 'complete') after(() => notifyLead('video', row));
-  return NextResponse.json({ ok: true, status: row.status, furthest_step: row.furthest_step });
+  // Completing the request: the backend decides whether it is a qualified lead (lib/qualify.ts) and reports it once
+  // (new_qualified is true only the first time), so the page fires qualified_lead only on the backend's word.
+  const q = p.status === 'complete' ? await markQualified(row) : null;
+  return NextResponse.json({
+    ok: true, status: row.status, furthest_step: row.furthest_step, lead_id: row.id, funnel: funnelOf(row.variant), theme: row.theme || 'photo',
+    ...(q ? { qualified: q.qualified, new_qualified: q.newly, missing: q.missing, has_inventory: q.has_inventory } : {}),
+  });
 }

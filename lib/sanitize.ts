@@ -44,7 +44,12 @@ export function cleanLeadInput(b: Record<string, unknown>) {
   }
   if (typeof b.video_skipped === 'boolean') out.video_skipped = b.video_skipped;
   if (b.theme === 'photo' || b.theme === 'art') out.theme = b.theme;
-  for (const k of ['utm_source', 'utm_medium', 'utm_campaign']) if (b[k] !== undefined) out[k] = s(b[k], 200);
+  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'landing_path']) if (b[k] !== undefined) out[k] = s(b[k], 200);
+  // Google Ads click ids and GA4 ids (lib/client.ts → getAttribution / gaIds): plain tokens only.
+  for (const k of ['gclid', 'gbraid', 'wbraid']) { const v = s(b[k], 200); if (v && /^[\w.-]+$/.test(v)) out[k] = v; }
+  { const v = s(b.ga_client_id, 60); if (v && /^\d+\.\d+$/.test(v)) out.ga_client_id = v; }
+  { const v = s(b.ga_session_id, 30); if (v && /^\d+$/.test(v)) out.ga_session_id = v; }
+  if (b.info_choice === 'video' || b.info_choice === 'items') out.info_choice = b.info_choice;
   if (b.add_video && typeof b.add_video === 'object') {
     const v = b.add_video as Record<string, unknown>;
     const path = s(v.path, 300);
