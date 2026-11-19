@@ -3,10 +3,10 @@
 --  utm_term / utm_content     = the other two UTM fields (utm_source / medium / campaign already existed)
 --  landing_path               = first page of the visit (path only, no query string)
 --  ga_client_id / ga_session_id = the visitor's GA4 ids (from the _ga cookies), so server-side events
---                               (qualified_lead for F, booked_move) join the same GA4 user and session
+--                               (qualify_lead for F, close_convert_lead) join the same GA4 user and session
 --  info_choice                = funnel E: 'video' or 'items' (what the client chose on the info step)
---  qualified_at               = when the lead first met the qualified_lead rules (set once: dedupe for GA4 / Ads)
---  booked_reported_at         = when booked_move was sent for this lead (set once)
+--  qualified_at               = when the lead first met the qualify_lead rules (set once: dedupe for GA4 / Ads)
+--  booked_reported_at         = when close_convert_lead was sent for this lead (set once)
 -- All columns are nullable and the functions accept the old input unchanged, so the current site keeps working.
 
 alter table movematch.leads

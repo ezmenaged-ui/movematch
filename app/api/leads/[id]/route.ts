@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (p.status === 'complete') after(() => onLeadComplete(row, { pingMovers: row.variant !== 'a' }));
   else if (p.add_video && row.status === 'complete') after(() => notifyLead('video', row));
   // Completing the request: the backend decides whether it is a qualified lead (lib/qualify.ts) and reports it once
-  // (new_qualified is true only the first time), so the page fires qualified_lead only on the backend's word.
+  // (new_qualified is true only the first time), so the page fires qualify_lead only on the backend's word.
   const q = p.status === 'complete' ? await markQualified(row) : null;
   return NextResponse.json({
     ok: true, status: row.status, furthest_step: row.furthest_step, lead_id: row.id, funnel: funnelOf(row.variant), theme: row.theme || 'photo',

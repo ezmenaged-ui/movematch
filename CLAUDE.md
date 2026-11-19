@@ -55,5 +55,7 @@ These rules exist so that never happens again.
 
 `lib/client.ts` → `trackStep` sends one `funnel_step` event per step reached, with `funnel`, `theme`, `variant_id`,
 `step_number` and `step_name` (numbered, e.g. `3_to`). Steps: A `0_landing → 1_contact`; B `… 2_from 3_to 4_when 5_items 6_done` (before 13 Nov 2026: `5_video`);
-C `… 2_details 3_done`; F (WhatsApp chat, sent from the server, `lib/gaServer.ts`) `1_start 2_to 3_when 4_video 5_name 6_done` with `ad_group`; D `… 2_from 3_to 4_when 5_video 6_items 7_done` (before 17 Nov 2026: `5_items 6_video`); E `… 2_from 3_to 4_when 5_info 6_done` (`6_done` carries `info_choice`: `video` or `items`; the choice itself also fires `info_choice`). Conversions: `generate_lead` (name + phone saved)
-and `lead_complete` (full details). Keep these names and parameters stable: GA4 reports and Google Ads conversions depend on them.
+C `… 2_details 3_done`; F (WhatsApp chat, sent from the server, `lib/gaServer.ts`) `1_start 2_to 3_when 4_video 5_name 6_done` with `ad_group`; D `… 2_from 3_to 4_when 5_video 6_items 7_done` (before 17 Nov 2026: `5_items 6_video`); E `… 2_from 3_to 4_when 5_info 6_done` (`6_done` carries `info_choice`: `video` or `items`; the choice itself also fires `info_choice`). Conversions: `generate_lead` (name + phone saved),
+`lead_complete` (full details, fired only after the backend saved them), `qualify_lead` (Google's standard name; rule in `lib/qualify.ts`, once per
+lead via `leads.qualified_at`) and `close_convert_lead` (a mover marked the job booked, server-side, `lib/booked.ts`). F also sends
+`wa_conversation_start` and `wa_questionnaire_complete`. Every lead event carries `lead_id`. Full setup: `TRACKING.md`. Keep these names and parameters stable: GA4 reports and Google Ads conversions depend on them.

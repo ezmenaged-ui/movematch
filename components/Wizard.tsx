@@ -275,7 +275,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
             has_video: up.usable.length > 0 || remote > 0, has_items: items.list.length > 0,
           };
           trackOnce('lead_complete', sent.id, ev);
-          if (res?.new_qualified) trackOnce('qualified_lead', sent.id, { ...ev, has_inventory: !!res.has_inventory });
+          if (res?.new_qualified) trackOnce('qualify_lead', sent.id, { ...ev, has_inventory: !!res.has_inventory });
         }
         go(S_DONE);
       } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }

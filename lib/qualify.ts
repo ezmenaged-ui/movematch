@@ -4,7 +4,7 @@ import { isTestLead } from './qa';
 import { isValidName } from './validate';
 
 /**
- * qualified_lead: one definition for funnels D, E and F (and any other funnel). A lead qualifies when ALL of these hold:
+ * qualify_lead: one definition for funnels D, E and F (and any other funnel). A lead qualifies when ALL of these hold:
  *   1. the backend accepted it as complete (status = 'complete'),
  *   2. it is a real lead: not a QA test lead (name "QA…", utm_source=qa, /qa test area),
  *   3. contact: a real name (not the WhatsApp placeholder) and an Israeli mobile number (05XXXXXXXX),
@@ -36,7 +36,7 @@ export function qualify(l: LeadRow): Qualification {
 
 /**
  * Qualify the lead and, the first time it qualifies, record qualified_at (migration 027). Returns newly = true only for
- * that first call, so qualified_lead is sent once per lead however many times the lead is saved.
+ * that first call, so qualify_lead is sent once per lead however many times the lead is saved.
  * Before migration 027 is applied the mark fails and nothing is reported as new (no event rather than duplicates).
  */
 export async function markQualified(l: LeadRow): Promise<Qualification & { newly: boolean }> {
