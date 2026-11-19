@@ -56,19 +56,16 @@ export const isStarter = (body: string) => CODE.test(body) || (/הובל/.test(b
 const isQaStarter = (body: string) => /^\s*QA\b/i.test(body);
 
 /**
- * Which ad the chat came from, saved on the lead as utm_campaign. The three Google Ads starters differ only in their ending:
- *   "היי, אני רוצה הצעת מחיר להובלה!"       → F1
- *   "היי, אני רוצה הצעת מחיר להובלה."       → F2
- *   "היי, אני רוצה הצעת מחיר להובלה בבקשה"  → F3
+ * Which ad the chat came from, saved on the lead as utm_campaign. Funnel F has one WhatsApp ad, labelled F2:
+ *   "היי, אני רוצה הצעת מחיר להובלה."  → F2
+ * The earlier variants ("…להובלה!", "…להובלה בבקשה", once F1 / F3) are also counted as F2, in case an old ad is still live.
  * A "#code" in the starter (e.g. #G1) also works. Anything else: null (unknown).
  */
 export function starterSource(body: string): string | null {
   const code = body.match(CODE)?.[1];
   if (code) return code.toUpperCase();
   const t = body.replace(/^\s*QA\b/i, '').trim();
-  if (/בבקשה[.!]?$/.test(t)) return 'F3';
-  if (/!$/.test(t)) return 'F1';
-  if (/\.$/.test(t)) return 'F2';
+  if (/(בבקשה[.!]?|[.!])$/.test(t)) return 'F2';
   return null;
 }
 

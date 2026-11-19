@@ -20,8 +20,8 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
 **Funnel F · WhatsApp chat** (no page): the Google Ads WhatsApp button (message asset) opens a chat with a starter message
-already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1` (`#G1` = ad-group code, saved as the lead's `utm_campaign`). The live Google Ads starters differ only in their ending and are saved as
-`utm_campaign` F1 (`…להובלה!`), F2 (`…להובלה.`), F3 (`…להובלה בבקשה`). The customer taps
+already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1` (`#G1` = ad-group code, saved as the lead's `utm_campaign`). There is one WhatsApp ad, starter `היי, אני רוצה הצעת מחיר להובלה.`, saved as
+`utm_campaign` F2. The old variants (`…להובלה!`, `…להובלה בבקשה`, once F1 / F3) also count as F2. The customer taps
 send and the bot asks, one at a time: from → to → when → video → name (`lib/waFunnel.ts`; Claude reads the free-text answers, `lib/waAi.ts`).
 Each address gets the same details as the web funnels; only what is missing is asked again. Done = a normal complete lead (`variant = 'chat'`):
 tender opened, movers in the area alerted, the tender link sent in the chat. Reminders: at most 2 per chat, at 20:30 / 10:00, inside the
