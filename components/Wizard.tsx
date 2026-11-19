@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearHandoff, FlowTheme, liveHandoff, loadHandoff, saveHandoff, VARIANT } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
-import { createLead, fmtDuration, funnelParams, LeadGoneError, LeadRef, PhoneRecentError, track, trackStep, updateLead } from '@/lib/client';
+import { createLead, fmtDuration, funnelParams, LeadGoneError, LeadRef, PhoneRecentError, track, trackOnce, trackStep, updateLead } from '@/lib/client';
 import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
 import { PriorityScale } from './PriorityScale';
 import { ItemsPicker } from './ItemsPicker';
@@ -160,7 +160,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
         const fields = { name: name.trim(), phone: normalizePhone(phone) };
         let r = ref;
         if (r) await updateLead(r, fields);
-        else { r = await createLead('wizard', { ...fields, furthest_step: 1 }, hp); setRef(r); up.attach(r); track('lead_created', funnelParams(funnel, theme)); track('generate_lead', funnelParams(funnel, theme)); trackStep(funnel, theme, 1, 'contact'); }
+        else { r = await createLead('wizard', { ...fields, furthest_step: 1 }, hp); setRef(r); up.attach(r); track('lead_created', funnelParams(funnel, theme)); trackOnce('generate_lead', r.id, funnelParams(funnel, theme)); trackStep(funnel, theme, 1, 'contact'); }
         go(2);
       } catch (e) {
         if (e instanceof PhoneRecentError) setErr({ phone: phoneRecentMsg(e.until) });
@@ -247,17 +247,19 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
         const all = {
           status: 'complete', furthest_step: S_DONE, video_skipped: isD && !up.usable.length && !remote, items, move_when: when, priority,
           move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
+          ...(isE && mode ? { info_choice: mode } : {}),
         };
         let sent = ref;
+        let res: { new_qualified?: boolean; has_inventory?: boolean } | null = null;
         if (ref) {
-          try { await updateLead(ref, all); } catch (e) {
+          try { res = await updateLead(ref, all); } catch (e) {
             if (!(e instanceof LeadGoneError)) throw e;
             // The lead was deleted while the page was open (e.g. a cleanup): open a fresh one with every detail, once.
             // Videos already uploaded belonged to the old lead and are not carried over. No new generate_lead event.
             const fresh = await createLead(VARIANT[funnel], { name, phone, city: from.city, theme, status: 'partial', furthest_step: 1 });
             setRef(fresh); up.attach(fresh);
             saveHandoff({ funnel, ref: fresh, name, phone, city: from.city, theme });
-            await updateLead(fresh, all);
+            res = await updateLead(fresh, all);
             sent = fresh;
           }
         }
@@ -265,7 +267,16 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
           const v = await fetch(`/api/leads/${sent.id}/videos?k=${sent.token}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
           if (v && typeof v.count === 'number') setSavedVideos(v.count);
         }
-        track('lead_complete', funnelParams(funnel, theme));
+        // Fired only after the backend saved the request as complete (updateLead throws otherwise).
+        // lead_id = the lead's database id: the same value is in /admin, so GA4 / Ads numbers can be checked lead by lead.
+        if (sent) {
+          const ev = {
+            ...funnelParams(funnel, theme), ...(isE && mode ? { info_choice: mode } : {}),
+            has_video: up.usable.length > 0 || remote > 0, has_items: items.list.length > 0,
+          };
+          trackOnce('lead_complete', sent.id, ev);
+          if (res?.new_qualified) trackOnce('qualified_lead', sent.id, { ...ev, has_inventory: !!res.has_inventory });
+        }
         go(S_DONE);
       } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
     }
@@ -374,7 +385,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                       ['items', <ClipboardList key="i" size={30} strokeWidth={1.5} aria-hidden />, 'רשימת פריטים', 'בוחרים מהרשימה את כל מה שעובר'],
                     ] as const).map(([m, ico, t, sub]) => (
                       <button key={m} type="button" role="radio" aria-checked={mode === m} className={`e-opt ${mode === m ? 'on' : ''}`}
-                        onClick={() => { if (mode !== m) { setMode(m); setExtraOpen(false); setShortWarn(false); setFail(''); track('info_choice', { ...funnelParams(funnel, theme), choice: m }); } }}>
+                        onClick={() => { if (mode !== m) { setMode(m); setExtraOpen(false); setShortWarn(false); setFail(''); track('info_choice', { ...funnelParams(funnel, theme), choice: m, info_choice: m, ...(ref ? { lead_id: ref.id } : {}) }); if (ref) updateLead(ref, { info_choice: m }).catch(() => {}); } }}>
                         {ico}<b>{t}</b><span>{sub}</span>{mode === m && <Check className="e-opt-ok" size={18} strokeWidth={2.5} aria-hidden />}
                       </button>
                     ))}

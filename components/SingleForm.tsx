@@ -2,7 +2,7 @@
 import { Check, PhoneCall } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { funnelParams, LeadRef, track, trackStep, updateLead } from '@/lib/client';
+import { funnelParams, LeadRef, track, trackOnce, trackStep, updateLead } from '@/lib/client';
 import { FlowTheme, liveHandoff, loadHandoff } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
 import { Address, emptyAddress, emptyWhen, MSG, validateAddress, validateWhen, When } from '@/lib/validate';
@@ -79,11 +79,12 @@ export function SingleForm() {
     if (!ref) return;
     setBusy(true);
     try {
-      await updateLead(ref, {
+      const res = await updateLead(ref, {
         status: 'complete', furthest_step: 5, video_skipped: skipped && !hasVideo, move_when: when, priority,
         move_from: { ...from, elevator: from.elevator ?? false }, move_to: { ...to, elevator: to.elevator ?? false },
       });
-      track('lead_complete', funnelParams('c', theme));
+      trackOnce('lead_complete', ref.id, funnelParams('c', theme));
+      if (res?.new_qualified) trackOnce('qualified_lead', ref.id, { ...funnelParams('c', theme), has_inventory: !!res.has_inventory });
       trackStep('c', theme, 3, 'done');
       setDone(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });

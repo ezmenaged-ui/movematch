@@ -38,6 +38,17 @@ export type LeadRow = {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
+  landing_path?: string | null;
+  ga_client_id?: string | null;
+  ga_session_id?: string | null;
+  info_choice?: 'video' | 'items' | null;
+  qualified_at?: string | null;
+  theme?: 'photo' | 'art' | null;
   user_agent: string | null;
   handled: boolean;
   share_token: string;

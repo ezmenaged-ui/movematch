@@ -1,7 +1,7 @@
 'use client';
 import { ArrowRight, Check, Monitor } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { track, updateLead } from '@/lib/client';
+import { funnelParams, trackOnce, updateLead } from '@/lib/client';
 import { useUploads } from './useUploads';
 import { ClipList, VideoButtons, VideoGuide } from './VideoUploader';
 import { Blueprint, Corners, Header, Spinner } from './ui';
@@ -37,8 +37,11 @@ export function PhoneUpload({ id, token, tender, backToDesktop = false }: { id: 
   async function finish() {
     setBusy(true); setFail('');
     try {
-      await updateLead({ id, token }, { status: 'complete', furthest_step: 6, video_skipped: false });
-      track('lead_complete', { via: 'phone' });
+      const r = await updateLead({ id, token }, { status: 'complete', furthest_step: 6, video_skipped: false });
+      // Finished on the phone (QR hand-off): same events as the desktop page, with the funnel the backend has for this lead.
+      const ev = { ...funnelParams(r.funnel || 'unknown', r.theme), via: 'phone' };
+      trackOnce('lead_complete', id, ev);
+      if (r.new_qualified) trackOnce('qualified_lead', id, { ...ev, has_inventory: !!r.has_inventory });
       setFinished(true);
     } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
   }
