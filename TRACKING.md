@@ -16,7 +16,7 @@ Last verified locally on 19 Nov 2026 (QA leads only, local server without Twilio
 
 Every lead event carries `lead_id` (= the lead's id in `/admin`), `funnel` (`d`/`e`/`f`), `theme`, `variant_id`
 (`d-photo`, `e-art`, `f-whatsapp`…), `utm_source/medium/campaign/term/content` and `click_id_type` (`gclid`/`gbraid`/`wbraid`/`none`).
-E adds `info_choice` (`video`/`items`); F adds `ad_group` = `F1`/`F2`/`F3`.
+E adds `info_choice` (`video`/`items`); F adds `ad_group` (`F2` for the one live WhatsApp ad, see §4).
 
 ## 2. qualified_lead definition (lib/qualify.ts, same for all funnels)
 
@@ -37,8 +37,10 @@ stricter rule can be added later without renaming the event. Candidate extra rul
 
 A WhatsApp message-asset click does **not** pass a gclid into the chat, and the starter text is the same for every click.
 So an F lead **cannot be joined to an individual click**. What is reliable:
-- **Ad level**: the starter ending maps the chat to F1 / F2 / F3 (verified: `!`→F1, `.`→F2, `בבקשה`→F3, QA prefix and spaces handled).
-  Risk: a customer who edits the prefilled text loses the label (stored as unknown), and a typed message that happens to end the same way gets that label.
+- **Ad level**: since #26 (19 Nov 2026) funnel F has **one** WhatsApp ad and every starter ending (`.`, `!`, `בבקשה`) is labelled **F2**
+  (the earlier F1/F2/F3 split was verified before that change; a `#code` in the starter, e.g. `#G1`, still gives its own label).
+  To compare several F ads again, give each ad its own `#code` starter rather than relying on punctuation.
+  Risk: a customer who edits the prefilled text loses the label (stored as unknown).
 - **Google Ads side**: Ads counts message-asset clicks/conversations itself. F's GA4 events use a phone-hash user, so importing them into Ads
   will **not** attribute them to clicks. Measure F cost per lead as *(Ads cost of the F ad group) ÷ (F leads with that `ad_group` in GA4 or `/admin`)*.
 
@@ -53,7 +55,7 @@ So an F lead **cannot be joined to an individual click**. What is reliable:
 6. Ads auto-tagging must be ON (it adds the gclid).
 
 Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified lead = Ads cost ÷ `qualified_lead`, split by `funnel`
-(D, E: per campaign; F: per ad group F1–F3).
+(D, E: per campaign; F: the F2 ad group).
 
 ## 6. Sample payloads (captured locally)
 
@@ -76,8 +78,8 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
 | Backend refuses the final save: no `lead_complete`, no `qualified_lead` | Pass |
 | Same lead submitted twice: second `new_qualified=false` | Pass |
 | Complete lead missing destination + date: `qualified=false`, `missing=[destination, move_date]` | Pass |
-| F chat (QA starter, F3) → 5 events in order, lead complete, nothing to movers | Pass |
-| Starter → F1/F2/F3 mapping (10 cases) | Pass |
+| F chat (QA starter) → 5 events in order, lead complete, nothing to movers | Pass |
+| Starter mapping (10 cases, before #26 merged all starters into F2) | Pass |
 | Booking: no report before a booking, exactly one after, value + GA client id read (in a rolled-back transaction) | Pass |
 | Ads CSV: 404 without the key; correct header; test leads excluded | Pass |
 | Ads CSV contains a real lead | Not testable without a real lead (all test leads are excluded by design) |
