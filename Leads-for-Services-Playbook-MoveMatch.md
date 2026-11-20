@@ -1,4 +1,4 @@
-# Local-services marketplace playbook (learned from building MoveMatch)
+# Leads for Services playbook (MoveMatch)
 
 **What this is:** everything learned while building MoveMatch (movematch.co.il, a Hebrew reverse-tender marketplace for home moves in Israel) between 6 and 20 November 2026. It is written so that you, or an LLM, can load it at the start of a new project, for example painters, cleaners, handymen or AC technicians, and skip the mistakes and back-and-forth we already went through.
 
