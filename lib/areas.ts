@@ -71,3 +71,6 @@ export function areasOfCity(city: string | null | undefined): Area[] {
 
 /** Clean a list of areas from a form: known areas only, no repeats, in list order. */
 export const cleanAreas = (list: unknown[]): Area[] => AREAS.filter((a) => list.includes(a));
+
+/** Cities we recognise in an area (list order), for the admin routing view. Border cities appear in each of their areas. */
+export const citiesOfArea = (area: Area): string[] => Object.keys(CITY_AREAS).filter((c) => CITY_AREAS[c].includes(area));

@@ -12,6 +12,7 @@ import { CopyButton } from '@/components/CopyButton';
 import { siteUrl } from '@/lib/notify';
 import { LogoInput } from '@/components/LogoInput';
 import { AreaPicker } from '@/components/AreaPicker';
+import { MoversTabs } from './MoversTabs';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Movers · MoveMatch', robots: { index: false } };
@@ -141,6 +142,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
   return (
     <AdminShell active="movers" title="מובילים" counts={{ movers: movers.length, pending: pending.length }}>
       <AdminHero kicker="סביבת מובילים" title="מובילים" sub="המובילים שמקבלים מכרזים בוואטסאפ, הפרופילים שלהם והרשמות חדשות לאישור." />
+      <MoversTabs on="list" movers={movers.length} />
       <div className="mmx-stats">
         <StatCard icon={<Truck size={20} />} n={movers.length} label="מובילים ברשימה" />
         <StatCard icon={<CircleCheck size={20} />} n={active} label="פעילים" />
