@@ -57,6 +57,7 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 | `/admin` | All leads, mover offers, sending tenders to movers and clients. |
 | `/admin/inbox` | WhatsApp inbox: messages sent to the business number (with images) and replies from the business number (24h window). |
 | `/admin/movers` | Mover roster, sign-up approvals, ratings, panel logins (send access by email). |
+| `/admin/movers/areas` | Tab "מי מקבל לפי אזור": which active movers receive a new tender per area (live from the DB, same rule as `routeByArea` in `lib/automations.ts`), a city checker (`?city=`), gaps, and a mover × area table. |
 | `/login` | Admin password page (remembered for 180 days). |
 
 ## 3. Movers panel (1): each mover sees only their own data
