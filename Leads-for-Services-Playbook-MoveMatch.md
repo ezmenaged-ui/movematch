@@ -4,9 +4,10 @@
 
 **How to use it:**
 - **If you are an LLM starting a new vertical:** read sections 0 to 3 before you write any code. Use section 14 as the build order. Section 11 (QA) and section 6 (WhatsApp) are not optional: they exist because of a real account ban.
-- **If you are a person:** section 1 is the one-page version. Section 14 is the checklist for the next vertical.
+- **If you are a person:** section 1 is the one-page version. Section 14 is the checklist for the next vertical. Section 19 lists everything MoveMatch added late, with the day-1 question that would have caught it.
+- **To actually start the next project:** use the agent kit in `starter-kit/` (eight Claude Code agents and a gated `/kickoff` process). Copy it into the new repo together with this file as `docs/PLAYBOOK.md`; see `starter-kit/README.md`.
 
-**Sources:** the MoveMatch repository (code, migrations, `CLAUDE.md`, `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md`, 70 commits, PRs #1 to #31), about 45 Claude Code chats from 6 to 20 November 2026, the "MoveMatch Launch Tracker" and "Message Map" artifacts. Where this document and the code disagree, the code is the source of truth; update this file.
+**Sources:** the MoveMatch repository (code, migrations, `CLAUDE.md`, `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md`, commits and PRs #1 to #32), about 45 Claude Code chats from 8 to 20 November 2026 (a second, fuller pass over the owner's messages in every major chat was done for section 19), the "MoveMatch Launch Tracker" and "Message Map" artifacts. Where this document and the code disagree, the code is the source of truth; update this file.
 
 ---
 
@@ -31,6 +32,7 @@
 16. [MoveMatch timeline (what happened when)](#16-movematch-timeline)
 17. [Open items in MoveMatch on 20 Nov 2026](#17-open-items-in-movematch-on-20-nov-2026)
 18. [Appendix: reference material](#18-appendix-reference-material)
+19. [What we added late, and the day-1 question that would have caught it](#19-what-we-added-late-and-the-day-1-question-that-would-have-caught-it)
 
 ---
 
@@ -500,6 +502,8 @@ Drafted by Claude, **not approved by a lawyer** (see `LEGAL_REVIEW.md`). Have an
 
 ## 14. Build order for the next vertical
 
+The fastest way to run this is the agent kit in `starter-kit/`: `/kickoff` takes you through entrepreneur → bizdev → product → design → marketing → developer → QA, with ops-legal starting after stage 1, and stops for your approval between stages. The list below is the same plan written out.
+
 Use this as the plan. Each step lists what "done" means.
 
 **Day 1: foundations and long-lead items**
@@ -583,7 +587,7 @@ Things to decide with the owner before building (ask as multiple choice):
 
 ## 17. Open items in MoveMatch on 20 Nov 2026
 
-- Supabase upgrade to Pro (flagged as blocking launch on 19 Nov; confirm it was done).
+- ~~Supabase upgrade to Pro~~: done by the owner on 20 Nov.
 - Lawyer review of `/terms`, `/movers/terms`, `/privacy`, `/accessibility` and the Google data statement.
 - Who funds the ₪50 discount (terms say the mover).
 - `qualify_lead` as the Primary conversion after the first real leads, as a MoveMatch-only campaign goal; then the booked-move upload.
@@ -660,3 +664,75 @@ The two v1 templates rejected as SCAM had the full URL in a variable and more ex
 | `components/Wizard.tsx`, `VideoUploader.tsx`, `QrHandoff.tsx`, `AddressFields.tsx`, `WhenFields.tsx`, `ItemsPicker.tsx` | Funnel building blocks |
 | `supabase/migrations/` | Schema, RPC functions, triggers, cron jobs |
 | `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md` | Page map, tracking spec, legal checklist |
+
+---
+
+## 19. What we added late, and the day-1 question that would have caught it
+
+MoveMatch's whole day-1 brief was one line: *"a movers leads operation; send every lead to my Gmail or ideally WhatsApp; I'm stepping away, make the decisions yourself; attached are design files."* Everything below was discovered afterwards (day 1 = 8 Nov 2026, day 13 = 20 Nov). Each row is now a question in one of the agents in `starter-kit/.claude/agents/`, so the next project answers it on day 1.
+
+### 19.1 Business and supply
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| Positioning (day 6) | The owner's own headline "we'll negotiate for you" was removed: we don't negotiate | What exactly do we promise, word for word, and can we keep it? | entrepreneur |
+| Customer contact for providers (day 4) | Started hidden "so movers can't bypass me", reversed so providers can call | Do providers see the customer's name and phone? How do terms protect us? | bizdev |
+| ₪50 incentive (day 4, changed day 10) | Added while reviewing the video page; rule changed from "video" to "video + full list"; who funds it still open at launch | Is there a customer incentive, what's the exact rule, who pays it? | entrepreneur |
+| Provider input (day 10) | A potential mover's feedback made video required and added crane, parking distance and filming instructions after five funnels existed | Interview two providers: what do they need to quote without a visit? | bizdev |
+| Tender deadline (day 4) | 12-hour countdown and server block on late offers | How long is a tender open, and what happens at zero? | bizdev / product |
+| Service areas and routing (day 6) | Built when no real provider existed yet; city spellings failed silently on day 13 | Which areas, how many providers each, and test every city spelling before ads | bizdev |
+| Ratings (days 4 to 9) | Google, Midrag, Facebook added one at a time; "rated by Midrag" replaced by "all rated" | Which rating sources do providers have, and what may we claim? | bizdev / design |
+| Provider logins (days 5 to 13) | Copy button sent unsaved passwords; pasted passwords had hidden characters; phone + SMS login for movers without email | Email or phone login? One button that saves and copies the message | bizdev / developer |
+| Invoicing (day 5) | Asked for real tax invoices, then removed as out of scope | Do we invoice providers in-system in v1? | bizdev |
+| Public provider profiles (day 11) | Phone gated behind the customer's name for attribution; prospects hidden | Public profiles: yes/no; how do we attribute direct contact? | bizdev |
+
+### 19.2 Product and design
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| Separate URLs per funnel (days 2 and 5) | Asked for separate URLs for ad testing, then everything was reorganised into `/x/photo|art` with redirects | One URL per funnel and design, short redirects keeping UTMs, what's on the homepage | product |
+| Funnel hypotheses (days 10 and 12) | Funnel C's video went required then back to optional; nobody remembered why three WhatsApp ads existed | What does each funnel or ad test, and how do we measure it? | product / marketing |
+| Date, time and flexibility (day 2) | Added after the first funnels | Full question list per address and for the job, from the provider interviews | product |
+| Elevator size, crane, parking, home size (days 4, 10, 13) | Each added in a separate session | (same) | product |
+| Video rules (days 2, 5, 7, 10) | 1.5 min → 4 min; optional → required → optional; filming guide; "go back to the computer" | Photos or video, required where, max length, guide, desktop-to-phone hand-off | product / design |
+| Item picker UX (day 4) | Long owner feedback: multi-select, prominent "pick from list", free add, sticky buttons, optional marked in red | Spec the picker completely before building | product / design |
+| Abandonment email (day 4) | 15-minute "didn't finish" email for every funnel | Which operator alerts, on which events and channels? | product |
+| Message map (day 5) | Owner kept asking "what happens when..." | Draw the message map before code | product |
+| Theme carried through steps (day 4) | Follow-up pages lost the landing page's design | References and every screen state up front | design |
+| Waiting states (day 4) | "Three dots" replaced by an honest walking-mover message | Design loading and waiting states, not just the happy path | design |
+| Competitor references and mockups (days 4 and 5) | Competitor tender page, ChatGPT admin mockup and a provider-panel style arrived mid-build | Send every reference you have now | design |
+| Page map (day 5) | "Give me a map of all my pages" became PAGES.md | Keep PAGES.md from day 1 | product |
+| Admin reports (day 5) | Funnel performance tab and money tab requested | Which admin views and reports in v1? | product |
+| WhatsApp chat funnel (day 11) | "Crazy idea": the whole funnel as a WhatsApp chat | Web form, WhatsApp chat, or both at launch? | product / marketing |
+| AI cost in the chat (day 11) | Opus cost ~5 cents per test chat; switched to Haiku + plain-code parsing | Which model, and what may one chat cost? | product / developer |
+| Chat tone (day 11) | Separate welcome + consent message; one bullet and emoji per sub-question; floor only without elevator | Write the chat script and tone before building | design |
+
+### 19.3 Ops, legal and messaging
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| GitHub (day 5) | The only copy outside Vercel was a backup file until then | Private repo on day 1, all work through PRs | ops-legal / developer |
+| Business email on own domain (day 4) | Twilio rejected a gmail representative email; Zoho was paid, so free forwarding was set up | Do you have a mailbox on your website domain? | ops-legal |
+| Company details (days 4 and 6) | Registry name, number and address needed for Twilio, footers and legal pages | Exact legal identity and documents ready on day 1 | entrepreneur / ops-legal |
+| Twilio Trust Hub (day 4) | About 1.5 hours of "where do I click" screenshots | Start it on day 1 with a click-by-click checklist | ops-legal |
+| Templates (days 4 to 7) | Two re-categorised as Marketing, two rejected as SCAM (link in a variable) | Utility wording, link in the body, submit on day 1 | ops-legal |
+| Inbound webhook (day 11) | Every inbound WhatsApp was refused for a week, unnoticed | Test inbound on the day the sender connects; log refusals | ops-legal / qa |
+| Operator 24-hour window (day 11) | Alerts came by SMS with a web link and the owner didn't know why | Explain the operator window up front | product |
+| Legal texts (day 6) | Arrived as a big brief; still waiting for a lawyer at launch | Draft legal on day 1, lawyer booked, hosting countries known | ops-legal |
+| Supabase plan (days 5 to 13) | Free plan filled after a few videos; owner deleted videos by hand; Pro was a launch blocker | Pro from day 1; storage math for media | ops-legal |
+| Deploy permissions (days 4 and 6) | Production deploys blocked by permission checks; the owner had to come back later | Agree autonomy and deploy rules on day 1 | entrepreneur |
+| Keys in the browser (day 11) | The owner expected Claude to set API keys in Google/Vercel; the cloud session couldn't | List which steps need the owner's hands | ops-legal |
+
+### 19.4 QA and process
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| Test-lead guard, throttle, kill switch, `/qa` (days 5, 10, 11) | All built after the WhatsApp ban; "pull the plug" requested on day 10 | Build safety before any sending code | developer / qa |
+| Fake numbers (day 5) | The owner said the fake movers' numbers were fine to ping; that was part of the ban | QA refuses made-up numbers even when the owner allows them | qa |
+| Ambiguous test data (day 5) | A real-looking lead ("משה") had to be guessed as test | Test-lead naming convention and owner test numbers on day 1 | qa |
+| Test-mode copy (day 11) | A QA chat said "providers are receiving your details" and caused alarm | Test messages must say they are tests | qa / design |
+| Parallel sessions (days 4, 7, 11) | Sessions overwrote each other's deploys and deleted each other's QA leads | One session deploys at a time; everything through `main` | developer |
+| Questions in jargon (days 12 and 13) | The owner answered "I don't understand" to technical questions | Plain-language multiple choice, recommended option first | all |
+| Tracker features (day 5) | Step-by-step cards, ranking, done collapsed, private notes box | Set up the tracker artifact this way from day 1 | marketing |
+| Tracking retrofit (day 12) | Event renames, click ids, backend-confirmed conversions | Tracking plan approved before code | marketing |
+| GA4 ↔ Ads hand-off (day 13) | ChatGPT couldn't verify the GA4 link; the owner went back and forth | Confirm property, Ads account and key events before launch | marketing |
