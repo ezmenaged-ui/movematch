@@ -2,7 +2,7 @@ import 'server-only';
 import { db, LeadRow } from './db';
 import { notifyLead, sendAll, siteUrl } from './notify';
 import { tenderRef } from './publicLead';
-import { elevatorText, whenText } from './validate';
+import { elevatorText, roomsText, whenText } from './validate';
 import { hasTemplate, sendWhatsApp, trySendSms, trySendWhatsApp, waEnabled, type TemplateKey } from './whatsapp';
 import { moverAlertSms, operatorAlertSms } from './alertSms';
 import { isHomeHeld, isQaEntry, isTestLead, waFunnelLive } from './qa';
@@ -28,7 +28,7 @@ function moveDetails(l: LeadRow) {
   const floors = from || to ? `${from || '?'} ← ${to || '?'}` : '';
   const video = l.videos?.length ? `סרטון מצורף (${l.videos.length})` : 'בלי סרטון';
   const n = (l.items?.list || []).reduce((s, i) => s + i.qty, 0);
-  return [floors, n ? `רשימת ${n} פריטים` : '', video].filter(Boolean).join(', ');
+  return [roomsText(l.move_from), floors, n ? `רשימת ${n} פריטים` : '', video].filter(Boolean).join(', ');
 }
 
 /**

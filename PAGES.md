@@ -22,7 +22,7 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 **Funnel F · WhatsApp chat** (no page): the Google Ads WhatsApp button (message asset) opens a chat with a starter message
 already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1` (`#G1` = ad-group code, saved as the lead's `utm_campaign`). There is one WhatsApp ad, starter `היי, אני רוצה הצעת מחיר להובלה.`, saved as
 `utm_campaign` F2. The old variants (`…להובלה!`, `…להובלה בבקשה`, once F1 / F3) also count as F2. The customer taps
-send and the bot asks, one at a time: from → to → when → video → name (`lib/waFunnel.ts`; Claude reads the free-text answers, `lib/waAi.ts`).
+send and the bot asks, one at a time: from (incl. home size) → to → when → video → name (`lib/waFunnel.ts`; Claude reads the free-text answers, `lib/waAi.ts`).
 Each address gets the same details as the web funnels; only what is missing is asked again. Done = a normal complete lead (`variant = 'chat'`):
 tender opened, movers in the area alerted, the tender link sent in the chat. Reminders: at most 2 per chat, at 20:30 / 10:00, inside the
 24h window only (`/api/cron/wa-funnel`, every 5 min). "נציג" hands the chat to `/admin/inbox`; "הסר" stops it. **Held from movers until `WA_FUNNEL_LIVE=1`** in Vercel: until then chat leads are stored with `entry = 'home'`
@@ -44,6 +44,11 @@ GA4 / Google Ads events, and every page shows a purple "סביבת בדיקות"
 Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`). Every video step shows the same filming guide (`VideoGuide` in `components/VideoUploader.tsx`).
 
 **₪50 discount** = the client sent both a video of the apartment and the full item list (`/terms` §11, `/movers/terms` §5). Mover lead pages show a note when a lead qualifies.
+
+**Home size (origin only)**: the "from" address starts with how many rooms the home has, Israeli count incl. the living room:
+1–1.5 · 2–2.5 · 3–3.5 · 4–4.5 · 5–5.5 · 6+ · private house / cottage. Required in B, C, D, E (and their `/qa` and homepage copies); optional tiles
+under the city on A's form; in F the bot asks it right after the street (tap pick-list `mm_chat_rooms`, or a typed "3", "3.5", "בית פרטי").
+Stored as `move_from.rooms` (`r1`…`r6`, `house`; A saves `move_from = { city, rooms }`). Shown to movers (lead page, WhatsApp alert text, crew sheet) and in `/admin`.
 
 **Every address (from and to)** asks: floor, apartment, elevator (yes / stairs only, then size: small / medium / large), **crane possible?** (yes / no / don't know) and **distance from truck parking to the entrance** (up to 10 m, 10–30, 30–60, 60–100, over 100 m / no parking). Stored in `move_from` / `move_to` as `crane` and `parking`.
 

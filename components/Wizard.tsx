@@ -135,7 +135,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
     if (n === step || busy) return;
     if (ref) {
       if (step === 1 && isValidName(name) && isValidPhone(phone)) updateLead(ref, { name: name.trim(), phone: normalizePhone(phone) }).catch(() => {});
-      if ((step === 2 || step === 3) && !Object.keys(validateAddress(step === 2 ? from : to)).length) {
+      if ((step === 2 || step === 3) && !Object.keys(validateAddress(step === 2 ? from : to, step === 2)).length) {
         const a = step === 2 ? from : to, norm = { ...a, elevator: a.elevator ?? false };
         updateLead(ref, step === 2 ? { move_from: norm } : { move_to: norm }).catch(() => {});
       }
@@ -170,7 +170,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
     }
     if (step === 2 || step === 3) {
       const a = step === 2 ? from : to;
-      const er = validateAddress(a);
+      const er = validateAddress(a, step === 2);
       setAddrErr(er);
       if (Object.keys(er).length) return;
       const norm = { ...a, elevator: a.elevator ?? false };
@@ -234,7 +234,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
     }
     if (step === S_LAST) {
       // Steps can be reached without passing their checks (progress bar, browser Forward): check everything once more.
-      const fromErr = validateAddress(from), toErr = validateAddress(to);
+      const fromErr = validateAddress(from, true), toErr = validateAddress(to);
       if (Object.keys(fromErr).length) { go(2); setAddrErr(fromErr); return; }
       if (Object.keys(toErr).length) { go(3); setAddrErr(toErr); return; }
       if (validateWhen(when).date) { go(S_WHEN); setWhenErr(validateWhen(when).date || ''); return; }
@@ -322,7 +322,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                 <>
                   <div className="saved-line"><Check size={15} strokeWidth={2} /> שמרנו את הפרטים. נחזור אליכם בכל מקרה.</div>
                   <h2>מאיפה עוברים?</h2>
-                  <AddressFields value={from} onChange={setFrom} errors={addrErr} />
+                  <AddressFields value={from} onChange={setFrom} errors={addrErr} origin />
                 </>
               )}
 

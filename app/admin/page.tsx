@@ -5,7 +5,7 @@ import { db, LeadRow } from '@/lib/db';
 import { tenderRef } from '@/lib/publicLead';
 import { ItemsTable } from '@/components/ItemsTable';
 import { LeadsFilter } from '@/components/LeadsFilter';
-import { craneText, elevatorText, parkingText, whenText } from '@/lib/validate';
+import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { CloseCard, CopyButton } from '@/components/CopyButton';
 import { setBidHidden, setHandled } from './actions';
 
@@ -30,6 +30,7 @@ function Addr({ title, a, fallback }: { title: string; a: Record<string, unknown
       <h4>{title}</h4>
       {!a && !fallback ? <span className="muted">—</span> : (
         <dl className="adm-dl">
+          {roomsText(a) && <><dt>גודל</dt><dd><b>{roomsText(a)}</b></dd></>}
           <dt>עיר</dt><dd>{cityOf(a) || fallback || '—'}</dd>
           <dt>כתובת</dt><dd>{(a?.address as string) || '—'}</dd>
           <dt>קומה / דירה</dt><dd>{(a?.floor as string) || '—'} / {(a?.apartment as string) || '—'}</dd>

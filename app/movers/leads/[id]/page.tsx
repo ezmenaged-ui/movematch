@@ -8,7 +8,7 @@ import { ItemsTable } from '@/components/ItemsTable';
 import { MoverLogo } from '@/components/MoverLogo';
 import { BID_STATE_LABEL, bidState, moverDb, requireMe, tabOf, type MoverLeadFull } from '@/lib/mover';
 import { dayHe, hhmm, nis, routeText, stamp } from '@/lib/moverFormat';
-import { craneText, elevatorText, parkingText, whenText } from '@/lib/validate';
+import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { tenderRef } from '@/lib/publicLead';
 import type { Crew } from '@/lib/crew';
 import { bookJob, setJobDone, unbookJob } from '../../actions';
@@ -34,6 +34,7 @@ function Stop({ title, a, fallbackCity }: { title: string; a: A; fallbackCity?: 
       <h3>{title}</h3>
       {!a && !city ? <p className="mv-meta">לא התקבל</p> : (
         <dl className="mv-dl">
+          {roomsText(a) && <><dt>גודל</dt><dd><b>{roomsText(a)}</b></dd></>}
           <dt>עיר</dt><dd><b>{city || '—'}</b></dd>
           <dt>כתובת</dt><dd>{s(a?.address) || '—'}</dd>
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}{s(a?.apartment) ? ` · דירה ${s(a?.apartment)}` : ''}</dd>

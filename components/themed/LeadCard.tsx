@@ -7,6 +7,7 @@ import { Entry, funnelParams, getAttribution, setEntry, track, trackStep } from 
 import { CityDatalist } from '../fields';
 import { Theme, useCallbackLead } from '../CallbackForm';
 import { Spinner } from '../ui';
+import { ROOMS_OPTIONS } from '@/lib/validate';
 import { Swoosh } from './Logo';
 
 type FP = {
@@ -34,7 +35,7 @@ function IconField({ icon, label, value, onChange, error, type = 'text', inputMo
 
 /** The quote-request card used by both themes. Same lead logic as the original first step. */
 export function LeadCard({ funnel, theme, entry = null }: { funnel: Funnel; theme: Theme; entry?: Entry }) {
-  const { v, set, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel, theme, '.lp-form');
+  const { v, set, rooms, setRooms, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel, theme, '.lp-form');
 
   useEffect(() => { setEntry(entry); getAttribution(); /* keep the ad click (gclid, UTMs) for this visitor */ track('landing_view', funnelParams(funnel, theme)); trackStep(funnel, theme, 0, 'landing'); }, [funnel, theme, entry]);
 
@@ -61,6 +62,17 @@ export function LeadCard({ funnel, theme, entry = null }: { funnel: Funnel; them
         <IconField icon={<User size={22} strokeWidth={1.5} />} label="שם מלא" name="name" autoComplete="name" value={v.name} onChange={set('name')} error={err.name} />
         <IconField icon={<Phone size={21} strokeWidth={1.5} />} label="מספר טלפון" name="phone" type="tel" inputMode="tel" autoComplete="tel" value={v.phone} onChange={set('phone')} error={err.phone} />
         <IconField icon={<MapPin size={22} strokeWidth={1.5} />} label="עיר מוצא" name="city" list="il-cities" autoComplete="address-level2" value={v.city} onChange={set('city')} error={err.city} chevron />
+        {funnel === 'a' && ( // A has no origin step: optional home size here (B–E ask it, required, on their origin step)
+          <div className="lp-rooms" role="radiogroup" aria-label="כמה חדרים בדירה? (לא חובה)">
+            <div className="lp-rooms-q">כמה חדרים בדירה? <span>(כולל סלון, לא חובה)</span></div>
+            <div className="lp-rooms-chips">
+              {ROOMS_OPTIONS.map((o) => (
+                <button key={o.v} type="button" role="radio" aria-checked={rooms === o.v} aria-label={o.label}
+                  className={rooms === o.v ? 'on' : ''} onClick={() => setRooms(rooms === o.v ? '' : o.v)}><bdi dir="ltr">{o.short}</bdi></button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <input className="visually-hidden" tabIndex={-1} autoComplete="off" aria-hidden name="website" value={hp} onChange={(e) => setHp(e.target.value)} />
       <button type="submit" className="lp-btn" aria-busy={busy} disabled={busy}>
