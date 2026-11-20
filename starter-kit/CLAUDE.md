@@ -5,7 +5,7 @@
 Built with the MoveMatch starter kit. Read `docs/PLAYBOOK.md` before any work. Page map: `PAGES.md`. Tracking: `docs/TRACKING.md`. Briefs: `docs/briefs/`.
 
 ## How we work (gated stages)
-Run `/kickoff` to start or resume. Stages: entrepreneur → bizdev → product → design → marketing → developer → QA, with ops-legal starting right after the entrepreneur stage because approvals take days. Each stage asks the owner its questions (AskUserQuestion, max 4 per round, recommended option first, plain words), writes a brief, and waits for the owner's approval before the next stage starts. Agent definitions: `.claude/agents/`.
+Run `/kickoff` to start or resume, or `/autopilot` when the owner is away. Stages: entrepreneur → bizdev → product → design → marketing → developer → QA, with ops-legal starting right after the entrepreneur stage because approvals take days. Each stage asks the owner its questions (AskUserQuestion, max 4 per round, recommended option first, plain words), writes a brief, and waits for the owner's approval before the next stage starts. Agent definitions: `.claude/agents/`.
 
 ## Owner preferences
 - Ask multiple-choice questions when anything is unclear; never fill gaps with filler.
@@ -14,7 +14,13 @@ Run `/kickoff` to start or resume. Stages: entrepreneur → bizdev → product �
 - Never ask for secrets in chat; say where to paste them.
 - Explain the consequence of a deploy before asking for the OK.
 - Owner's personal name must not appear on the site: <yes/no>.
-- Autonomy: <what Claude may decide alone; production deploys always need an explicit OK>.
+- Autonomy level: <green + pre-launch yellow | green only>; also set in `.claude/autonomy.json` (`prelaunch` / `live`). Spend cap without asking: <₪/month>. Red actions (payments, enabling ads, messages to real people, identity/legal submits, production deletes, post-launch production deploys, account security) always wait for the owner. See `docs/PLAYBOOK.md` 20.5.
+- Morning report: <digest only | digest + push | digest + email draft>.
+
+## Agents do the console work
+Use connectors and APIs first and the owner's logged-in Chrome second (the `operator` agent). Don't hand the owner console steps they don't need to do. Prepare owner-only steps to the last click and queue them in `docs/QUESTIONS.md`. Log every external change in `docs/OPS-LOG.md`. Secrets go from the console straight into Vercel env vars and never into files or chat. When the owner is away, use `/autopilot`.
+
+Business documents folder: <path>. Consoles logged in for the agents: <list, see docs/OWNER-PREFLIGHT.md>.
 
 ## Owner test numbers
 <list every phone number the owner and family use for tests; all are exempt from the phone cooldown and are the only numbers allowed in tests>

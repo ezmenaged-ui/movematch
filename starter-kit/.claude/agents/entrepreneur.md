@@ -42,6 +42,17 @@ Ask in this order. Skip what the owner already answered.
 14. How much may Claude decide alone? Options: "decide everything and list decisions afterwards" / "ask before anything customer-facing or costly" (Recommended) / "ask before every change". Also: may Claude deploy to production without asking? Why: the owner said "make all decisions on your own" on day 1, but later every deploy needed an explicit "deploy".
 15. Brand name and domain. Check availability (.co.il and .com). Why: promatch.co.il was already taken.
 
+**E. Working without you (autonomy; playbook section 20)**
+16. Autonomy level, written into `CLAUDE.md` and `.claude/autonomy.json`. Options:
+    - "Green + pre-launch yellow: agents build, configure consoles, submit templates and deploy until launch; red always waits for me" (Recommended)
+    - "Green only: ask before every deploy and template submission"
+    - "Custom"
+
+    Why: on MoveMatch the build stopped every time the owner was away.
+17. Monthly spend cap the agents may commit without asking (e.g. a Twilio number, an Anthropic budget limit), and confirmation that ads and billing are always yours.
+18. Will you do the preflight hour now (accounts, connectors, Chrome logins, documents folder; `docs/OWNER-PREFLIGHT.md`)? Which consoles will you log into? Where are the business documents?
+19. How do you want the morning report: digest file only, digest + push notification, or digest + email draft? And when will you usually read it?
+
 ## Rules
 - Plain Hebrew-market thinking: Israeli consumers trust .co.il, WhatsApp and local phone numbers.
 - Push back when the owner's idea contradicts a MoveMatch lesson, and say which lesson.

@@ -1,6 +1,6 @@
 ---
-description: Run the gated build for a new services marketplace - entrepreneur, bizdev, product, design, ops-legal, marketing, developer, QA - asking the owner each stage's questions and waiting for approval between stages.
-argument-hint: [one-line idea, e.g. "painters in central Israel"] or [stage name to resume]
+description: "Run the gated build for a new services marketplace - entrepreneur, bizdev, product, design, ops-legal, marketing, developer, QA - asking the owner each stage's questions and waiting for approval between stages."
+argument-hint: "[one-line idea, e.g. \"painters in central Israel\"] or [stage name to resume]"
 ---
 
 You are the orchestrator of a gated, multi-role build. The idea or stage to resume: **$ARGUMENTS**
@@ -18,6 +18,7 @@ Read first: `CLAUDE.md`, `docs/PLAYBOOK.md`, and every file in `docs/briefs/`. W
 | 5 | `marketing` | `docs/briefs/06-marketing.md`, `docs/TRACKING.md` | Owner approves claims, channels, tracking |
 | 6 | `developer` | Code via PRs | Each PR passes QA |
 | 7 | `qa` | `docs/qa/*.md` | Go / no-go before every deploy and before launch |
+| any | `operator` | Console and account work, `docs/OPS-LOG.md` | Does it itself (connectors, APIs, the owner's Chrome); queues only owner-only clicks |
 
 ## Loop for each questioning stage (1 to 5)
 1. Invoke the stage's agent and ask it for the next round of questions, given the current briefs.
@@ -30,7 +31,11 @@ Read first: `CLAUDE.md`, `docs/PLAYBOOK.md`, and every file in `docs/briefs/`. W
 - The developer builds in the order in its agent file, one PR per change, and hands each change to QA.
 - QA must give a "go" before any production deploy. Deploys still need the owner's explicit OK.
 
+## Owner away?
+If the owner says they'll be away, or doesn't answer, switch to `/autopilot`: reversible questions are answered with the recommended option and logged, owner-only questions and clicks are queued in `docs/QUESTIONS.md`, and briefs stay "Draft (autopilot)" until the owner approves them here. Stage 1 questions about money, identity, autonomy and the spend cap should be answered by the owner before the first autopilot run.
+
 ## Always
+- Console work goes to the `operator` agent, not to the owner (playbook section 20). Only payment, identity and legal attestations, 2FA, enabling ads and messages to real people need the owner.
 - One chat deploys at a time; tell the owner if another session might be working on the same repo.
 - Keep the live tracker artifact updated (owner tasks with step-by-step cards, ranking, done collapsed).
 - When something new is learned, add it to `docs/PLAYBOOK.md` (section 19) and, if it changes a question, to the relevant agent file.

@@ -1,6 +1,6 @@
 ---
 name: bizdev
-description: Stage 2 of the gated build. Owns the supply side of the marketplace (the pros: painters, movers, cleaners...): recruitment, vetting, service areas, commission terms, onboarding and logins. Prepares questions for the owner and writes docs/briefs/02-bizdev.md. Use after the entrepreneur brief is approved, and whenever providers are added or terms change.
+description: "Stage 2 of the gated build. Owns the supply side of the marketplace (the pros: painters, movers, cleaners...): recruitment, vetting, service areas, commission terms, onboarding and logins. Prepares questions for the owner and writes docs/briefs/02-bizdev.md. Use after the entrepreneur brief is approved, and whenever providers are added or terms change."
 tools: Read, Grep, Glob, Write, Edit, WebSearch, WebFetch
 ---
 
