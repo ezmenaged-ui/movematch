@@ -1,5 +1,5 @@
 'use server';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomInt } from 'node:crypto';
 import { cookies, headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -9,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 import { db } from '@/lib/db';
 import { moverDb } from '@/lib/mover';
 import { sendEmailTo } from '@/lib/notify';
+import { sendSms } from '@/lib/whatsapp';
 import { authToken, cookieOpts, MV_AT, MV_RT, RT_MAX_AGE } from '@/lib/moverSession';
 
 const s = (f: FormData, k: string, max = 200) => String(f.get(k) ?? '').trim().slice(0, max);
@@ -100,6 +101,47 @@ export async function resetPassword(form: FormData) {
   const { error } = await db().rpc('mm_mover_reset_password', { p_secret: process.env.MM_ADMIN_SECRET, p_token_hash: sha(t), p_password: pw });
   if (error) redirect(`/movers/reset?t=${t}&error=${error.message.includes('invalid token') ? 'token' : 'fail'}`);
   redirect('/movers/login?reset=1');
+}
+
+// ── Phone + SMS code (movers without email; migration 028) ──────────────────
+
+const normPhone = (raw: string) => { const d = raw.replace(/\D/g, '').replace(/^972/, '0'); return /^0\d{8,9}$/.test(d) ? d : ''; };
+const otpHash = (phone: string, code: string) => createHmac('sha256', process.env.MM_ADMIN_SECRET || '').update(`${phone}:${code}`).digest('hex');
+
+/** Send a 6-digit code by SMS. Same answer whether or not the phone has an account. */
+export async function requestOtp(form: FormData) {
+  const phone = normPhone(s(form, 'phone', 30));
+  const next = safeNext(s(form, 'next', 300));
+  const q = (extra: string) => `/movers/phone?p=${phone}&next=${encodeURIComponent(next)}${extra}`;
+  if (!phone) redirect(`/movers/phone?error=phone&next=${encodeURIComponent(next)}`);
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  const { data } = await db().rpc('mm_mover_otp_request', { p_secret: process.env.MM_ADMIN_SECRET, p_phone: phone, p_code_hash: otpHash(phone, code) });
+  if (data && (data as { wait?: boolean }).wait) redirect(q('&sent=1&error=wait'));
+  if (data) {
+    if (!process.env.TWILIO_ACCOUNT_SID) console.log(`[mover otp] local run, no Twilio: code for ${phone} is ${code}`);
+    else {
+      try { await sendSms(phone, `קוד הכניסה שלך ל-MoveMatch: ${code}\nבתוקף ל-10 דקות. אל תמסרו אותו לאף אחד.`); }
+      catch (e) { console.error('[mover otp sms]', e); redirect(q('&error=send')); }
+    }
+  }
+  redirect(q('&sent=1'));
+}
+
+export async function verifyOtp(form: FormData) {
+  const phone = normPhone(s(form, 'phone', 30));
+  const code = s(form, 'code', 20).replace(/\D/g, '');
+  const next = safeNext(s(form, 'next', 300));
+  const fail = () => redirect(`/movers/phone?p=${phone}&sent=1&error=code&next=${encodeURIComponent(next)}`);
+  if (!phone || code.length !== 6) fail();
+  const password = randomBytes(24).toString('hex'); // one-use; replaced on the next login
+  const { data: email, error } = await db().rpc('mm_mover_otp_verify', { p_secret: process.env.MM_ADMIN_SECRET, p_phone: phone, p_code_hash: otpHash(phone, code), p_password: password });
+  if (error || !email) { await new Promise((r) => setTimeout(r, 500)); fail(); }
+  const t = await authToken('password', { email: email as string, password });
+  if (!t) { console.error('[mover otp] password grant failed after a correct code'); fail(); }
+  const c = await cookies();
+  c.set(MV_AT, t!.access_token, cookieOpts(t!.expires_in));
+  c.set(MV_RT, t!.refresh_token, cookieOpts(RT_MAX_AGE));
+  redirect(next);
 }
 
 // ── Jobs ─────────────────────────────────────────────────────────────────────

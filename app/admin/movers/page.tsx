@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { waEnabled } from '@/lib/whatsapp';
 import { messagesPaused } from '@/lib/pause';
 import { MoverLogo } from '@/components/MoverLogo';
-import { addProspect, approveMover, clearMoverLogo, deleteMover, revokeMoverLogin, saveMover, saveMoverProfile, setMoverActive, setMoverAreas, setMoverLogin, testMover } from '../actions';
+import { addProspect, approveMover, clearMoverLogo, deleteMover, revokeMoverLogin, saveMover, setMoverPhoneLogin, saveMoverProfile, setMoverActive, setMoverAreas, setMoverLogin, testMover } from '../actions';
 import { profileToText } from '@/lib/profileForm';
 import type { MoverProfile } from '@/lib/publicMovers';
 import { MoverLoginForm } from '@/components/MoverLoginForm';
@@ -31,7 +31,8 @@ const MSG: Record<string, string> = {
   url: 'קישור לא תקין. העתיקו את הכתובת המלאה, שמתחילה ב-https://',
   db: 'השמירה נכשלה. נסו שוב.',
   send: 'שליחת הודעת הבדיקה נכשלה. בדקו שהגדרות Twilio הושלמו.',
-  email: 'כתובת דוא״ל לא תקינה.', pw: 'הסיסמה הראשונית צריכה להיות באורך 8 תווים לפחות.', emailused: 'כתובת הדוא״ל כבר משויכת למוביל אחר.', mail: 'הגישה נשמרה, אבל שליחת המייל נכשלה. העתיקו את ההודעה ושלחו ידנית, או נסו שוב (הסיסמה תתחלף).',
+  email: 'כתובת דוא״ל לא תקינה.', pw: 'הסיסמה הראשונית צריכה להיות באורך 8 תווים לפחות.', emailused: 'כתובת הדוא״ל כבר משויכת למוביל אחר.', hasemail: 'למוביל כבר יש כניסה עם דוא״ל. כניסה בטלפון פתוחה רק לחשבון בלי דוא״ל.', sms: 'הגישה נפתחה, אבל שליחת ה-SMS נכשלה. שלחו לו ידנית את הקישור /movers/phone.',
+  mail: 'הגישה נשמרה, אבל שליחת המייל נכשלה. העתיקו את ההודעה ושלחו ידנית, או נסו שוב (הסיסמה תתחלף).',
 };
 
 /** Area tags + an editor. Leads go only to movers whose areas include the lead's origin area. */
@@ -152,7 +153,7 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
       {!waEnabled() && !messagesPaused() && <p className="adm-tag warn" style={{ display: 'inline-block', padding: '6px 10px' }}>וואטסאפ עדיין לא מחובר (חסרות הגדרות Twilio). אפשר כבר להוסיף מובילים.</p>}
       {ar.error && <p className="adm-tag warn" style={{ display: 'block', padding: '6px 10px' }}>אזורי השירות לא נטענו: צריך להריץ את מיגרציה 013 (supabase/migrations/013_mover_service_areas.sql). עד אז מכרזים לא יישלחו למובילים.</p>}
       {err && <p className="adm-tag warn" style={{ display: 'block', padding: '6px 10px' }}>{MSG[err] || 'שגיאה'}</p>}
-      {ok && <p className="adm-tag ok" style={{ display: 'block', padding: '6px 10px' }}>{ok === 'profile' ? 'הפרופיל הציבורי נשמר.' : ok === 'test' ? 'הודעת בדיקה נשלחה.' : ok === 'login' ? 'הגישה נשמרה וההודעה הועתקה. הדביקו ושלחו אותה למוביל כמו שהיא (אל תעתיקו שוב מהכרטיס: זו תהיה סיסמה אחרת).' : ok === 'sent' ? `הגישה נשמרה ונשלח מייל עם פרטי הכניסה${to ? ` אל ${to}` : ''}.` : 'נשמר.'}</p>}
+      {ok && <p className="adm-tag ok" style={{ display: 'block', padding: '6px 10px' }}>{ok === 'profile' ? 'הפרופיל הציבורי נשמר.' : ok === 'test' ? 'הודעת בדיקה נשלחה.' : ok === 'login' ? 'הגישה נשמרה וההודעה הועתקה. הדביקו ושלחו אותה למוביל כמו שהיא (אל תעתיקו שוב מהכרטיס: זו תהיה סיסמה אחרת).' : ok === 'phonelogin' ? 'נפתחה כניסה בטלפון. המוביל נכנס ב-/movers/phone עם קוד ב-SMS.' : ok === 'phonesent' ? 'נפתחה כניסה בטלפון ונשלח למוביל SMS עם הקישור.' : ok === 'sent' ? `הגישה נשמרה ונשלח מייל עם פרטי הכניסה${to ? ` אל ${to}` : ''}.` : 'נשמר.'}</p>}
 
       <div className="adm-box" style={{ margin: '14px 0' }}>
         <h4>קישור הרשמה למובילים</h4>
@@ -230,7 +231,14 @@ export default async function Movers({ searchParams }: { searchParams: Promise<{
             <MoverAreas m={m} areas={areasOf.get(m.id) || []} />
             <MoverProfileEditor m={m} />
             <details style={{ marginTop: 8 }}>
-              <summary className="small" style={{ cursor: 'pointer', color: 'var(--color-accent-700)', fontWeight: 600 }}>{m.auth_user_id ? `גישה לפאנל המובילים · ${m.email}` : 'פתיחת גישה לפאנל המובילים'}</summary>
+              <summary className="small" style={{ cursor: 'pointer', color: 'var(--color-accent-700)', fontWeight: 600 }}>{m.auth_user_id ? `גישה לפאנל המובילים · ${m.email || `כניסה בטלפון ${m.phone}`}` : 'פתיחת גישה לפאנל המובילים'}</summary>
+              {!m.auth_user_id && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
+                  <span className="small muted">אין למוביל דוא״ל?</span>
+                  <form action={setMoverPhoneLogin.bind(null, m.id, m.phone, m.name.split(' ')[0], true)}><button className="btn btn-primary adm-btn" type="submit"><MessageCircle size={14} /> כניסה בטלפון ושליחת SMS</button></form>
+                  <form action={setMoverPhoneLogin.bind(null, m.id, m.phone, m.name.split(' ')[0], false)}><button className="btn btn-secondary adm-btn" type="submit">כניסה בטלפון בלי SMS</button></form>
+                </div>
+              )}
               <MoverLoginForm id={m.id} email={m.email || ''} hasLogin={!!m.auth_user_id} panelUrl={panelUrl} firstName={m.name.split(' ')[0]} action={setMoverLogin} />
               {m.auth_user_id && <form action={revokeMoverLogin.bind(null, m.id)}><button className="btn btn-secondary adm-btn" type="submit">ביטול הגישה לפאנל</button></form>}
             </details>

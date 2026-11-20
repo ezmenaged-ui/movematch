@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE, adminToken } from '@/lib/auth';
 import { authToken, cookieOpts, jwtTtl, MV_AT, MV_RT, RT_MAX_AGE } from '@/lib/moverSession';
 
-const MOVER_PUBLIC = ['/movers/login', '/movers/forgot', '/movers/reset', '/movers/join', '/movers/terms']; // join = public mover sign-up form, terms = mover agreement
+const MOVER_PUBLIC = ['/movers/login', '/movers/phone', '/movers/forgot', '/movers/reset', '/movers/join', '/movers/terms']; // join = public mover sign-up form, terms = mover agreement
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;

@@ -18,7 +18,7 @@ export default async function MoverLogin({ searchParams }: { searchParams: Promi
         <div className="field"><label htmlFor="pw">סיסמה</label><input id="pw" name="password" type="password" className="input" autoComplete="current-password" required dir="ltr" autoFocus={!!sp.email} /></div>
         <button type="submit" className="btn btn-primary">כניסה</button>
       </form>
-      <div className="mv-auth-links"><Link href="/movers/forgot">שכחתם סיסמה?</Link></div>
+      <div className="mv-auth-links"><Link href={`/movers/phone${sp.next ? `?next=${encodeURIComponent(sp.next)}` : ''}`}>אין לכם דוא״ל? כניסה עם קוד בטלפון</Link> · <Link href="/movers/forgot">שכחתם סיסמה?</Link></div>
     </MoverAuthCard>
   );
 }

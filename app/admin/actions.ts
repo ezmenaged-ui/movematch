@@ -113,6 +113,19 @@ export async function setMoverLogin(form: FormData) {
   redirect(`/admin/movers?ok=sent&to=${encodeURIComponent(email)}`);
 }
 
+/** Phone-only panel access (movers without email): they sign in at /movers/phone with an SMS code. Optionally SMS them the link. */
+export async function setMoverPhoneLogin(id: string, phone: string, first: string, send: boolean) {
+  const { error } = await db().rpc('mm_admin_set_mover_phone_login', { p_secret: process.env.MM_ADMIN_SECRET, p_mover: id });
+  if (error) { console.error('[setMoverPhoneLogin]', error); redirect(`/admin/movers?err=${error.message.includes('has email login') ? 'hasemail' : 'db'}`); }
+  revalidatePath('/admin/movers');
+  if (!send) redirect('/admin/movers?ok=phonelogin');
+  const { siteUrl } = await import('@/lib/notify');
+  const { sendSms } = await import('@/lib/whatsapp');
+  try { await sendSms(phone, `שלום${first ? ` ${first}` : ''}, פתחנו לך גישה לסביבת המובילים של MoveMatch.\nכניסה עם קוד ב-SMS למספר הזה: ${siteUrl() || ''}/movers/phone`); }
+  catch (e) { console.error('[mover phone access sms]', e); redirect('/admin/movers?err=sms'); }
+  redirect('/admin/movers?ok=phonesent');
+}
+
 export async function revokeMoverLogin(id: string) {
   await db().rpc('mm_admin_revoke_mover_login', { p_secret: process.env.MM_ADMIN_SECRET, p_mover: id });
   revalidatePath('/admin/movers');
