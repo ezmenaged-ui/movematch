@@ -45,6 +45,13 @@
 .lp-art .lp-card-title .lp-hl { color: var(--lp-blue); font-size: 1.15em; }
 .lp-photo .lp-card-title .lp-hl { color: inherit; }
 .lp-fields { display: grid; gap: 12px; }
+/* Funnel A: optional home size under the city */
+.lp-rooms-q { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--lp-ink); }
+.lp-rooms-q span { font-weight: 400; font-size: 13px; opacity: .7; }
+.lp-rooms-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.lp-rooms-chips button { min-height: 40px; padding: 0 4px; border: 1.5px solid var(--lp-line); border-radius: 10px; background: #fafcfe; color: var(--lp-ink); font: inherit; font-size: 15px; cursor: pointer; }
+.lp-rooms-chips button:last-child { grid-column: span 2; }
+.lp-rooms-chips button.on { border-color: var(--lp-blue); color: var(--lp-blue); background: rgba(11, 99, 206, .08); font-weight: 700; box-shadow: inset 0 0 0 1px var(--lp-blue); }
 .lp-input { position: relative; display: flex; align-items: center; background: #fafcfe; border: 1.5px solid var(--lp-line); border-radius: 12px; transition: border-color .15s, box-shadow .15s; }
 .lp-input:focus-within { border-color: var(--lp-blue); box-shadow: 0 0 0 3px rgba(11, 99, 206, .15); background: #fff; }
 .lp-input.invalid { border-color: var(--lp-err); }

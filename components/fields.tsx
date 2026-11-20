@@ -1,7 +1,7 @@
 'use client';
 import { Check } from 'lucide-react';
 import React, { useId, useMemo, useState } from 'react';
-import { CITIES, Crane, CRANE_OPTIONS, ELEVATOR_TYPES, ElevatorType, Parking, PARKING_OPTIONS } from '@/lib/validate';
+import { CITIES, Crane, CRANE_OPTIONS, ELEVATOR_TYPES, ElevatorType, Parking, PARKING_OPTIONS, Rooms, ROOMS_OPTIONS } from '@/lib/validate';
 import { Corners } from './ui';
 
 type FieldProps = {
@@ -154,6 +154,24 @@ export function ParkingPicker({ value, onChange, error }: { value: Parking | '' 
         {PARKING_OPTIONS.map((t) => (
           <button key={t.v} type="button" role="radio" aria-checked={value === t.v} className={`time-tile ${value === t.v ? 'on' : ''}`} onClick={() => onChange(t.v)}>
             <b>{value === t.v ? '✓ ' : ''}{t.label}</b>
+          </button>
+        ))}
+      </div>
+      {error && <div className="field-error" role="alert">{error}</div>}
+    </div>
+  );
+}
+
+/** Size of the home they're moving from (origin step of every funnel). */
+export function RoomsPicker({ value, onChange, error }: { value: Rooms | '' | undefined; onChange: (v: Rooms) => void; error?: string }) {
+  return (
+    <div className="elev-type" role="radiogroup" aria-label="כמה חדרים יש בדירה שממנה עוברים?">
+      <div className="small" style={{ marginBottom: 4, color: 'var(--color-neutral-700)' }}>כמה חדרים יש בדירה שממנה עוברים?</div>
+      <div className="small" style={{ marginBottom: 8, fontSize: 13, color: 'var(--color-text)' }}>כולל הסלון: 2 חדרי שינה וסלון = 3 חדרים. זה מה שקובע את גודל המשאית ואת מספר המובילים.</div>
+      <div className={`elev-tiles rooms-tiles ${error ? 'invalid' : ''}`}>
+        {ROOMS_OPTIONS.map((t) => (
+          <button key={t.v} type="button" role="radio" aria-checked={value === t.v} aria-label={t.label} className={`time-tile ${value === t.v ? 'on' : ''}`} onClick={() => onChange(t.v)}>
+            <b>{value === t.v ? '✓ ' : ''}<bdi dir="ltr">{t.short}</bdi></b>{t.v !== 'house' && <span>חדרים</span>}
           </button>
         ))}
       </div>

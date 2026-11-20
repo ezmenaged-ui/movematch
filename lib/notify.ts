@@ -1,6 +1,6 @@
 import 'server-only';
 import type { LeadRow } from './db';
-import { craneText, elevatorText, parkingText, whenText } from './validate';
+import { craneText, elevatorText, parkingText, roomsText, whenText } from './validate';
 import { itemsSummary } from './items';
 import { logPaused, messagesPaused } from './pause';
 
@@ -22,7 +22,7 @@ const VARIANT_LABEL: Record<string, string> = { a: 'משפך A (/)', wizard: 'מ
 
 function addr(a: Record<string, unknown> | null | undefined) {
   if (!a) return '';
-  const parts = [a.city, a.address, a.floor ? `קומה ${a.floor}` : '', a.apartment ? `דירה ${a.apartment}` : '',
+  const parts = [roomsText(a), a.city, a.address, a.floor ? `קומה ${a.floor}` : '', a.apartment ? `דירה ${a.apartment}` : '',
     elevatorText(a), craneText(a), parkingText(a)].filter(Boolean);
   return parts.join(', ');
 }

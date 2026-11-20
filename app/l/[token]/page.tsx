@@ -4,7 +4,7 @@ import { BidForm } from '@/components/BidForm';
 import { ItemsTable } from '@/components/ItemsTable';
 import { Countdown } from '@/components/Countdown';
 import '@/app/tender.css';
-import { craneText, elevatorText, parkingText, whenText } from '@/lib/validate';
+import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { getPublicLead, tenderRef } from '@/lib/publicLead';
 import { db } from '@/lib/db';
 import { MoverLogo } from '@/components/MoverLogo';
@@ -32,6 +32,7 @@ function AddressCard({ title, a, fallbackCity }: { title: string; a: A; fallback
       <h2>{title}</h2>
       {!a && !city ? <p className="muted">עוד לא התקבל</p> : (
         <dl className="ml-dl">
+          {roomsText(a) && <><dt>גודל</dt><dd><b>{roomsText(a)}</b></dd></>}
           <dt>עיר</dt><dd><b>{city || '—'}</b></dd>
           <dt>כתובת</dt><dd>{s(a?.address) || '—'}</dd>
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}</dd>

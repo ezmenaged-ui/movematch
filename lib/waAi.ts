@@ -13,6 +13,7 @@ export type AddrPatch = {
   city: string | null; address: string | null; floor: string | null; apartment: string | null;
   elevator: boolean | null; elevator_type: 'small' | 'regular' | 'large' | null;
   crane: 'yes' | 'no' | 'unknown' | null; parking: 'p10' | 'p30' | 'p60' | 'p100' | 'far' | null;
+  rooms: 'r1' | 'r2' | 'r3' | 'r4' | 'r5' | 'r6' | 'house' | null;
 };
 export type WhenPatch = { date: string | null; date_flexible: boolean | null; time: 'morning' | 'noon' | 'afternoon' | null; time_flexible: boolean | null };
 export type Reading = {
@@ -27,13 +28,14 @@ const nullable = (schema: Record<string, unknown>) => ({ anyOf: [schema, { type:
 const str = nullable({ type: 'string' });
 const ADDR = {
   type: 'object', additionalProperties: false,
-  required: ['city', 'address', 'floor', 'apartment', 'elevator', 'elevator_type', 'crane', 'parking'],
+  required: ['city', 'address', 'floor', 'apartment', 'elevator', 'elevator_type', 'crane', 'parking', 'rooms'],
   properties: {
     city: str, address: str, floor: str, apartment: str,
     elevator: nullable({ type: 'boolean' }),
     elevator_type: nullable({ type: 'string', enum: ['small', 'regular', 'large'] }),
     crane: nullable({ type: 'string', enum: ['yes', 'no', 'unknown'] }),
     parking: nullable({ type: 'string', enum: ['p10', 'p30', 'p60', 'p100', 'far'] }),
+    rooms: nullable({ type: 'string', enum: ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'house'] }),
   },
 };
 const SCHEMA = {
@@ -69,6 +71,9 @@ Fields:
   - crane (מנוף): yes / no / unknown ("לא יודע").
   - parking = distance from where the truck can park to the building entrance: up to 10 m → p10, 10–30 → p30, 30–60 → p60, 60–100 → p100, over 100 m or no parking → far.
     When the bot listed numbered options 1–5 for parking, "1" = p10, "2" = p30, "3" = p60, "4" = p100, "5" = far. "צמוד לבניין", "ממש ליד" → p10.
+  - rooms (origin only: size of the home they're leaving, Israeli count incl. the living room): 1–1.5 rooms / סטודיו → r1, 2–2.5 → r2, 3–3.5 → r3,
+    4–4.5 → r4, 5–5.5 → r5, 6 or more / פנטהאוז גדול → r6, a private house / cottage / villa (בית פרטי, קוטג׳, וילה, דו-משפחתי) → house.
+    If they count bedrooms only ("2 חדרי שינה"), add one for the living room (→ r3). Null when not stated; never infer it from anything else.
 - when (when the bot is asking about the moving date): date as YYYY-MM-DD (resolve relative dates against today's date given below; a date without a year is the next such date).
   "גמיש" / "לא יודע עדיין" → date_flexible true. A month or "סוף החודש" → a representative date plus date_flexible true.
   time: morning (בוקר, 7–11), noon (צהריים, 11–15), afternoon (אחה"צ, 15–19). "לא משנה" for the hour → time_flexible true.

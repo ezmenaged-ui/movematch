@@ -59,7 +59,7 @@ export function SingleForm() {
     e.preventDefault();
     setFail('');
     const er: typeof errs = {};
-    const f = validateAddress(from), t = validateAddress(to);
+    const f = validateAddress(from, true), t = validateAddress(to);
     if (Object.keys(f).length) er.from = f;
     if (Object.keys(t).length) er.to = t;
     const w = validateWhen(when);
@@ -122,7 +122,7 @@ export function SingleForm() {
           <div className="f-grid">
             <Blueprint as="section" className="f-sec">
               <h2><span className="f-num">1</span> מאיפה עוברים</h2>
-              <AddressFields value={from} onChange={setFrom} errors={errs.from} />
+              <AddressFields value={from} onChange={setFrom} errors={errs.from} origin />
             </Blueprint>
             <Blueprint as="section" className="f-sec">
               <h2><span className="f-num">2</span> לאן עוברים</h2>

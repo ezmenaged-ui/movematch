@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Funnel, loadHandoff, NEXT_PATH, saveHandoff, VARIANT } from '@/lib/handoff';
 import { createLead, funnelParams, PhoneRecentError, track, trackOnce, trackStep, updateLead } from '@/lib/client';
-import { isValidName, isValidPhone, MSG, normalizePhone, phoneRecentMsg } from '@/lib/validate';
-import { CityDatalist, CityField, Field, PhoneField } from './fields';
+import { emptyAddress, isValidName, isValidPhone, MSG, normalizePhone, phoneRecentMsg, Rooms } from '@/lib/validate';
+import { CityDatalist, CityField, Field, PhoneField, RoomsPicker } from './fields';
 import { Blueprint, Corners, MidragBadge, Spinner } from './ui';
 import { LegalNote } from './LegalNote';
 
@@ -16,6 +16,7 @@ import type { FlowTheme as Theme } from '@/lib/handoff';
 export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-form') {
   const router = useRouter();
   const [v, setV] = useState({ name: '', phone: '', city: '' });
+  const [rooms, setRooms] = useState<Rooms | ''>(''); // funnel A only, optional (B–E ask it on their origin step)
   const [err, setErr] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -59,7 +60,9 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
           return;
         }
       }
-      const ref = await createLead(VARIANT[funnel], { ...fields, theme, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
+      // A has no origin step: the (optional) home size is kept on move_from with the city, like the other funnels store it.
+      const size = isA && rooms ? { move_from: { ...emptyAddress(), city: fields.city, rooms } } : {};
+      const ref = await createLead(VARIANT[funnel], { ...fields, ...size, theme, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
       const fp = funnelParams(funnel, theme);
       track('lead_created', fp);
       trackOnce('generate_lead', ref.id, fp);
@@ -73,12 +76,12 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
       else setFail('משהו השתבש. נסו שוב בעוד רגע.');
     } finally { if (!leaving) setBusy(false); }
   }
-  return { v, set, err, busy, done, fail, hp, setHp, submit };
+  return { v, set, rooms, setRooms, err, busy, done, fail, hp, setHp, submit };
 }
 
 /** Shared first step. Funnel A ends here (callback); B and C continue to their next page. */
 export function CallbackForm({ funnel = 'a' }: { funnel?: Funnel }) {
-  const { v, set, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel);
+  const { v, set, rooms, setRooms, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel);
 
   if (done) {
     return (
@@ -99,6 +102,7 @@ export function CallbackForm({ funnel = 'a' }: { funnel?: Funnel }) {
         <Field label="שם מלא" value={v.name} onChange={set('name')} error={err.name} autoComplete="name" name="name" />
         <PhoneField value={v.phone} onChange={set('phone')} error={err.phone} name="phone" />
         <CityField value={v.city} onChange={set('city')} error={err.city} name="city" />
+        {funnel === 'a' && <RoomsPicker value={rooms} onChange={setRooms} />}
       </div>
       <input className="visually-hidden" tabIndex={-1} autoComplete="off" aria-hidden name="website" value={hp} onChange={(e) => setHp(e.target.value)} />
       <div className="actions">

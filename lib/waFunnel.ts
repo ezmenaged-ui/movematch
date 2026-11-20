@@ -4,7 +4,7 @@ import { notifyLead, siteUrl } from './notify';
 import { onLeadComplete } from './automations';
 import { cleanLeadInput } from './sanitize';
 import { areasOfCity } from './areas';
-import { CITIES, PARKING_OPTIONS, normalizePhone, type Address, type When } from './validate';
+import { CITIES, PARKING_OPTIONS, ROOMS_VALUES, normalizePhone, type Address, type When } from './validate';
 import { fetchTwilioMedia, forwardToOperator, windowLeftMs, type InboxState, type Media } from './inbox';
 import { sendWhatsAppText } from './whatsapp';
 import { messagesPaused } from './pause';
@@ -31,7 +31,7 @@ import { markQualified } from './qualify';
  */
 
 type Side = 'from' | 'to';
-type AddrField = 'city' | 'address' | 'floor' | 'elevator' | 'elevator_type' | 'crane' | 'parking';
+type AddrField = 'city' | 'address' | 'rooms' | 'floor' | 'elevator' | 'elevator_type' | 'crane' | 'parking';
 export type Step = 'from' | 'to' | 'when' | 'video' | 'name' | 'done';
 type Data = {
   from?: Partial<Address>; to?: Partial<Address>; when?: Partial<When>;
@@ -92,6 +92,7 @@ const PARKING_Q = ['כמה רחוק המשאית יכולה לחנות מהכנ�
 const FIELD_Q: Record<AddrField, (s: Side) => string> = {
   city: (s) => (s === 'from' ? 'מאיזו עיר עוברים?' : 'לאיזו עיר עוברים?'),
   address: () => 'מה הרחוב ומספר הבית?',
+  rooms: () => 'כמה חדרים יש בדירה שממנה עוברים? (כולל סלון. כתבו מספר, למשל 3 או 3.5, או "בית פרטי")',
   floor: () => 'באיזו קומה הדירה? (קרקע = 0)',
   elevator: () => 'יש מעלית בבניין? (כן / לא) אם כן, היא קטנה, בינונית או גדולה?',
   elevator_type: () => 'מה גודל המעלית: קטנה, בינונית או גדולה?',
@@ -100,18 +101,19 @@ const FIELD_Q: Record<AddrField, (s: Side) => string> = {
 };
 const OPENER: Record<Side, string> = {
   // Questions that ask for several things: one item per line, each with its own emoji (easier to read on a phone).
-  from: '*מאיפה עוברים?*\nכתבו בהודעה אחת:\n🏙️ עיר\n📍 רחוב ומספר\n🛗 האם יש מעלית',
+  from: '*מאיפה עוברים?*\nכתבו בהודעה אחת:\n🏙️ עיר\n📍 רחוב ומספר\n🏠 כמה חדרים (כולל סלון)\n🛗 האם יש מעלית',
   to: '*ולאן עוברים?*\nכתבו בהודעה אחת:\n🏙️ עיר\n📍 רחוב ומספר\n🛗 האם יש מעלית',
 };
 const WHEN_Q = '*מתי ההובלה?*\n📅 תאריך (למשל 15/12), "סוף החודש" או "גמיש"\n🕗 ואם יש העדפה: בוקר / צהריים / אחה״צ';
 const VIDEO_Q = '*כמעט סיימנו 🎥*\nצלמו סרטון קצר ושלחו אותו כאן:\n🚪 עוברים על כל החדרים\n🗄️ עם ארונות פתוחים\n⏱️ עד 3 דקות\n\nכך המובילים נותנים מחיר מדויק בלי לבוא לראות את הדירה.';
 const NAME_Q = 'ועל איזה שם לרשום את הבקשה?';
 const TIME_Q = 'באיזה חלק של היום מתאים להתחיל?\n🌅 בוקר (7–11)\n☀️ צהריים (11–15)\n🌇 אחר הצהריים (15–19)\n🤷 לא משנה';
-const LABEL: Record<AddrField, string> = { city: 'city', address: 'street and house number', floor: 'floor', elevator: 'elevator (and its size)', elevator_type: 'elevator size', crane: 'crane', parking: 'truck parking distance' };
+const LABEL: Record<AddrField, string> = { city: 'city', address: 'street and house number', rooms: 'number of rooms in the home they are leaving', floor: 'floor', elevator: 'elevator (and its size)', elevator_type: 'elevator size', crane: 'crane', parking: 'truck parking distance' };
 
-function missing(a: Partial<Address> | undefined): AddrField | null {
+function missing(a: Partial<Address> | undefined, side: Side): AddrField | null {
   if (!a?.city) return 'city';
   if (!a.address) return 'address';
+  if (side === 'from' && !a.rooms) return 'rooms'; // home size: origin only
   // Elevator first: with an elevator we ask its size and skip the floor; stairs only → the floor matters.
   if (a.elevator == null) return 'elevator';
   if (a.elevator && !a.elevator_type) return 'elevator_type';
@@ -123,10 +125,13 @@ function missing(a: Partial<Address> | undefined): AddrField | null {
 
 // Closed questions are sent with tap buttons / a pick-list (Twilio Content, session-only: no Meta approval needed).
 // Created in Twilio on 18 Nov 2026 (friendly names mm_chat_*); the button ids come back as ButtonPayload / ListId.
+// mm_chat_rooms (list-picker, 7 rows). Created in Twilio on 20 Nov 2026.
+const ROOMS_SID = 'HXf8517eb74a71038103bdfaef04b17a9b';
 const BUTTONS: Partial<Record<AddrField | 'time', { sid: string; text: string }>> = {
   elevator: { sid: 'HXfddbc2c06c6da654f9b404874f5f7b86', text: 'יש מעלית בבניין?' },             // elev_yes / elev_no
   elevator_type: { sid: 'HXa5251204d878ae4fdbcdc72b7944d91a', text: 'מה גודל המעלית?' },           // size_small / size_regular / size_large
   crane: { sid: 'HX78c49363103cab8d4ac28c24e17d40d3', text: 'אפשר להשתמש במנוף בכתובת הזו?' },   // crane_yes / crane_no / crane_unknown
+  rooms: { sid: ROOMS_SID, text: 'כמה חדרים יש בדירה שממנה עוברים (כולל סלון)? לחצו על "בחירת גודל".' }, // rooms_r1 … rooms_r6 / rooms_house
   parking: { sid: 'HXf73d12558cf6fb8f54fbf9550a2b723c', text: 'כמה רחוק המשאית יכולה לחנות מהכניסה לבניין? לחצו על "בחירת מרחק".' }, // park_p10 … park_far
   time: { sid: 'HX4e8edb220bf99e3a8308861c8f943be1', text: 'באיזה חלק של היום מתאים להתחיל? לחצו על "בחירת שעה".' }, // time_morning / time_noon / time_afternoon / time_any
 };
@@ -146,6 +151,7 @@ function buttonAnswer(payload: string): Partial<Address> | null {
   if (k === 'size' && ['small', 'regular', 'large'].includes(v)) return { elevator: true, elevator_type: v as Address['elevator_type'] };
   if (k === 'crane' && ['yes', 'no', 'unknown'].includes(v)) return { crane: v as Address['crane'] };
   if (k === 'park' && PARKING_OPTIONS.some((o) => o.v === v)) return { parking: v as Address['parking'] };
+  if (k === 'rooms' && ROOMS_VALUES.includes(v)) return { rooms: v as Address['rooms'] };
   return null;
 }
 const timeAnswer = (payload: string): Partial<When> | null =>
@@ -166,6 +172,7 @@ function quickAddress(field: AddrField, raw: string): Partial<Address> | null {
     if (field === 'elevator' && /^(לא|אין|אין מעלית|רק מדרגות|מדרגות)$/.test(t)) return { elevator: false, elevator_type: '' };
     return null;
   }
+  if (field === 'rooms') return roomsOf(t);
   if (field === 'crane') return /^(כן|אפשר)$/.test(t) ? { crane: 'yes' } : /^(לא|אי אפשר)$/.test(t) ? { crane: 'no' } : /^לא יודע(ת|ים)?$/.test(t) ? { crane: 'unknown' } : null;
   if (field === 'parking') { const m = t.match(/^[1-5]$/); return m ? { parking: PARKING_OPTIONS[Number(m[0]) - 1].v } : null; }
   return null;
@@ -182,6 +189,15 @@ function quickTime(raw: string): Partial<When> | null {
   if (/^(אחה"?צ|אחר הצהריים|ערב)$/.test(t)) return { time: 'afternoon', time_flexible: false };
   if (/^(לא משנה|גמיש|כל שעה|לא חשוב)$/.test(t)) return { time: '', time_flexible: true };
   return null;
+}
+/** "3", "3.5", "3 וחצי", "4 חדרים", "דירת 2 חדרים", "בית פרטי" → rooms; anything else (e.g. "2 חדרי שינה") goes to Claude. */
+function roomsOf(t: string): Partial<Address> | null {
+  if (/^(ב?בית( פרטי)?|קוטג'?׳?|וילה|דו[- ]?משפחתי)$/.test(t)) return { rooms: 'house' };
+  if (/^סטודיו$/.test(t)) return { rooms: 'r1' };
+  const m = t.match(/^(?:דירת |דירה של )?(\d{1,2})(?:[.,]5| וחצי)?(?: חדרים| חד'?׳?)?$/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n < 1 ? null : { rooms: (n >= 6 ? 'r6' : `r${n}`) as Address['rooms'] };
 }
 const quickName = (raw: string) => { const t = tidy(raw); return /^[\p{L}'"׳״ -]{2,40}$/u.test(t) && t.split(' ').length <= 4 ? t : null; };
 
@@ -272,6 +288,9 @@ function fallbackAddress(t: string, field: AddrField | null): Partial<AddrPatch>
     if (floor != null) p.floor = floor;
     const street = t.replace(city, '').split(/[,\n]/).map((s) => s.trim()).find((s) => /[א-ת]+\s*\d+/.test(s) && !/קומה|מעלית/.test(s));
     if (street) p.address = street;
+    const rm = t.match(/(\d{1,2})(?:[.,]5| וחצי)?\s*(?:חדרים|חד'?׳?)(?!\s*שינה)/)?.[1];
+    if (rm && Number(rm) >= 1) p.rooms = (Number(rm) >= 6 ? 'r6' : `r${rm}`) as AddrPatch['rooms'];
+    else if (/בית פרטי|קוטג|וילה/.test(t)) p.rooms = 'house';
     if (/אין\s*מעלית|בלי\s*מעלית|מדרגות/.test(t)) p.elevator = false; else if (/מעלית/.test(t)) { p.elevator = true; p.elevator_type = size(t); }
     return p;
   }
@@ -282,6 +301,7 @@ function fallbackAddress(t: string, field: AddrField | null): Partial<AddrPatch>
   if (field === 'elevator_type') p.elevator_type = size(v);
   if (field === 'crane') p.crane = yesNo(v) as AddrPatch['crane'];
   if (field === 'parking') { const n = Number(v.match(/[1-5]/)?.[0]); if (n) p.parking = PARKING_OPTIONS[n - 1].v; }
+  if (field === 'rooms') { const r = roomsOf(tidy(v)); if (r?.rooms) p.rooms = r.rooms; }
   return p;
 }
 
@@ -473,7 +493,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
       if (cur.elevator === false) cur.elevator_type = '';
       data[side] = cur;
     }
-    const need = missing(data[side]);
+    const need = missing(data[side], side);
     if (need) {
       data.ask = `${side}.${need}`;
     } else {

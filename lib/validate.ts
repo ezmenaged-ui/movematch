@@ -35,6 +35,29 @@ export const parkingText = (a: { parking?: unknown } | null | undefined) => {
   return o ? `חניה למשאית: ${o.label}` : '';
 };
 
+/**
+ * Size of the home they're moving FROM: the best single predictor of truck size, crew and price.
+ * Israeli count = all rooms including the living room (2 bedrooms + salon = 3 חדרים); half rooms go to the lower bucket.
+ */
+export type Rooms = 'r1' | 'r2' | 'r3' | 'r4' | 'r5' | 'r6' | 'house';
+export const ROOMS_OPTIONS: { v: Rooms; short: string; label: string }[] = [
+  // label = text for messages and pages ("3 עד 3.5", like the parking labels: a "3–3.5" range flips in RTL text);
+  // short = tile caption, always shown inside a left-to-right <bdi>.
+  { v: 'r1', short: '1–1.5', label: '1 עד 1.5 חדרים' },
+  { v: 'r2', short: '2–2.5', label: '2 עד 2.5 חדרים' },
+  { v: 'r3', short: '3–3.5', label: '3 עד 3.5 חדרים' },
+  { v: 'r4', short: '4–4.5', label: '4 עד 4.5 חדרים' },
+  { v: 'r5', short: '5–5.5', label: '5 עד 5.5 חדרים' },
+  { v: 'r6', short: '6+', label: '6 חדרים ומעלה' },
+  { v: 'house', short: 'בית פרטי', label: 'בית פרטי / קוטג׳' },
+];
+export const ROOMS_VALUES = ROOMS_OPTIONS.map((o) => o.v) as string[];
+/** "דירת 3 עד 3.5 חדרים" / "בית פרטי / קוטג׳", or '' when not given. */
+export const roomsText = (a: { rooms?: unknown } | null | undefined) => {
+  const o = ROOMS_OPTIONS.find((r) => r.v === a?.rooms);
+  return !o ? '' : o.v === 'house' ? o.label : `דירת ${o.label}`;
+};
+
 export type Address = {
   city: string;
   address: string;
@@ -44,6 +67,7 @@ export type Address = {
   elevator_type?: ElevatorType | '';
   crane?: Crane | '';
   parking?: Parking | '';
+  rooms?: Rooms | ''; // origin only
 };
 
 export const emptyAddress = (): Address => ({ city: '', address: '', floor: '', apartment: '', elevator: null, crane: '', parking: '' });
@@ -69,6 +93,7 @@ export const MSG = {
   video: 'נא לצרף סרטון, או לבחור לדלג ונחזור אליכם לקבלת הסרטון',
   crane: 'נא לבחור',
   parking: 'נא לבחור את המרחק',
+  rooms: 'נא לבחור כמה חדרים יש בדירה',
 };
 
 /** Shown when this phone number already opened a tender in the last 30 days. `until` is YYYY-MM-DD. */
@@ -78,8 +103,10 @@ export function phoneRecentMsg(until?: string) {
   return `כבר נפתח מכרז עם מספר הטלפון הזה בחודש האחרון. אפשר לפתוח מכרז חדש${d ? ` החל מ־${d}` : ' 30 יום אחרי הקודם'}.`;
 }
 
-export function validateAddress(a: Address): Partial<Record<keyof Address, string>> {
+/** `origin`: the address they're moving from, which also needs the home size. */
+export function validateAddress(a: Address, origin = false): Partial<Record<keyof Address, string>> {
   const e: Partial<Record<keyof Address, string>> = {};
+  if (origin && !a.rooms) e.rooms = MSG.rooms;
   if (!a.city.trim()) e.city = MSG.city;
   if (!a.address.trim()) e.address = MSG.address;
   if (!a.floor.trim()) e.floor = MSG.floor;

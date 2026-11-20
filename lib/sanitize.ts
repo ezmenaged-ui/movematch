@@ -1,4 +1,4 @@
-import { normalizePhone } from './validate';
+import { normalizePhone, ROOMS_VALUES } from './validate';
 
 const s = (v: unknown, max = 200) => (typeof v === 'string' ? v.trim().slice(0, max) : undefined);
 
@@ -11,6 +11,7 @@ function addr(v: unknown) {
     elevator_type: a.elevator === true && ['small', 'regular', 'large'].includes(a.elevator_type as string) ? a.elevator_type : '',
     crane: ['yes', 'no', 'unknown'].includes(a.crane as string) ? a.crane : '',
     parking: ['p10', 'p30', 'p60', 'p100', 'far'].includes(a.parking as string) ? a.parking : '',
+    ...(ROOMS_VALUES.includes(a.rooms as string) ? { rooms: a.rooms } : {}),
   };
 }
 
