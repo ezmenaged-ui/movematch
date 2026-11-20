@@ -50,9 +50,9 @@ function Below() {
   );
 }
 
-function ArtLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
+function ArtLanding({ funnel, entry, whatsapp }: { funnel: Funnel; entry: Entry; whatsapp: boolean }) {
   return (
-    <div className="lp lp-art" id="top">
+    <div className={`lp lp-art${whatsapp ? ' lp-has-wa' : ''}`} id="top">
       <section className="lp-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="art-leaves" src="/art-leaves.webp" alt="" width={320} height={280} aria-hidden />
@@ -60,7 +60,7 @@ function ArtLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
           <Logo />
           <h1>משווים מחירי הובלה <span className="lp-hl">וחוסכים<Swoosh /></span></h1>
           <p className="lp-sub">ממלאים פרטים פעם אחת ומקבלים עד 5 הצעות מחיר ממובילים אמינים באזורכם</p>
-          <LeadCard funnel={funnel} theme="art" entry={entry} />
+          <LeadCard funnel={funnel} theme="art" entry={entry} whatsapp={whatsapp} />
         </div>
         <div className="art-scene" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,9 +83,9 @@ function Points({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-function PhotoLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
+function PhotoLanding({ funnel, entry, whatsapp }: { funnel: Funnel; entry: Entry; whatsapp: boolean }) {
   return (
-    <div className="lp lp-photo" id="top">
+    <div className={`lp lp-photo${whatsapp ? ' lp-has-wa' : ''}`} id="top">
       <section className="lp-hero">
         <div className="ph-media">
           <picture>
@@ -103,7 +103,7 @@ function PhotoLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
             <p className="lp-sub">קבלו עד 5 הצעות מחיר ממובילים אמינים ומדורגים, ללא עלות וללא התחייבות</p>
             <Points />
           </div>
-          <div className="ph-card"><LeadCard funnel={funnel} theme="photo" entry={entry} /></div>
+          <div className="ph-card"><LeadCard funnel={funnel} theme="photo" entry={entry} whatsapp={whatsapp} /></div>
           <Points mobile />
         </div>
       </section>
@@ -129,12 +129,13 @@ function PhotoLanding({ funnel, entry }: { funnel: Funnel; entry: Entry }) {
 /**
  * entry: 'home' on the homepage (owner's test area: leads are not sent to movers, see lib/qa.ts),
  * 'qa' on the /qa test area (nothing is sent; a banner says so), nothing on the live funnels.
+ * whatsapp: the /f landing (funnel E's page with a WhatsApp option in the lead card, see components/themed/WhatsAppCta.tsx).
  */
-export function ThemedLanding({ funnel, theme, entry = null }: { funnel: Funnel; theme: Theme; entry?: Entry }) {
+export function ThemedLanding({ funnel, theme, entry = null, whatsapp = false }: { funnel: Funnel; theme: Theme; entry?: Entry; whatsapp?: boolean }) {
   return (
     <main>
       {entry === 'qa' && <QaBanner always />}
-      {theme === 'art' ? <ArtLanding funnel={funnel} entry={entry} /> : <PhotoLanding funnel={funnel} entry={entry} />}
+      {theme === 'art' ? <ArtLanding funnel={funnel} entry={entry} whatsapp={whatsapp} /> : <PhotoLanding funnel={funnel} entry={entry} whatsapp={whatsapp} />}
     </main>
   );
 }

@@ -90,3 +90,12 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
 1. Open `https://movematch.co.il/e?utm_source=qa&gclid=TEST123` with Google Tag Assistant, finish as `QA …` with 054-6677361 (QA = no movers).
 2. GA4 DebugView: `generate_lead`, `info_choice`, `lead_complete`, `qualify_lead`, each with `lead_id`.
 3. In `/admin`, the lead shows the same id. Then delete the QA lead.
+
+## 9. The /f landing page (E + WhatsApp button)
+
+- The page is funnel E's photo landing, so its form events are E's (`funnel=e`, `variant_id=e-photo`). To separate /f from /e/photo use
+  GA4's **Landing page** dimension, or `leads.landing_path = '/f'` in the database (set when the visit starts on /f).
+- The green button fires **`wa_cta_click`** (`funnel`, `theme`, `variant_id`, `landing_page: 'f'`, `placement: 'lead_card'`). It is a click,
+  **not a lead**: no `generate_lead` / `lead_created`. Don't mark it as a key event or import it into Ads.
+- If the visitor sends the prefilled message, the chat runs as funnel F and is labelled **`ad_group` / `utm_campaign` = FL**
+  (`lib/waFunnel.ts` → `starterSource`), so it is not counted as the Google Ads WhatsApp ad (F2).
