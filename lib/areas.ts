@@ -55,6 +55,7 @@ const ALIASES: Record<string, string> = {
   'קרית גת': 'קריית גת', 'קרית מלאכי': 'קריית מלאכי', 'קרית שמונה': 'קריית שמונה', 'קרית אונו': 'קריית אונו',
   'נצרת עילית': 'נוף הגליל', 'יהוד': 'יהוד-מונוסון', 'קדימה': 'קדימה-צורן', 'פרדס חנה': 'פרדס חנה-כרכור', 'כרכור': 'פרדס חנה-כרכור',
   'זכרון': 'זכרון יעקב', 'יקנעם': 'יקנעם עילית', 'כוכב יאיר': 'כוכב יאיר-צור יגאל',
+  'ראשון': 'ראשון לציון', 'ר"ג': 'רמת גן', 'הרצליה פיתוח': 'הרצליה',
 };
 
 const norm = (s: string) => s.trim().replace(/[׳']/g, "'").replace(/[״"]/g, '"').replace(/\s+/g, ' ');
@@ -62,8 +63,10 @@ const norm = (s: string) => s.trim().replace(/[׳']/g, "'").replace(/[״"]/g, '"
 /** Areas of a city name as the client typed it; [] when we don't recognise the city (the operator then routes by hand). */
 export function areasOfCity(city: string | null | undefined): Area[] {
   if (!city) return [];
+  const look = (c: string) => CITY_AREAS[c] || CITY_AREAS[ALIASES[c] || ''] || CITY_AREAS[c.replace(/^קרית /, 'קריית ')];
   const c = norm(city);
-  return CITY_AREAS[c] || CITY_AREAS[ALIASES[c] || ''] || CITY_AREAS[c.replace(/^קרית /, 'קריית ')] || [];
+  // A hyphen typed instead of a space ("רמת-גן", "בת-ים", "כפר-סבא"): try again with spaces.
+  return look(c) || look(c.replace(/\s*-\s*/g, ' ')) || [];
 }
 
 /** Clean a list of areas from a form: known areas only, no repeats, in list order. */
