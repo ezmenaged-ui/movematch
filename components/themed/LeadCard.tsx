@@ -9,6 +9,7 @@ import { Theme, useCallbackLead } from '../CallbackForm';
 import { Spinner } from '../ui';
 import { ROOMS_OPTIONS } from '@/lib/validate';
 import { Swoosh } from './Logo';
+import { WhatsAppCta } from './WhatsAppCta';
 
 type FP = {
   icon: React.ReactNode; label: string; value: string; onChange: (v: string) => void; error?: string;
@@ -33,8 +34,11 @@ function IconField({ icon, label, value, onChange, error, type = 'text', inputMo
   );
 }
 
-/** The quote-request card used by both themes. Same lead logic as the original first step. */
-export function LeadCard({ funnel, theme, entry = null }: { funnel: Funnel; theme: Theme; entry?: Entry }) {
+/**
+ * The quote-request card used by both themes. Same lead logic as the original first step.
+ * whatsapp: the /f landing adds a WhatsApp option between the heading and the fields; the form itself is unchanged.
+ */
+export function LeadCard({ funnel, theme, entry = null, whatsapp = false }: { funnel: Funnel; theme: Theme; entry?: Entry; whatsapp?: boolean }) {
   const { v, set, rooms, setRooms, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel, theme, '.lp-form');
 
   useEffect(() => { setEntry(entry); getAttribution(); /* keep the ad click (gclid, UTMs) for this visitor */ track('landing_view', funnelParams(funnel, theme)); trackStep(funnel, theme, 0, 'landing'); }, [funnel, theme, entry]);
@@ -57,6 +61,7 @@ export function LeadCard({ funnel, theme, entry = null }: { funnel: Funnel; them
           ? <>קבלו <span className="lp-hl">5<Swoosh /></span> הצעות להובלה בחינם</>
           : <>קבלו עד 5 <span className="lp-hl">הצעות<Swoosh /></span> להובלה</>}
       </h2>
+      {whatsapp && <WhatsAppCta funnel={funnel} theme={theme} />}
       <CityDatalist />
       <div className="lp-fields">
         <IconField icon={<User size={22} strokeWidth={1.5} />} label="שם מלא" name="name" autoComplete="name" value={v.name} onChange={set('name')} error={err.name} />

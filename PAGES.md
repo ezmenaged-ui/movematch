@@ -19,6 +19,12 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
+**/f · E with a WhatsApp option** (`app/f/page.tsx`): funnel E's photo landing page, unchanged, plus a WhatsApp block at the top of the
+lead card ("רוצים לספר לנו על המעבר בוואטסאפ?", green "המשיכו בוואטסאפ" button, then "או השאירו פרטים כאן" above E's form).
+The button opens `wa.me/<LEGAL.whatsapp>` (the business number) with the starter `היי, הגעתי דרך MoveMatch ואני רוצה לקבל הצעות מחיר להובלה. אשמח לספר על המעבר שלי בוואטסאפ.`
+prefilled (not sent). That starter starts the chat bot below, labelled **FL** (not F2). The form is E's form: saved as variant `choice`,
+continues to `/e/steps`, same GA4 events as `e-photo`; tell /f leads apart by `leads.landing_path = '/f'` or GA4's landing page.
+
 **Funnel F · WhatsApp chat** (no page): the Google Ads WhatsApp button (message asset) opens a chat with a starter message
 already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1` (`#G1` = ad-group code, saved as the lead's `utm_campaign`). There is one WhatsApp ad, starter `היי, אני רוצה הצעת מחיר להובלה.`, saved as
 `utm_campaign` F2. The old variants (`…להובלה!`, `…להובלה בבקשה`, once F1 / F3) also count as F2. The customer taps

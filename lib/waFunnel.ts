@@ -59,12 +59,16 @@ const isQaStarter = (body: string) => /^\s*QA\b/i.test(body);
  * Which ad the chat came from, saved on the lead as utm_campaign. Funnel F has one WhatsApp ad, labelled F2:
  *   "היי, אני רוצה הצעת מחיר להובלה."  → F2
  * The earlier variants ("…להובלה!", "…להובלה בבקשה", once F1 / F3) are also counted as F2, in case an old ad is still live.
+ * The /f landing page's starter ("היי, הגעתי דרך MoveMatch …") → FL (site, not an ad).
  * A "#code" in the starter (e.g. #G1) also works. Anything else: null (unknown).
  */
 export function starterSource(body: string): string | null {
   const code = body.match(CODE)?.[1];
   if (code) return code.toUpperCase();
   const t = body.replace(/^\s*QA\b/i, '').trim();
+  // The /f landing page's green button (components/themed/WhatsAppCta.tsx): "היי, הגעתי דרך MoveMatch ואני רוצה…" → FL,
+  // so chats from the site are not counted as the Google Ads WhatsApp ad (F2).
+  if (/הגעתי דרך MoveMatch/i.test(t)) return 'FL';
   if (/(בבקשה[.!]?|[.!])$/.test(t)) return 'F2';
   return null;
 }

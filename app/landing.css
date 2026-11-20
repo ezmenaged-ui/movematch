@@ -334,3 +334,26 @@
 }
 .lp-flow .lp-logo { margin: 0; }
 .lp-legal { text-align: center; }
+
+/* ---------- /f: WhatsApp option at the top of the lead card (components/themed/WhatsAppCta.tsx) ---------- */
+.lp-wa { margin: -4px 0 14px; text-align: center; }
+.lp-wa-q { margin: 0 0 10px; font-size: 16px; font-weight: 600; color: var(--lp-navy); }
+.lp-wa-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 54px; border-radius: 12px; background: #1f9e4f; color: #fff; font-size: 19px; font-weight: 700; text-decoration: none; box-shadow: 0 6px 16px rgba(31, 158, 79, .28); transition: filter .15s, transform .1s; }
+.lp-wa-btn:hover { filter: brightness(1.06); }
+.lp-wa-btn:active { transform: translateY(1px); }
+.lp-wa-btn:focus-visible { outline: 3px solid #7fd6a0; outline-offset: 2px; }
+.lp-wa-or { display: flex; align-items: center; gap: 12px; margin-top: 14px; color: var(--lp-muted); font-size: 14px; }
+.lp-wa-or::before, .lp-wa-or::after { content: ''; flex: 1; height: 1px; background: var(--lp-line); }
+@media (prefers-reduced-motion: reduce) { .lp-wa-btn { transition: none; } }
+@media (min-width: 1180px) {
+  /* The photo card has a fixed height over the photo: tighten this card so the WhatsApp block fits without overflow. */
+  .lp-photo.lp-has-wa .lp-card { padding-block: 1.3vw 1vw; }
+  .lp-photo.lp-has-wa .lp-card-title { margin-bottom: .7vw; }
+  .lp-photo.lp-has-wa .lp-wa { margin: 0 0 .6vw; }
+  .lp-photo.lp-has-wa .lp-wa-q { font-size: clamp(14px, 1.05vw, 19px); margin-bottom: .45vw; }
+  .lp-photo.lp-has-wa .lp-wa-btn { min-height: clamp(40px, 3.4vw, 64px); font-size: clamp(16px, 1.35vw, 25px); }
+  .lp-photo.lp-has-wa .lp-wa-or { margin-top: .6vw; font-size: clamp(13px, .9vw, 16px); }
+  .lp-photo.lp-has-wa .lp-fields { gap: .7vw; }
+  .lp-photo.lp-has-wa .lp-input input { height: clamp(42px, 3.2vw, 62px); }
+  .lp-photo.lp-has-wa .lp-btn { margin-top: 1vw; min-height: clamp(46px, 3.9vw, 72px); }
+}
