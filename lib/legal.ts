@@ -8,7 +8,7 @@ export const LEGAL = {
   email: 'legal@admarkgrowth.com',
   whatsapp: '972533891029',
   whatsappDisplay: '053-389-1029',
-  updated: '17.11.2026',
+  updated: '21.11.2026',
   /** Version of the mover agreement (/movers/terms) a mover accepts at sign-up (stored on the mover row). Bump when it changes. */
   moverTermsVersion: '2026-11-17',
   /** Where our providers keep data (privacy policy, "transfers abroad").
