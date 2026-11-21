@@ -6,7 +6,13 @@ function addr(v: unknown) {
   if (!v || typeof v !== 'object') return undefined;
   const a = v as Record<string, unknown>;
   return {
-    city: s(a.city, 80) || '', address: s(a.address, 200) || '', floor: s(a.floor, 10) || '',
+    city: s(a.city, 80) || '',
+    // Forms send street + house number separately; `address` stays "street number" for everything that reads it.
+    address: (typeof a.street === 'string' || typeof a.number === 'string'
+      ? [s(a.street, 120), s(a.number, 10)].filter(Boolean).join(' ') : s(a.address, 200)) || '',
+    ...(typeof a.street === 'string' ? { street: s(a.street, 120) || '' } : {}),
+    ...(typeof a.number === 'string' ? { number: s(a.number, 10) || '' } : {}),
+    floor: s(a.floor, 10) || '',
     apartment: s(a.apartment, 10) || '', elevator: typeof a.elevator === 'boolean' ? a.elevator : null,
     elevator_type: a.elevator === true && ['small', 'regular', 'large'].includes(a.elevator_type as string) ? a.elevator_type : '',
     crane: ['yes', 'no', 'unknown'].includes(a.crane as string) ? a.crane : '',
