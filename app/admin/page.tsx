@@ -35,7 +35,7 @@ function Addr({ title, a, fallback }: { title: string; a: Record<string, unknown
           <dt>כתובת</dt><dd>{(a?.address as string) || '—'}</dd>
           <dt>קומה / דירה</dt><dd>{(a?.floor as string) || '—'} / {(a?.apartment as string) || '—'}</dd>
           <dt>מעלית</dt><dd>{elevatorText(a) || elev(a?.elevator)}</dd>
-          <dt>מנוף</dt><dd>{craneText(a) || '—'}</dd>
+          {craneText(a) && <><dt>מנוף</dt><dd>{craneText(a)}</dd></>}
           <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || '—'}</dd>
         </dl>
       )}

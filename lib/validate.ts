@@ -126,7 +126,6 @@ export function validateAddress(a: Address, origin = false): Partial<Record<keyo
   if (!a.floor.trim()) e.floor = MSG.floor;
   if (a.elevator == null) e.elevator = MSG.elevator;
   if (a.elevator === true && !a.elevator_type) e.elevator_type = 'נא לבחור את גודל המעלית';
-  if (!a.crane) e.crane = MSG.crane;
   if (!a.parking) e.parking = MSG.parking;
   return e;
 }

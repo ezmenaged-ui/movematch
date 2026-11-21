@@ -14,7 +14,7 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 4 | B · art | `/b/art` | `/b/steps` | Same as B, illustrated design. |
 | 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video (can be skipped: "we'll call you for the video"; no item list). |
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
-| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off). |
+| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off; marked "(רשות)" in the progress bar and counter, with a "not required" note under the list). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
 | 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. On desktop, a video filmed on the phone via the QR code sends the client back to the computer to finish (like D). |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
@@ -47,6 +47,8 @@ Safe to send to anyone: the lead is saved as a test lead (`entry = 'qa'`), the o
 or SMS goes to anyone** (not the phone entered, not movers, not the operator). It skips the 30-day phone rule, sends no
 GA4 / Google Ads events, and every page shows a purple "סביבת בדיקות" strip. Not indexed by Google.
 
+Every date box opens its calendar on a click anywhere on the box, not only on the calendar icon (`components/DatePickerOnClick.tsx`, site-wide).
+
 Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`). Every video step shows the same filming guide (`VideoGuide` in `components/VideoUploader.tsx`).
 
 **₪50 discount** = the client sent both a video of the apartment and the full item list (`/terms` §11, `/movers/terms` §5). Mover lead pages show a note when a lead qualifies.
@@ -56,7 +58,7 @@ Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload pa
 under the city on A's form; in F the bot asks it right after the street (tap pick-list `mm_chat_rooms`, or a typed "3", "3.5", "בית פרטי").
 Stored as `move_from.rooms` (`r1`…`r6`, `house`; A saves `move_from = { city, rooms }`). Shown to movers (lead page, WhatsApp alert text, crew sheet) and in `/admin`.
 
-**Every address (from and to)** asks, in two rows of two boxes: city + street, then house number + floor (since 21 Nov 2026; before that one "full address" box). Stored as `street` and `number`, plus `address` = "street number" for movers, emails and the crew sheet. Then: floor (always), elevator (yes / stairs only, the same two tiles on phone and desktop; with an elevator its size: small / medium / large; no apartment number since 21 Nov 2026), **crane possible?** (yes / no / don't know) and **distance from truck parking to the entrance** (up to 10 m, 10–30, 30–60, 60–100, over 100 m / no parking). Stored in `move_from` / `move_to` as `crane` and `parking`.
+**Every address (from and to)** asks, in two rows of two boxes: city + street, then house number + floor (since 21 Nov 2026; before that one "full address" box). Stored as `street` and `number`, plus `address` = "street number" for movers, emails and the crew sheet. Then: floor (always), elevator (yes / stairs only, the same two tiles on phone and desktop; with an elevator its size: small / medium / large; no apartment number since 21 Nov 2026) and **distance from truck parking to the entrance** (up to 10 m, 10–30, 30–60, 60–100, over 100 m / no parking), stored in `move_from` / `move_to` as `parking`. The **crane** question (yes / no / don't know) was removed on 22 Nov 2026 to shorten the funnels, in the web forms and in the WhatsApp chat; leads from before keep `crane`, and mover/admin pages show it only when it was answered.
 
 Short addresses forward automatically, and tracking parameters (`?utm_…`) are kept:
 `/a` → `/a/photo` · `/b` → `/b/photo` · `/c` → `/c/photo` · `/d` → `/d/photo` · `/e` → `/e/photo` · old `/wizard` → `/b/photo` · old `/form` → `/c/photo`.

@@ -38,7 +38,7 @@ function AddressCard({ title, a, fallbackCity }: { title: string; a: A; fallback
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}</dd>
           <dt>דירה</dt><dd>{s(a?.apartment) || '—'}</dd>
           <dt>מעלית</dt><dd><Elevator v={a?.elevator} />{a?.elevator === true && elevatorText(a).includes('(') ? <span className="muted"> · {elevatorText(a).replace('יש מעלית ', '').replace(/[()]/g, '')}</span> : null}</dd>
-          <dt>מנוף</dt><dd>{craneText(a) || <span className="muted">לא צוין</span>}</dd>
+          {craneText(a) && <><dt>מנוף</dt><dd>{craneText(a)}</dd></>}
           <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || <span className="muted">לא צוין</span>}</dd>
         </dl>
       )}
