@@ -14,6 +14,7 @@ If the argument is `preflight`: have the `operator` agent run the smoke test in 
 - The QA rules in `CLAUDE.md` apply unchanged: `/qa` and local QA first, test leads only, owner test numbers only, no loops or retries of sends.
 - Stage briefs written now are "Draft (autopilot)". Never mark a brief Approved; only the owner does that.
 - If the guard hook blocks something, queue it; don't look for another way.
+- Every new 💳 payment item triggers an immediate push notification to the owner (price, monthly or one-off, what it unlocks), once per item. Use the push-notification tool if the session has it; otherwise flag it at the top of the digest.
 
 ## Loop
 1. **Plan.** List the open tasks for every stage not yet approved, plus build tasks whose briefs are approved or drafted. Tag each 🟢/🟡/🔴 and blocked/unblocked. Order: long approvals first (domain, Twilio, Meta verification, templates, Supabase plan), then safety code (test-lead guard, `/qa`, kill switch, throttle), then the rest.

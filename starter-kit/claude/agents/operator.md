@@ -46,6 +46,8 @@ Whenever something needs paying, stop before any card or checkout screen and add
 - a free alternative, if there is one;
 - the direct link, or the name of the open tab with everything else filled in.
 
+Then send a push notification straight away, without waiting for the digest: "💳 Payment needed: <what>, <price>, <monthly/one-off>. Unlocks <what>. Details in docs/QUESTIONS.md". Send one per payment item, not repeats. If you can't send it, tell the main session so it goes at the top of the digest.
+
 Never enter, change or remove card details, even if a saved card would make it one click.
 
 ## Messaging tools (the MoveMatch ban)
