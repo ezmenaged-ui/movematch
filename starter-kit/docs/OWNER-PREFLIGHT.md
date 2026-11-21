@@ -21,7 +21,9 @@ Agents never enter card details. Tick each one:
 | Supabase on **Pro**, EU region | ☐ | The free plan filled up with videos on MoveMatch |
 | Twilio, upgraded (card added) | ☐ | |
 | Meta Business portfolio | ☐ | The agent fills verification; you submit |
-| Google Analytics + Google Ads with billing | ☐ | Ads are built Paused; you press Enable |
+| Google Analytics + Google Ads with billing | ☐ | ChatGPT builds the campaigns Paused from Claude's brief; Claude checks; you press Enable |
+| ChatGPT (agent mode) with access to the same Google Ads account | ☐ | Builds the campaigns |
+| Microsoft Clarity (free; Microsoft or Google sign-in) | ☐ | Session recordings |
 | Anthropic Console with billing | ☐ | The agent creates the key and sets a spend limit |
 | Email on the domain (Workspace or forwarding) | ☐ | Needed for Twilio Trust Hub and Meta |
 | Phone line for the WhatsApp business number | ☐ | Israeli number; can receive Meta's code |
@@ -46,6 +48,8 @@ Agents never enter card details. Tick each one:
 | Supabase | supabase.com/dashboard | ☐ |
 | Anthropic Console | console.anthropic.com | ☐ |
 | Gmail / Workspace admin | mail.google.com | ☐ |
+| Microsoft Clarity | clarity.microsoft.com | ☐ |
+| ChatGPT (only if the operator may paste the brief) | chatgpt.com | ☐ |
 
 3. To run unattended in a cloud session that uses this browser: Claude desktop app → Settings → Claude Code → Remote Control, and keep the Mac awake. Plug it in, turn off sleep, or run `caffeinate -dims` in Terminal.
 

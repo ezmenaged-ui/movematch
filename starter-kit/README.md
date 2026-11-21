@@ -1,6 +1,6 @@
 # Services marketplace starter kit (from MoveMatch)
 
-A team of nine Claude Code agents, a gated process and an unattended mode, for building the next lead marketplace (painters, cleaners, AC technicians...) faster than MoveMatch. On MoveMatch most of the product was discovered as we went: the original brief was one line, and funnels, video rules, access questions, abandonment emails, the test area, the kill switch, legal texts, tracking and the WhatsApp chat all came on days 3 to 12. These agents ask those questions on day 1, and the `operator` agent does the console work (Vercel, Supabase, Twilio, Meta, GA4, Google Ads) in your logged-in Chrome instead of sending you screenshots to follow.
+A team of nine Claude Code agents, a gated process and an unattended mode, for building the next lead marketplace (painters, cleaners, AC technicians...) faster than MoveMatch. On MoveMatch most of the product was discovered as we went: the original brief was one line, and funnels, video rules, access questions, abandonment emails, the test area, the kill switch, legal texts, tracking and the WhatsApp chat all came on days 3 to 12. These agents ask those questions on day 1, and the `operator` agent does the console work (Vercel, Supabase, Twilio, Meta, GA4, Microsoft Clarity) in your logged-in Chrome instead of sending you screenshots to follow. Google Ads campaigns are built by ChatGPT from a brief the marketing agent writes, and Claude checks them.
 
 ## What's inside
 
@@ -23,12 +23,16 @@ In the MoveMatch repo the kit is stored **inert**: the folder is `claude/` (not 
 | `.claude/hooks/guard.mjs` | Blocks pushes to `main`, force pushes, CLI production deploys, real Twilio sends and destructive SQL, even in Auto mode |
 | `.claude/autonomy.json` | `prelaunch` (agents may merge and deploy before launch) or `live` (merges need you). Switch on launch day |
 | `docs/OWNER-PREFLIGHT.md` | Your one-hour checklist before letting agents work alone |
+| `docs/ads/CHATGPT-BRIEF.template.md` | The brief ChatGPT uses to build the Google Ads campaigns (Paused), with the report format Claude checks against |
+| `START-HERE.md` | What to do first and the message to paste (not copied into the project) |
 | `docs/autopilot/README.md` | Templates for `QUESTIONS.md`, `DECISIONS.md`, `OPS-LOG.md` and the daily digest |
 | `CLAUDE.md` (stored as `CLAUDE.template.md`) | Project rules template (fill in the placeholders) |
 | `install.sh` | Copies the kit into a new project (not copied itself) |
 | `docs/briefs/README.md` | Brief template; each stage writes one brief |
 
 ## How to start a new project
+
+**Shortest path:** follow `START-HERE.md`. It has the exact first message to paste into Claude.
 
 1. Create a new empty GitHub repo for the project and open a Claude Code session on it.
 2. Install the kit. Ask Claude: "Clone ezmenaged-ui/movematch to a temporary folder and run `bash starter-kit/install.sh <this repo>`, then commit." The script copies `claude/` → `.claude/`, `CLAUDE.template.md` → `CLAUDE.md`, the `docs/` files, and the playbook → `docs/PLAYBOOK.md`. It refuses to run into the MoveMatch repo or over existing files, and it changes nothing in MoveMatch.

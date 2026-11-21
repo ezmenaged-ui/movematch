@@ -3,7 +3,7 @@
 **What this is:** everything learned while building MoveMatch (movematch.co.il, a Hebrew reverse-tender marketplace for home moves in Israel) between 6 and 20 November 2026. It is written so that you, or an LLM, can load it at the start of a new project, for example painters, cleaners, handymen or AC technicians, and skip the mistakes and back-and-forth we already went through.
 
 **Start here (next project in four steps):**
-1. New GitHub repo, then run `bash starter-kit/install.sh <new repo>` from a MoveMatch checkout; it installs the agents, commands, hooks and this file as `docs/PLAYBOOK.md` (`starter-kit/README.md`). The kit is stored inert in MoveMatch and never affects it.
+1. New GitHub repo, then paste the first message from `starter-kit/START-HERE.md` into Claude Code on it. That runs `bash starter-kit/install.sh <new repo>` from a MoveMatch checkout; it installs the agents, commands, hooks and this file as `docs/PLAYBOOK.md` (`starter-kit/README.md`). The kit is stored inert in MoveMatch and never affects it.
 2. Owner's preflight hour: accounts, connectors, Chrome logins, autonomy level (section 20.3, `docs/OWNER-PREFLIGHT.md`).
 3. `/kickoff <idea>` with the owner for stage 1 (about 20 minutes), then `/autopilot` to let the agents work alone.
 4. Each morning: read the digest, answer `docs/QUESTIONS.md`, press the few buttons only the owner can press.
@@ -352,7 +352,7 @@ Every client message links to the same live tender page, so even an old message 
 | Templates | `TWILIO_TPL_MOVER_LEAD_V2`, `TWILIO_TPL_CLIENT_FIRST_V2`, `TWILIO_TPL_CLIENT_OPEN_V2`, `TWILIO_TPL_CLIENT_NEW_V2`, `TWILIO_TPL_OP_LEAD`, `TWILIO_TPL_OP_BID` |
 | Safety switches | `MESSAGES_PAUSED`, `WA_MAX`, `WA_WINDOW_SEC`, `HOME_LEADS_LIVE`, `WA_FUNNEL_LIVE`, `WA_CHAT_MAX` |
 | AI | `ANTHROPIC_API_KEY`, `WA_AI_MODEL` |
-| Analytics | `NEXT_PUBLIC_GA_ID`, `GA4_API_SECRET`, `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `ADS_EXPORT_KEY`, `GA_DEBUG_LOG` |
+| Analytics | `NEXT_PUBLIC_GA_ID`, `GA4_API_SECRET`, `NEXT_PUBLIC_GTM_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `NEXT_PUBLIC_CLARITY_ID`, `ADS_EXPORT_KEY`, `GA_DEBUG_LOG` |
 | Local tests only | `MM_QUALIFY_TEST_LEADS` (never in Vercel) |
 
 ### 7.4 Scheduled jobs
@@ -436,12 +436,49 @@ Patterns worth keeping:
 - Check which GA4 property is linked to Ads (the site used one ID, the brief mentioned another).
 
 ### 10.3 Using ChatGPT for the ads
-The owner built campaigns in ChatGPT from a pasted brief. A good brief contains: what the service is, the goal and main CTA, the exact final URLs per ad group (no homepage while it is held), the WhatsApp number and exact starter texts, devices, locations (only covered areas), language, conversion goal, and the facts allowed in copy (free, no obligation, several quotes from vetted local providers, offers arrive in WhatsApp; no specific prices or dates). Then paste ChatGPT's report back to Claude to check it.
+**ChatGPT builds the campaigns; Claude writes the brief and checks the result.** This is the owner's standing choice for every project.
+
+The brief contains:
+- what the service is, the goal and the main CTA;
+- the exact final URLs per ad group (no homepage while it is held);
+- the WhatsApp number and the exact starter texts with their `#codes`;
+- devices, locations (only covered areas) and language;
+- the conversion goal;
+- the facts allowed in copy (free, no obligation, several quotes from vetted local providers, offers arrive in WhatsApp; no specific prices or dates).
+
+How it runs in the kit:
+1. The marketing agent writes `docs/ads/CHATGPT-BRIEF.md` from the template. The brief tells ChatGPT to create everything **Paused** and to finish with a report in a fixed format.
+2. The brief is pasted into ChatGPT (agent mode, signed in to the same Google Ads account):
+   - by the owner, or
+   - by the operator agent in the owner's logged-in Chrome, if the owner allowed that in stage 1.
+3. ChatGPT's report is saved as `docs/ads/CHATGPT-REPORT.md`.
+4. The operator opens Google Ads read-only and checks every campaign against the brief: URLs, geo, devices, budget, conversions, claims, negatives and status Paused. The results go into `docs/ads/CHECK-<date>.md`.
+5. Anything wrong goes back to ChatGPT as a short correction prompt.
+6. The owner presses Enable.
+
+GA4 key events, the Ads–GA4 link and the conversion import are done and verified by the operator, not ChatGPT. On MoveMatch, ChatGPT couldn't verify the GA4 link and the owner went back and forth.
 
 ### 10.4 Launch plan we settled on
 - Two web funnels (D and E, photo design) plus F (one WhatsApp ad, about ₪50/day), city targeting to the centre of Israel and Jerusalem where providers exist.
 - After the first 3 to 5 real leads: a "launch-day check" (Twilio error codes, Vercel logs, lead data complete, providers alerted, GA4 DebugView events).
 - Raise budget slowly while watching the WhatsApp quality rating.
+
+
+### 10.5 Microsoft Clarity (session recordings, added 21 Nov 2026)
+Clarity is free with no recording cap. It shows what visitors actually did on each funnel step, which GA4 can't. MoveMatch's setup, worth copying as is:
+- `components/Clarity.tsx` in the root layout, enabled by `NEXT_PUBLIC_CLARITY_ID`. It loads **only on client funnel pages** (`/`, `/a` to `/e` and their follow-up pages, `/f`, the video upload page). It never loads on `/qa`, admin, provider pages, login, or the tender and offer pages, which show personal details.
+- `strategy="lazyOnload"`, so the first screen isn't slowed.
+- Tags from `track()` in `lib/client.ts`, queued until the script arrives:
+  - `funnel` (= `variant_id`) and `step` (every `step_name` reached);
+  - `lead_id`;
+  - `lead` (`generate_lead` / `lead_complete` / `qualify_lead`), plus Clarity events of the same names.
+
+  Filter example: `funnel = d-art` and `step = 4_when` but not `step = 5_video` = people who dropped at the video step.
+- Privacy:
+  - no name or phone is ever sent as a tag;
+  - project masking set to Balanced (form inputs masked) or Strict;
+  - the privacy page names Microsoft Clarity as a processor, says what it records, and lists the countries (US and others).
+- Use: in the first weeks, watch the recordings of people who dropped at each step. The digest lists the steps with the most drop-offs, rage clicks and dead clicks.
 
 ---
 
@@ -672,6 +709,7 @@ The two v1 templates rejected as SCAM had the full URL in a variable and more ex
 | `lib/legal.ts` and the legal pages | Operator identity and legal texts (re-review for the new vertical) |
 | `components/Wizard.tsx`, `VideoUploader.tsx`, `QrHandoff.tsx`, `AddressFields.tsx`, `WhenFields.tsx`, `ItemsPicker.tsx` | Funnel building blocks |
 | `supabase/migrations/` | Schema, RPC functions, triggers, cron jobs |
+| `components/Clarity.tsx`, `clarityTags()` in `lib/client.ts` | Microsoft Clarity recordings on funnel pages only, tagged by funnel, step and lead |
 | `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md` | Page map, tracking spec, legal checklist |
 
 ---
@@ -811,14 +849,16 @@ The full checklist is in `starter-kit/docs/OWNER-PREFLIGHT.md`. In short:
 | Twilio | REST API (Messages log, Content API for templates, webhooks on the sender), console in the browser | Configure webhooks, create Content templates and submit them for WhatsApp approval, read the message log and error codes, set the status callback | Upgrade the account (card). Final submit of the Trust Hub profile (identity attestation). Buying numbers costs money (yellow) | Inbound webhook refused for a week. Templates rejected as SCAM. The owner did every Trust Hub screen by screenshot |
 | Meta (Business Suite, WhatsApp Manager) | Browser only | Read the quality rating, template status, account health and warnings. Fill in the business-verification and appeal forms. Prepare the display name | Final submit of verification and appeals. Receive the number's verification code if it goes to a SIM | The ban appeal was written by Claude and submitted by the owner (18.2) |
 | Google Analytics 4 | Browser (the Admin API needs OAuth set up) | Property and data stream, mark key events, link Google Ads, custom dimensions, check DebugView after a deploy | Be signed in | The measurement ID in the site didn't match the one in the brief. Key events were set up by hand |
-| Google Ads | Browser (the API needs a developer token) | Build campaigns, ad groups, ads and keywords **as Paused**. Import conversions (Primary/Secondary, Count: One). Geo, devices, negative keywords. Upload the offline-conversion source | Billing. **Enabling a campaign or raising a budget** (red) | Campaigns were built in ChatGPT and pasted back to Claude to check; another campaign on the account could have optimised for MoveMatch leads |
+| Google Ads | **ChatGPT builds the campaigns** from Claude's brief (10.3); the agent uses the browser to check | Write the ChatGPT brief; import conversions (Primary/Secondary, Count: One); upload the offline-conversion source; check ChatGPT's campaigns against the brief (read-only) and write the correction prompt | Billing. Paste the brief into ChatGPT, unless the operator may. **Enabling a campaign or raising a budget** (red) | Campaigns were built in ChatGPT and pasted back to Claude to check; another campaign on the account could have optimised for MoveMatch leads |
 | Gmail / Google Workspace | Gmail connector, browser | Read verification emails and codes sent by services, draft emails to providers or the lawyer | Send outreach (outward-facing). Create the App Password (Google asks for re-login) | The App Password is shown once; lost means a new one |
 | Anthropic Console | Browser | Create the API key and put it straight into Vercel; set a monthly spend limit at the cap the owner chose | Billing | `ANTHROPIC_API_KEY` for the chat parser |
 | Live site | Playwright in the container or Mac (no login), Chrome for logged-in admin pages | Phone-width screenshots of every page, 200 checks, funnel walk-through on `/qa`, GA4 events in DebugView | Nothing | Admin pages behind a password couldn't be verified from the cloud |
 | WhatsApp on the owner's phone | None | Read the Twilio log as a stand-in | Look at the phone after the one allowed WhatsApp test | Only the owner can confirm a message looked right |
 | Lawyer, providers, customers | Gmail drafts | Drafts and call scripts | Calls, signatures, relationships | Mover feedback on day 10 changed the funnels; that conversation can't be automated |
 
-**ChatGPT is no longer needed for the ads.** The marketing agent writes the plan and the operator agent builds it in Google Ads, paused. The owner reviews it and presses Enable.
+**ChatGPT builds the ads; Claude briefs and checks.** The marketing agent writes the brief, ChatGPT creates the campaigns Paused, the operator checks them in Google Ads against the brief, and the owner presses Enable (section 10.3).
+
+**Microsoft Clarity** (session recordings, section 10.5): the operator creates the project at clarity.microsoft.com in the browser, sets masking to Balanced or Strict, puts the project ID into Vercel as `NEXT_PUBLIC_CLARITY_ID`, and reads the dashboard (drop-off by step tag, rage clicks, dead clicks) into the weekly digest. The owner only needs to be signed in to Clarity with the same Microsoft or Google account.
 
 ### 20.5 Autonomy levels
 
@@ -877,7 +917,7 @@ Rules in prompts get forgotten in long runs; code doesn't. The kit adds:
 |---|---|---|
 | Night 1 | One-line brief, code started | The owner answers stage 1 (20 min) and does the preflight hour. Overnight: bizdev, product and design drafts from recommended options, repo and Vercel project, Supabase schema and migrations, `/qa` and the test-lead guard, Twilio webhooks, Trust Hub and Meta forms filled to the submit screen, templates drafted as Utility with the link in the body |
 | Morning 2 | | Digest: 14 decisions to confirm, 4 owner clicks (Trust Hub submit, Meta verification submit, Supabase Pro, domain payment), about 15 minutes |
-| Days 2 to 4 | Funnels and feature requests one at a time; WhatsApp ban on day 5 | Funnels built from the approved product brief; templates submitted the moment Meta verification clears; GA4 and Ads (paused) built in the browser |
+| Days 2 to 4 | Funnels and feature requests one at a time; WhatsApp ban on day 5 | Funnels built from the approved product brief; templates submitted the moment Meta verification clears; GA4 and Clarity set up in the browser; ChatGPT builds the Ads campaigns (paused) from Claude's brief, Claude checks them |
 | Day 5 | Ban, appeal, rebuild | Launch-ready review: QA go / no-go, the owner enables the campaigns |
 
 ### 20.9 Known limits (be honest about them)

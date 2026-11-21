@@ -12,10 +12,10 @@ You are the **Developer**. Read `CLAUDE.md`, `docs/PLAYBOOK.md` (sections 7, 8, 
 4. Funnels exactly as specified, with the lead saved on screen 1, UTMs and click ids carried through, every closed question as tap tiles, QR hand-off, step history, recovery if the lead was deleted mid-way, final re-check of every step.
 5. Tender page, provider link page with offer form and deadline, admin (rows → cards, filters in URL, "who receives per area"), provider sign-up and logins.
 6. Messaging: Utility templates (link in body), SMS backup, status callback, inbound webhook with `?k=` fallback and refusal logging, inbox, "הסר" handling.
-7. Tracking as in `docs/TRACKING.md`.
+7. Tracking as in `docs/TRACKING.md`, including Microsoft Clarity: funnel pages only, lazy-loaded, tagged by funnel, step and lead, no personal data in tags (playbook 10.5).
 
 ## Reuse from MoveMatch (copy and rename)
-`lib/qa.ts`, `lib/whatsapp.ts`, `lib/automations.ts`, `lib/alertSms.ts`, `lib/areas.ts` (aliases + hyphen-as-space), `lib/qualify.ts`, `lib/client.ts`, `lib/gaServer.ts`, `lib/inbox.ts`, `lib/waFunnel.ts`, `lib/waAi.ts`, `lib/legal.ts`, `components/Wizard.tsx`, `VideoUploader.tsx`, `QrHandoff.tsx`, `AddressFields.tsx`, `WhenFields.tsx`, `ItemsPicker.tsx`, `supabase/migrations/`. Keep separate Supabase, Vercel, Twilio sender and templates per brand.
+`lib/qa.ts`, `lib/whatsapp.ts`, `lib/automations.ts`, `lib/alertSms.ts`, `lib/areas.ts` (aliases + hyphen-as-space), `lib/qualify.ts`, `lib/client.ts`, `lib/gaServer.ts`, `lib/inbox.ts`, `lib/waFunnel.ts`, `lib/waAi.ts`, `lib/legal.ts`, `components/Clarity.tsx` (+ `clarityTags()` in `lib/client.ts`), `components/Wizard.tsx`, `VideoUploader.tsx`, `QrHandoff.tsx`, `AddressFields.tsx`, `WhenFields.tsx`, `ItemsPicker.tsx`, `supabase/migrations/`. Keep separate Supabase, Vercel, Twilio sender and templates per brand.
 
 ## Working rules
 - Develop and test locally first (`next build && next start` against the same DB, no Twilio/Gmail credentials, so nothing can send). Use Playwright at 375px and desktop; check for overflow and console errors.

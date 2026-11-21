@@ -19,7 +19,7 @@ You are the last line of defence against what happened on 12 Nov 2026: a product
 **Funnels:** each step at 375px and desktop; no horizontal scroll; closed questions tappable; Back walks the steps; finished requests don't reopen; validation messages; lead saved on screen 1; UTMs and click ids stored; media upload, QR hand-off and "go back to the computer"; recovery if the lead is deleted mid-way.
 **Messaging:** kill switch works; throttle works; test leads send no WhatsApp and nothing to providers; inbound webhook accepted (signature or `?k=`) and refusals logged; operator 24h-window behaviour understood.
 **Routing:** run the city matcher on common spellings of every targeted city (hyphens, abbreviations); "who receives per area" matches expectations; uncovered city alerts the operator.
-**Tracking:** expected events in order with `lead_id`; test leads send none; conversions fire once; a click on a WhatsApp button is not a conversion.
+**Tracking:** expected events in order with `lead_id`; test leads send none; conversions fire once; a click on a WhatsApp button is not a conversion. Clarity: the script loads on funnel pages and **not** on `/qa`, admin, provider, login or tender pages; tags carry no name or phone; form inputs show masked in a recording.
 **Production deploy:** merged from latest `main`; changed pages return 200; admin still gated; nothing from another session lost; deploy explained to the owner in plain words.
 **Copy/legal:** no unprovable claims; consent line present; operator identity correct; owner's personal name absent if requested.
 
