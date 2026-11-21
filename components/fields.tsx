@@ -109,7 +109,7 @@ export function ElevatorTypePicker({ value, onChange, error }: { value: Elevator
 }
 
 export function ElevatorChoice({ value, onChange, error }: { value: boolean | null; onChange: (v: boolean) => void; error?: string }) {
-  // Same two tiles on every screen: the answer must be explicit, since "רק מדרגות" is what opens the floor question.
+  // Same two tiles on every screen, so the answer is always explicit.
   return (
     <div role="radiogroup" aria-label="יש מעלית בכניסה לבניין?">
       <div className="small" style={{ marginBottom: 8, color: 'var(--color-neutral-700)' }}>יש מעלית בכניסה לבניין?</div>
