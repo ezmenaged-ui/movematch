@@ -46,6 +46,8 @@ export type MoverLead = {
   id: string; tender_no: number | null; share_token: string; created_at: string; closes_at: string | null; now: string; open: boolean;
   city: string | null; move_from: Addr; move_to: Addr; move_when: Record<string, unknown> | null;
   video_skipped: boolean; priority: number | null; bid_count: number; my_bid: MyBid | null;
+  /** Migration 028: an unfinished lead the operator sent by hand is 'partial'. */
+  status?: 'partial' | 'complete'; admin_sent?: boolean;
 };
 export type MoverLeadSummary = MoverLead & { videos: number; items: number };
 export type MoverLeadFull = MoverLead & {

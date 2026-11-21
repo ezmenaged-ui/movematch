@@ -7,13 +7,18 @@ import { ItemsTable } from '@/components/ItemsTable';
 import { LeadsFilter } from '@/components/LeadsFilter';
 import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { CloseCard, CopyButton } from '@/components/CopyButton';
-import { setBidHidden, setHandled } from './actions';
+import { sendLeadToMovers, setBidHidden, setHandled } from './actions';
+import { AdminVideoUpload, ConfirmSend } from '@/components/AdminLeadTools';
+import { autoSentToArea, recipientsFrom, type ActiveMover, type MoverAreaRow } from '@/lib/automations';
+import { isTestLead } from '@/lib/qa';
+import { missingInfo } from '@/lib/moverFormat';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Leads · MoveMatch', robots: { index: false } };
 
 type Bid = { id: string; lead_id: string; price: number; mover_phone: string; mover_name: string | null; available_date: string | null; available_flexible: boolean; note: string | null; hidden: boolean; created_at: string };
-type Lead = LeadRow & { client_token: string; movers_pinged_at: string | null; movers_pinged_count: number | null; priority: number | null };
+type Lead = LeadRow & { client_token: string; movers_pinged_at: string | null; movers_pinged_count: number | null; priority: number | null; admin_sent_at: string | null };
+const SEND_ERR: Record<string, string> = { already: 'הליד כבר נשלח למובילים.', test: 'ליד בדיקה (QA): לא נשלח למובילים.', no_movers: 'אין מובילים פעילים.', not_found: 'הליד לא נמצא.' };
 const PRIO: Record<number, string> = { 1: 'שירות פרימיום', 2: 'בעיקר שירות', 3: 'איזון', 4: 'בעיקר מחיר', 5: 'המחיר הנמוך' };
 
 const V: Record<string, string> = { a: 'A · חזרה', wizard: 'B · פריטים', form: 'C · טופס', items: 'D · פריטים+סרטון', choice: 'E · סרטון או פריטים', chat: 'F · וואטסאפ' };
@@ -45,7 +50,7 @@ function Addr({ title, a, fallback }: { title: string; a: Record<string, unknown
 
 const STATUS: Record<string, string> = { complete: 'מלאים', partial: 'לא סיימו', offers: 'עם הצעות', open: 'לא טופלו', handled: 'טופלו' };
 
-export default async function Admin({ searchParams }: { searchParams: Promise<{ q?: string; f?: string; v?: string }> }) {
+export default async function Admin({ searchParams }: { searchParams: Promise<{ q?: string; f?: string; v?: string; open?: string; sent?: string; of?: string; senderr?: string }> }) {
   const sp = await searchParams;
   const q = (sp.q || '').trim();
   const fs = (sp.f || '').split(',').filter((x) => STATUS[x]);
@@ -69,12 +74,18 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
       (x === 'offers' && (bidsBy.get(l.id) || []).length > 0) || (x === 'open' && !l.handled) || (x === 'handled' && l.handled))) return false;
     if (q) {
       const hay = `${l.name} ${l.phone} ${l.city || ''} ${cityOf(l.move_from)} ${cityOf(l.move_to)} ${l.tender_no || ''}`;
-      if (!hay.includes(q)) return false;
+      // A phone typed with dashes, spaces or +972 still finds the lead (phones are stored as 05XXXXXXXX).
+      const digits = q.replace(/\D/g, '').replace(/^972/, '0');
+      if (!hay.includes(q) && !(digits.length >= 6 && /^[\d\s+()-]+$/.test(q) && l.phone.includes(digits))) return false;
     }
     return true;
   });
-  const { data: moverData } = await db().rpc('mm_admin_movers', { p_secret: process.env.MM_ADMIN_SECRET });
-  const movers = (moverData || []) as { status: string }[];
+  const [{ data: moverData }, { data: areaData }] = await Promise.all([
+    db().rpc('mm_admin_movers', { p_secret: process.env.MM_ADMIN_SECRET }),
+    db().rpc('mm_admin_mover_areas', { p_secret: process.env.MM_ADMIN_SECRET }),
+  ]);
+  const movers = (moverData || []) as (ActiveMover & { status: string })[];
+  const areaRows = (areaData || []) as MoverAreaRow[];
   const pending = movers.filter((m) => m.status === 'pending').length;
   const nComplete = allLeads.filter((l) => l.status === 'complete').length;
   const nOffers = allLeads.filter((l) => (bidsBy.get(l.id) || []).length).length;
@@ -103,6 +114,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <h2>פניות {leads.length !== allLeads.length ? `(${leads.length} מתוך ${allLeads.length})` : ''}</h2>
         <LeadsFilter statuses={Object.entries(STATUS).map(([v, label]) => ({ v, label }))} funnels={Object.entries(V).map(([v, label]) => ({ v, label }))} />
       </div>
+      {sp.sent !== undefined && <p className="adm-flash ok" role="status">{sp.sent === sp.of ? `✅ הליד נשלח ל-${sp.of} מובילים.` : `⚠️ נשלח ל-${sp.sent} מתוך ${sp.of} מובילים. לשאר לא יצא וואטסאפ וגם לא SMS: כדאי לבדוק את לוג Twilio.`}</p>}
+      {sp.senderr && <p className="adm-flash warn" role="alert">⚠️ לא נשלח: {SEND_ERR[sp.senderr] || sp.senderr}</p>}
       {leads.length === 0 && <div className="mmx-empty">אין פניות שמתאימות לסינון.</div>}
 
       <div className="adm-list">
@@ -119,7 +132,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           const firstName = l.name.split(' ')[0];
           const clientMsg = `היי ${firstName}, ${visible.length === 1 ? 'התקבלה הצעה' : `התקבלו ${visible.length} הצעות`} במכרז ההובלה שלך מס׳ ${ref} (${route}). אפשר לראות ולבחור כאן:\n${clientLink}`;
           return (
-            <details key={l.id} className={`adm-lead ${l.handled ? 'handled' : ''}`}>
+            <details key={l.id} id={`lead-${l.id}`} open={sp.open === l.id || undefined} className={`adm-lead ${l.handled ? 'handled' : ''}`}>
               <summary>
                 <span className="adm-ico" aria-hidden><Truck size={20} strokeWidth={1.75} /></span>
                 <span className="adm-route">{route}<small>מכרז #{ref}</small></span>
@@ -159,9 +172,9 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
                 </div>
 
                 {l.items?.list?.length ? <div className="adm-box"><h4>פריטים</h4><ItemsTable items={l.items} /></div> : null}
-                {l.videos.length > 0 && (
-                  <div className="adm-box">
-                    <h4>סרטונים ({l.videos.length})</h4>
+                <div className="adm-box">
+                  <h4>סרטונים ({l.videos.length})</h4>
+                  {l.videos.length > 0 && (
                     <div className="adm-videos">
                       {l.videos.map((v) => {
                         const src = `/admin/video?path=${encodeURIComponent(v.path)}&parts=${v.parts || 1}`;
@@ -173,13 +186,35 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
                         );
                       })}
                     </div>
+                  )}
+                  <p className="small muted" style={{ margin: '8px 0 0' }}>סרטון שהלקוח שלח בוואטסאפ: מוסיפים מתיבת ההודעות (כפתור &quot;הוספה לליד&quot; ליד הסרטון).</p>
+                  <div className="adm-actions">
+                    <AdminVideoUpload leadId={l.id} />
+                    <a className="btn btn-secondary adm-btn" href={`/admin/inbox?p=972${l.phone.replace(/^0/, '')}`}><MessageCircle size={14} /> השיחה בוואטסאפ</a>
                   </div>
-                )}
+                </div>
 
                 <div className="adm-box">
                   <h4>1. שליחה למובילים</h4>
                   <p className="small muted" style={{ margin: '0 0 8px' }}>דף ההובלה. מובילים מאושרים (מהקישור האישי) רואים בו גם את שם הלקוח והטלפון, ומגישים הצעת מחיר.</p>
                   {l.movers_pinged_at && l.movers_pinged_count ? <p className="small" style={{ margin: '0 0 8px' }}>✅ נשלח אוטומטית בוואטסאפ ל-{l.movers_pinged_count} מובילים ({fmt(l.movers_pinged_at)})</p> : null}
+                  {l.admin_sent_at && <p className="small" style={{ margin: '0 0 8px' }}>✅ נשלח ידנית ממסך הניהול ({fmt(l.admin_sent_at)})</p>}
+                  {(() => {
+                    if (l.admin_sent_at) return null;
+                    if (isTestLead(l) || l.is_test) return <p className="small muted" style={{ margin: '0 0 8px' }}>ליד בדיקה (QA): לא נשלח למובילים.</p>;
+                    const r = recipientsFrom(l, movers, areaRows);
+                    if (autoSentToArea(l, r.inArea)) return null;
+                    const missing = missingInfo(l);
+                    return (
+                      <form action={sendLeadToMovers} className="adm-send">
+                        <input type="hidden" name="id" value={l.id} />
+                        <input type="hidden" name="q" value={q} />
+                        {missing.length > 0 && <p className="small" style={{ margin: '0 0 6px' }}>⚠️ חסרים פרטים: <b>{missing.join(', ')}</b>. המובילים יראו את הרשימה הזו בהודעה ובדף ההובלה.</p>}
+                        <p className="small muted" style={{ margin: '0 0 6px' }}>יישלח ל-{r.movers.length} מובילים ({r.scope}). פעם אחת בלבד.</p>
+                        {r.movers.length > 0 && <ConfirmSend label={`שליחה ל-${r.movers.length} מובילים`} question={`לשלוח את מכרז ${ref} ל-${r.movers.length} מובילים (${r.scope})?${missing.length ? `\nחסרים: ${missing.join(', ')}` : ''}\nאי אפשר לבטל.`} />}
+                      </form>
+                    );
+                  })()}
                   <div className="adm-link"><a href={moverLink} target="_blank" rel="noreferrer" dir="ltr">{moverLink}</a></div>
                   <div className="adm-actions">
                     <CopyButton text={moverLink} label="העתקת קישור" />

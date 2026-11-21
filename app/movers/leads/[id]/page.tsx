@@ -7,7 +7,7 @@ import { Countdown } from '@/components/Countdown';
 import { ItemsTable } from '@/components/ItemsTable';
 import { MoverLogo } from '@/components/MoverLogo';
 import { BID_STATE_LABEL, bidState, moverDb, requireMe, tabOf, type MoverLeadFull } from '@/lib/mover';
-import { dayHe, hhmm, nis, routeText, stamp } from '@/lib/moverFormat';
+import { dayHe, hhmm, missingInfo, nis, routeText, stamp } from '@/lib/moverFormat';
 import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { tenderRef } from '@/lib/publicLead';
 import type { Crew } from '@/lib/crew';
@@ -87,6 +87,9 @@ export default async function MoverLeadPage({ params, searchParams }: { params: 
           {l.priority ? <span>· הלקוח מעדיף: {PRIO[l.priority]}</span> : null}
         </p>
       </section>
+      {l.status === 'partial' && missingInfo(l).length > 0 && (
+        <p className="mv-note warn" role="note">הלקוח עוד לא השלים את כל הפרטים. חסרים: <b>{missingInfo(l).join(', ')}</b>. אפשר לתת הצעה לפי מה שיש, או ליצור קשר עם הלקוח.</p>
+      )}
 
       <div className="mv-card">
         <h2><CalendarDays size={20} strokeWidth={1.6} /> פרטי המעבר</h2>
