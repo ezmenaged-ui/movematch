@@ -2,11 +2,18 @@
 
 **What this is:** everything learned while building MoveMatch (movematch.co.il, a Hebrew reverse-tender marketplace for home moves in Israel) between 6 and 20 November 2026. It is written so that you, or an LLM, can load it at the start of a new project, for example painters, cleaners, handymen or AC technicians, and skip the mistakes and back-and-forth we already went through.
 
+**Start here (next project in four steps):**
+1. New GitHub repo, then run `bash starter-kit/install.sh <new repo>` from a MoveMatch checkout; it installs the agents, commands, hooks and this file as `docs/PLAYBOOK.md` (`starter-kit/README.md`). The kit is stored inert in MoveMatch and never affects it.
+2. Owner's preflight hour: accounts, connectors, Chrome logins, autonomy level (section 20.3, `docs/OWNER-PREFLIGHT.md`).
+3. `/kickoff <idea>` with the owner for stage 1 (about 20 minutes), then `/autopilot` to let the agents work alone.
+4. Each morning: read the digest, answer `docs/QUESTIONS.md`, press the few buttons only the owner can press.
+
 **How to use it:**
 - **If you are an LLM starting a new vertical:** read sections 0 to 3 before you write any code. Use section 14 as the build order. Section 11 (QA) and section 6 (WhatsApp) are not optional: they exist because of a real account ban.
-- **If you are a person:** section 1 is the one-page version. Section 14 is the checklist for the next vertical.
+- **If you are a person:** section 1 is the one-page version. Section 14 is the checklist for the next vertical. Section 19 lists everything MoveMatch added late, with the day-1 question that would have caught it.
+- **To actually start the next project:** use the agent kit in `starter-kit/` (nine Claude Code agents, a gated `/kickoff` process and an unattended `/autopilot` mode; section 20 explains how agents do the console work in the browser instead of the owner). Install it with `starter-kit/install.sh` (it also copies this file as `docs/PLAYBOOK.md`); see `starter-kit/README.md`.
 
-**Sources:** the MoveMatch repository (code, migrations, `CLAUDE.md`, `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md`, 70 commits, PRs #1 to #31), about 45 Claude Code chats from 6 to 20 November 2026, the "MoveMatch Launch Tracker" and "Message Map" artifacts. Where this document and the code disagree, the code is the source of truth; update this file.
+**Sources:** the MoveMatch repository (code, migrations, `CLAUDE.md`, `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md`, commits and PRs #1 to #32), about 45 Claude Code chats from 8 to 20 November 2026 (a second, fuller pass over the owner's messages in every major chat was done for section 19), the "MoveMatch Launch Tracker" and "Message Map" artifacts. Where this document and the code disagree, the code is the source of truth; update this file.
 
 ---
 
@@ -31,6 +38,8 @@
 16. [MoveMatch timeline (what happened when)](#16-movematch-timeline)
 17. [Open items in MoveMatch on 20 Nov 2026](#17-open-items-in-movematch-on-20-nov-2026)
 18. [Appendix: reference material](#18-appendix-reference-material)
+19. [What we added late, and the day-1 question that would have caught it](#19-what-we-added-late-and-the-day-1-question-that-would-have-caught-it)
+20. [The autonomous build: agents that do the work, browser included](#20-the-autonomous-build-agents-that-do-the-work-browser-included)
 
 ---
 
@@ -41,10 +50,10 @@ Follow these from the first message. Each one comes from something that went wro
 1. **Ask multiple-choice questions when the brief is unclear.** The owner prefers AskUserQuestion with 2 to 4 concrete options and a recommended one first. Do not fill gaps with guesses or filler. Keep the question in plain words: twice the owner answered "I don't understand the question" when it was phrased in terms like GA4 step numbering. Say what changes for *them*, not for the code.
 2. **Write the project rules file (`CLAUDE.md`) on day one** and keep it current. Every new chat reads it automatically. Copy the QA rules from section 11 into it before the first test.
 3. **Never send a real message during testing.** Build the test-lead guard (section 11) *before* wiring WhatsApp. Test locally, where no credentials exist, so nothing can be sent.
-4. **Ask before production deploys, database deletes and anything outward-facing** (sending emails, submitting templates to Meta, DNS). Show what will change. The owner says "deploy" or "yes" in one word; that is enough.
+4. **Ask before production deploys, database deletes and anything outward-facing** (sending emails, submitting templates to Meta, DNS). Show what will change. The owner says "deploy" or "yes" in one word; that is enough. When the owner is away, follow the autonomy levels in section 20.5 instead: green and pre-approved yellow go ahead, red waits in `docs/QUESTIONS.md`.
 5. **One chat deploys at a time.** Several parallel chats deployed over each other's work on 11 and 14 November, and one chat's QA cleanup deleted another chat's test leads mid-test. Rule: every chat starts from the latest `main`, merges back to `main` through a PR, and deploys only from `main`.
 6. **Never paste or ask for secrets in the chat.** Tell the owner exactly where to paste a key (Vercel → Settings → Environment Variables), and say "tell me when it's done".
-7. **Walk the owner through consoles one screen at a time.** Twilio Trust Hub, Meta Business Manager, Google, Vercel DNS: ask for a screenshot after each screen, then say exactly which field gets which value and which button to press. Long multi-step instructions caused "I keep going in circles".
+7. **Do the console work yourself** (section 20): connectors and APIs first, the owner's logged-in Chrome second. Stop only for payment, identity, 2FA and final legal submits, and prepare those to the last click. Only when you truly can't reach a console, walk the owner through it one screen at a time: ask for a screenshot after each screen, then say exactly which field gets which value and which button to press. Long multi-step instructions caused "I keep going in circles".
 8. **Verify on the live site after every deploy** (pages return 200, the changed feature appears), and say plainly what you could not verify (for example admin pages behind a password).
 9. **Supabase MCP approval prompts time out after about 60 seconds.** When a migration or delete times out, say so, confirm nothing was applied, and ask the owner to watch for the prompt on the retry.
 10. **Keep a live tracker artifact** (tasks with owner: You / Claude / Meta / Waiting) and a "message map" of every automated message. The owner used both daily.
@@ -351,6 +360,7 @@ Every client message links to the same live tender page, so even an old message 
 - Nightly: retention (videos 30 days after the move date, 90 days when no date; tenders after 24 months; orphan uploads after 7 days).
 
 ### 7.5 Things the cloud environment could not do
+All of these are solved in the next build by running console work in the owner's Chrome (section 20.2) and allowing hosts during the preflight hour.
 - Open the live site or Google from the sandbox until the hosts were allowed (ask the owner to approve network access rather than testing only with faked calls).
 - Sign in to Google Analytics / Ads (the owner did those screens, or ChatGPT built the campaigns from a brief).
 - Reach whatsapp.com or the Israeli domain registry (we used Meta developer docs and Vercel's registrar instead).
@@ -488,6 +498,7 @@ Drafted by Claude, **not approved by a lawyer** (see `LEGAL_REVIEW.md`). Have an
 - **Approval prompts timing out** (Supabase MCP asks the owner; no answer within ~60 seconds cancels it). Batch the deletes and tell the owner to watch for the prompt.
 - **Testing with faked calls only.** Allow the sandbox to reach the live site and database early (with approval) so real end-to-end checks are possible.
 - **The 5-hour usage limit** ended one long session mid-task; keep chats focused and hand off through the tracker and `CLAUDE.md`.
+- **The owner as the hands.** Every console step went screenshot → instruction → screenshot, and the build waited whenever the owner was away. Section 20 replaces this with agents in the owner's Chrome and a short queue of owner-only clicks.
 
 ### 13.3 Owner preferences (carry them over)
 - Multiple-choice questions when unclear; no filler.
@@ -499,6 +510,8 @@ Drafted by Claude, **not approved by a lawyer** (see `LEGAL_REVIEW.md`). Have an
 ---
 
 ## 14. Build order for the next vertical
+
+The fastest way to run this is the agent kit in `starter-kit/`: `/kickoff` takes you through entrepreneur → bizdev → product → design → marketing → developer → QA, with ops-legal starting after stage 1, and stops for your approval between stages. The list below is the same plan written out.
 
 Use this as the plan. Each step lists what "done" means.
 
@@ -583,7 +596,7 @@ Things to decide with the owner before building (ask as multiple choice):
 
 ## 17. Open items in MoveMatch on 20 Nov 2026
 
-- Supabase upgrade to Pro (flagged as blocking launch on 19 Nov; confirm it was done).
+- ~~Supabase upgrade to Pro~~: done by the owner on 20 Nov.
 - Lawyer review of `/terms`, `/movers/terms`, `/privacy`, `/accessibility` and the Google data statement.
 - Who funds the ₪50 discount (terms say the mover).
 - `qualify_lead` as the Primary conversion after the first real leads, as a MoveMatch-only campaign goal; then the booked-move upload.
@@ -660,3 +673,217 @@ The two v1 templates rejected as SCAM had the full URL in a variable and more ex
 | `components/Wizard.tsx`, `VideoUploader.tsx`, `QrHandoff.tsx`, `AddressFields.tsx`, `WhenFields.tsx`, `ItemsPicker.tsx` | Funnel building blocks |
 | `supabase/migrations/` | Schema, RPC functions, triggers, cron jobs |
 | `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md` | Page map, tracking spec, legal checklist |
+
+---
+
+## 19. What we added late, and the day-1 question that would have caught it
+
+MoveMatch's whole day-1 brief was one line: *"a movers leads operation; send every lead to my Gmail or ideally WhatsApp; I'm stepping away, make the decisions yourself; attached are design files."* Everything below was discovered afterwards (day 1 = 8 Nov 2026, day 13 = 20 Nov). Each row is now a question in one of the agents in `starter-kit/.claude/agents/`, so the next project answers it on day 1.
+
+### 19.1 Business and supply
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| Positioning (day 6) | The owner's own headline "we'll negotiate for you" was removed: we don't negotiate | What exactly do we promise, word for word, and can we keep it? | entrepreneur |
+| Customer contact for providers (day 4) | Started hidden "so movers can't bypass me", reversed so providers can call | Do providers see the customer's name and phone? How do terms protect us? | bizdev |
+| ₪50 incentive (day 4, changed day 10) | Added while reviewing the video page; rule changed from "video" to "video + full list"; who funds it still open at launch | Is there a customer incentive, what's the exact rule, who pays it? | entrepreneur |
+| Provider input (day 10) | A potential mover's feedback made video required and added crane, parking distance and filming instructions after five funnels existed | Interview two providers: what do they need to quote without a visit? | bizdev |
+| Tender deadline (day 4) | 12-hour countdown and server block on late offers | How long is a tender open, and what happens at zero? | bizdev / product |
+| Service areas and routing (day 6) | Built when no real provider existed yet; city spellings failed silently on day 13 | Which areas, how many providers each, and test every city spelling before ads | bizdev |
+| Ratings (days 4 to 9) | Google, Midrag, Facebook added one at a time; "rated by Midrag" replaced by "all rated" | Which rating sources do providers have, and what may we claim? | bizdev / design |
+| Provider logins (days 5 to 13) | Copy button sent unsaved passwords; pasted passwords had hidden characters; phone + SMS login for movers without email | Email or phone login? One button that saves and copies the message | bizdev / developer |
+| Invoicing (day 5) | Asked for real tax invoices, then removed as out of scope | Do we invoice providers in-system in v1? | bizdev |
+| Public provider profiles (day 11) | Phone gated behind the customer's name for attribution; prospects hidden | Public profiles: yes/no; how do we attribute direct contact? | bizdev |
+
+### 19.2 Product and design
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| Separate URLs per funnel (days 2 and 5) | Asked for separate URLs for ad testing, then everything was reorganised into `/x/photo|art` with redirects | One URL per funnel and design, short redirects keeping UTMs, what's on the homepage | product |
+| Funnel hypotheses (days 10 and 12) | Funnel C's video went required then back to optional; nobody remembered why three WhatsApp ads existed | What does each funnel or ad test, and how do we measure it? | product / marketing |
+| Date, time and flexibility (day 2) | Added after the first funnels | Full question list per address and for the job, from the provider interviews | product |
+| Elevator size, crane, parking, home size (days 4, 10, 13) | Each added in a separate session | (same) | product |
+| Video rules (days 2, 5, 7, 10) | 1.5 min → 4 min; optional → required → optional; filming guide; "go back to the computer" | Photos or video, required where, max length, guide, desktop-to-phone hand-off | product / design |
+| Item picker UX (day 4) | Long owner feedback: multi-select, prominent "pick from list", free add, sticky buttons, optional marked in red | Spec the picker completely before building | product / design |
+| Abandonment email (day 4) | 15-minute "didn't finish" email for every funnel | Which operator alerts, on which events and channels? | product |
+| Message map (day 5) | Owner kept asking "what happens when..." | Draw the message map before code | product |
+| Theme carried through steps (day 4) | Follow-up pages lost the landing page's design | References and every screen state up front | design |
+| Waiting states (day 4) | "Three dots" replaced by an honest walking-mover message | Design loading and waiting states, not just the happy path | design |
+| Competitor references and mockups (days 4 and 5) | Competitor tender page, ChatGPT admin mockup and a provider-panel style arrived mid-build | Send every reference you have now | design |
+| Page map (day 5) | "Give me a map of all my pages" became PAGES.md | Keep PAGES.md from day 1 | product |
+| Admin reports (day 5) | Funnel performance tab and money tab requested | Which admin views and reports in v1? | product |
+| WhatsApp chat funnel (day 11) | "Crazy idea": the whole funnel as a WhatsApp chat | Web form, WhatsApp chat, or both at launch? | product / marketing |
+| AI cost in the chat (day 11) | Opus cost ~5 cents per test chat; switched to Haiku + plain-code parsing | Which model, and what may one chat cost? | product / developer |
+| Chat tone (day 11) | Separate welcome + consent message; one bullet and emoji per sub-question; floor only without elevator | Write the chat script and tone before building | design |
+
+### 19.3 Ops, legal and messaging
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| GitHub (day 5) | The only copy outside Vercel was a backup file until then | Private repo on day 1, all work through PRs | ops-legal / developer |
+| Business email on own domain (day 4) | Twilio rejected a gmail representative email; Zoho was paid, so free forwarding was set up | Do you have a mailbox on your website domain? | ops-legal |
+| Company details (days 4 and 6) | Registry name, number and address needed for Twilio, footers and legal pages | Exact legal identity and documents ready on day 1 | entrepreneur / ops-legal |
+| Twilio Trust Hub (day 4) | About 1.5 hours of "where do I click" screenshots | Start it on day 1 with a click-by-click checklist | ops-legal |
+| Templates (days 4 to 7) | Two re-categorised as Marketing, two rejected as SCAM (link in a variable) | Utility wording, link in the body, submit on day 1 | ops-legal |
+| Inbound webhook (day 11) | Every inbound WhatsApp was refused for a week, unnoticed | Test inbound on the day the sender connects; log refusals | ops-legal / qa |
+| Operator 24-hour window (day 11) | Alerts came by SMS with a web link and the owner didn't know why | Explain the operator window up front | product |
+| Legal texts (day 6) | Arrived as a big brief; still waiting for a lawyer at launch | Draft legal on day 1, lawyer booked, hosting countries known | ops-legal |
+| Supabase plan (days 5 to 13) | Free plan filled after a few videos; owner deleted videos by hand; Pro was a launch blocker | Pro from day 1; storage math for media | ops-legal |
+| Deploy permissions (days 4 and 6) | Production deploys blocked by permission checks; the owner had to come back later | Agree autonomy and deploy rules on day 1 | entrepreneur |
+| Keys in the browser (day 11) | The owner expected Claude to set API keys in Google/Vercel; the cloud session couldn't | Preflight hour: owner logs in once in Chrome; the operator agent does console work itself (section 20) | operator / ops-legal |
+
+### 19.4 QA and process
+
+| Added late (day) | What happened | Day-1 question | Agent |
+|---|---|---|---|
+| Test-lead guard, throttle, kill switch, `/qa` (days 5, 10, 11) | All built after the WhatsApp ban; "pull the plug" requested on day 10 | Build safety before any sending code | developer / qa |
+| Fake numbers (day 5) | The owner said the fake movers' numbers were fine to ping; that was part of the ban | QA refuses made-up numbers even when the owner allows them | qa |
+| Ambiguous test data (day 5) | A real-looking lead ("משה") had to be guessed as test | Test-lead naming convention and owner test numbers on day 1 | qa |
+| Test-mode copy (day 11) | A QA chat said "providers are receiving your details" and caused alarm | Test messages must say they are tests | qa / design |
+| Parallel sessions (days 4, 7, 11) | Sessions overwrote each other's deploys and deleted each other's QA leads | One session deploys at a time; everything through `main` | developer |
+| Questions in jargon (days 12 and 13) | The owner answered "I don't understand" to technical questions | Plain-language multiple choice, recommended option first | all |
+| Tracker features (day 5) | Step-by-step cards, ranking, done collapsed, private notes box | Set up the tracker artifact this way from day 1 | marketing |
+| Tracking retrofit (day 12) | Event renames, click ids, backend-confirmed conversions | Tracking plan approved before code | marketing |
+| GA4 ↔ Ads hand-off (day 13) | ChatGPT couldn't verify the GA4 link; the owner went back and forth | Confirm property, Ads account and key events before launch | marketing |
+
+---
+
+## 20. The autonomous build: agents that do the work, browser included
+
+On MoveMatch the owner was the hands. Claude wrote the code, but every console step went through the owner: Twilio Trust Hub, Meta Business Manager, the WhatsApp appeal, GA4 key events, Google Ads (built in ChatGPT and pasted back), Gmail App Password, Vercel env vars, the Supabase upgrade. Each step was a screenshot, an instruction and another screenshot, and the build waited whenever the owner was busy or asleep. On day 11 the owner expected Claude to set the keys itself, and the cloud session couldn't.
+
+The next build should flip this. **Agents do everything a logged-in person can do in a browser or through an API. The owner only does what legally or physically needs a human:** paying, proving identity, two-factor codes, signing. Then the build keeps moving while the owner is away.
+
+This section covers where the agents run, the hour of preparation the owner does once, what each tool allows, the three autonomy levels, and how an unattended run works. The kit implements it in `starter-kit/` (installed into the new project as `.claude/`): the `operator` agent, the `/autopilot` command, `.claude/settings.json`, a guard hook and `docs/OWNER-PREFLIGHT.md`.
+
+### 20.1 The ten rules
+
+1. **Do it, don't describe it.** If a step can be done through a connector, an API, a CLI or the browser, the agent does it. "Here are the steps for you" is the fallback, not the default.
+2. **The owner logs in once and the agents reuse the session.** Before an unattended run, the owner signs in to every console in Chrome (section 20.3). Agents never type, store or change passwords or 2FA settings.
+3. **Prepare to the last click.** When a step needs the owner (pay, attest, upload ID, 2FA), the agent fills in everything and stops on the final screen, writes one line in `docs/QUESTIONS.md` ("Twilio Trust Hub: open tab X, check the details, press Submit, about 2 minutes"), and moves on to other work.
+4. **Never wait idle.** A blocked task goes to the queue and the agent picks up the next task that isn't blocked. Approvals that take days (Meta templates, business verification) are checked again on a schedule, not watched.
+5. **Assume, log, continue.** With the owner away, a question with a safe, reversible default is answered with the recommended option and logged in `docs/DECISIONS.md` (decision, why, how to undo). Only irreversible or money questions wait.
+6. **Green, yellow, red** (section 20.5). Spending money, messaging real people and anything you can't undo stays red no matter how autonomous the run is.
+7. **Every console change is logged** in `docs/OPS-LOG.md`: the tool, the screen, the setting, old value and new value. On MoveMatch nobody could say later which webhook URL was set where, and inbound WhatsApp was refused for a week.
+8. **Secrets go from console to vault, never to text.** A key the agent creates in a console goes straight into the Vercel env (API or browser). It is never written into the repo, a brief, a log, a screenshot or the chat.
+9. **Verify what you changed.** After a console change, check that it took effect (API read-back, test request, Twilio log, GA4 DebugView), and write down what couldn't be checked.
+10. **A digest at the end.** Every unattended run ends with `docs/DIGEST-<date>.md`: done, decided for you (with undo), waiting for you (sorted, with time estimates), risks, and what's next. It's pushed to the branch, plus a push notification if the session supports it.
+
+### 20.2 Where the agents run
+
+| Setup | What it gives | Use it for |
+|---|---|---|
+| **A. Claude Code on the owner's Mac** (desktop app or `claude --chrome` in the terminal), with the Claude in Chrome extension | The agent drives the owner's real Chrome with their logins: Meta, Google Ads, GA4, Twilio console, registrar. It can also run the site locally, which is the safe QA path because no credentials means nothing gets sent | Console-heavy days (setup, Meta, Ads, GA4) and unattended nights. Keep the Mac on power with sleep disabled, and run `caffeinate -dims` in a terminal |
+| **B. Cloud session** (claude.ai/code) with connectors: GitHub, Supabase MCP, Vercel and Twilio through the proxy, Gmail, Drive | Survives the laptop closing. Good for code, PRs, DB migrations, Vercel and Twilio APIs, and live-site checks with Playwright (public pages, no login needed) | Code and API work. For browser steps, attach the Mac through Remote Control (desktop app → Settings → Claude Code → Remote Control). The cloud session then gets the Mac's browser and computer tools. Not every account has this yet; if the Mac is offline, browser tasks go to the queue |
+
+**Recommendation:** run the build in setup A for the first two days, when most console work happens. Move code work to setup B (or keep it in A) after that. One session deploys (section 0, rule 5). Others work in branches or git worktrees and hand changes to it.
+
+Chrome facts worth knowing (Claude Code docs, checked 20 Nov 2026):
+- It needs a direct Anthropic plan and `/login`, not an API key.
+- It works with Chrome, Edge and other Chromium browsers, but not in WSL.
+- `/chrome` shows the status and reconnects. "Receiving end does not exist" means the extension went idle; reconnect it.
+- The agent opens its own tabs and shares the browser's logins.
+- At a login page or CAPTCHA it stops and asks; this is why the owner logs in beforehand.
+- JavaScript alert/confirm dialogs block it until someone dismisses them.
+- File uploads are capped at 10 MB per upload.
+- Project settings cannot turn Chrome on; the owner enables it once with `/chrome`.
+
+### 20.3 The owner's preflight hour (once per project, before the first unattended run)
+
+The full checklist is in `starter-kit/docs/OWNER-PREFLIGHT.md`. In short:
+
+1. **Answer stage 1** (`/kickoff`, entrepreneur): only the owner can decide the promise, the money, their identity on the site, the autonomy level and the spend cap. About 20 minutes.
+2. **Accounts exist and are paid for:** GitHub, Vercel, Supabase (Pro), Twilio (upgraded), Meta Business portfolio, Google (Analytics, Ads with billing), Anthropic Console, a Google Workspace or Gmail address on the domain. Paying is the owner's job; agents never enter cards.
+3. **Connectors on claude.ai:** GitHub (with the Claude GitHub App on the new repo), Supabase, Vercel, Gmail, Google Drive. Twilio and other APIs: when the agent asks for a credential, the owner pastes it into the secure form, never into the chat.
+4. **Chrome:** install Claude in Chrome, run `/chrome` → "Enabled by default". Sign in to every console in that Chrome profile and tick "stay signed in": Meta Business Suite and WhatsApp Manager, Google Ads, GA4, Google Search Console, Twilio console, Vercel, Supabase, Anthropic Console, the domain registrar. Finish 2FA now so the sessions last.
+5. **Documents folder:** put the business documents in one folder the agent can read: incorporation certificate or עוסק מורשה, ID scan if needed, logo, address, business phone. The agent fills the forms from it; the owner presses the final submit.
+6. **Permissions:** set the session to Auto mode (or accept the kit's `.claude/settings.json` allowlist) so the run doesn't stop on prompts. The guard hook still blocks the dangerous things (section 20.6). On MoveMatch, Supabase prompts timed out after about 60 seconds when nobody answered, and production deploys waited for permission checks.
+7. **Write the autonomy level and owner test numbers into `CLAUDE.md`** (the entrepreneur stage does this).
+8. **Smoke test:** run `/autopilot preflight`. The operator agent opens each console in a new tab, confirms it is logged in, and writes a ✅/❌ table into `OWNER-PREFLIGHT.md`. Fix the ❌ before leaving.
+
+### 20.4 Tool by tool: what the agent can do alone
+
+| Tool | Agent's route | Agent does alone | Owner does (once) | MoveMatch lesson |
+|---|---|---|---|---|
+| GitHub | GitHub MCP (cloud) or `gh` / git (Mac) | Branches, commits, PRs, merges to non-production branches, branch protection on `main` (browser) | Create the repo, install the Claude GitHub App | The project wasn't in Git for the first days |
+| Vercel | Vercel API or MCP (cloud proxy), `vercel` CLI (Mac), browser | Project, env vars (incl. secrets copied from consoles), domains, DNS records, preview deploys, logs, turning deployment protection off | Buy the domain (payment). Click the registrar's contact-verification email, or let the agent click it through Gmail and the browser | Deployment protection blocked ad visitors. The verification email had to be clicked within 15 days |
+| Supabase | Supabase MCP | Migrations (on a branch or a dev project first), SQL, storage buckets, `pg_cron`, advisors, logs | Upgrade to Pro (payment). Allow the MCP tools so prompts don't time out | The free plan filled with videos. Approval prompts timed out after about 60 seconds |
+| Twilio | REST API (Messages log, Content API for templates, webhooks on the sender), console in the browser | Configure webhooks, create Content templates and submit them for WhatsApp approval, read the message log and error codes, set the status callback | Upgrade the account (card). Final submit of the Trust Hub profile (identity attestation). Buying numbers costs money (yellow) | Inbound webhook refused for a week. Templates rejected as SCAM. The owner did every Trust Hub screen by screenshot |
+| Meta (Business Suite, WhatsApp Manager) | Browser only | Read the quality rating, template status, account health and warnings. Fill in the business-verification and appeal forms. Prepare the display name | Final submit of verification and appeals. Receive the number's verification code if it goes to a SIM | The ban appeal was written by Claude and submitted by the owner (18.2) |
+| Google Analytics 4 | Browser (the Admin API needs OAuth set up) | Property and data stream, mark key events, link Google Ads, custom dimensions, check DebugView after a deploy | Be signed in | The measurement ID in the site didn't match the one in the brief. Key events were set up by hand |
+| Google Ads | Browser (the API needs a developer token) | Build campaigns, ad groups, ads and keywords **as Paused**. Import conversions (Primary/Secondary, Count: One). Geo, devices, negative keywords. Upload the offline-conversion source | Billing. **Enabling a campaign or raising a budget** (red) | Campaigns were built in ChatGPT and pasted back to Claude to check; another campaign on the account could have optimised for MoveMatch leads |
+| Gmail / Google Workspace | Gmail connector, browser | Read verification emails and codes sent by services, draft emails to providers or the lawyer | Send outreach (outward-facing). Create the App Password (Google asks for re-login) | The App Password is shown once; lost means a new one |
+| Anthropic Console | Browser | Create the API key and put it straight into Vercel; set a monthly spend limit at the cap the owner chose | Billing | `ANTHROPIC_API_KEY` for the chat parser |
+| Live site | Playwright in the container or Mac (no login), Chrome for logged-in admin pages | Phone-width screenshots of every page, 200 checks, funnel walk-through on `/qa`, GA4 events in DebugView | Nothing | Admin pages behind a password couldn't be verified from the cloud |
+| WhatsApp on the owner's phone | None | Read the Twilio log as a stand-in | Look at the phone after the one allowed WhatsApp test | Only the owner can confirm a message looked right |
+| Lawyer, providers, customers | Gmail drafts | Drafts and call scripts | Calls, signatures, relationships | Mover feedback on day 10 changed the funnels; that conversation can't be automated |
+
+**ChatGPT is no longer needed for the ads.** The marketing agent writes the plan and the operator agent builds it in Google Ads, paused. The owner reviews it and presses Enable.
+
+### 20.5 Autonomy levels
+
+The entrepreneur stage asks which level the owner wants. Write the answer into `CLAUDE.md`.
+
+| Level | What's included | Rule |
+|---|---|---|
+| 🟢 **Green: do it** | Code, branches, PRs, preview deploys, local QA, dev or branch DB migrations, reading every console, creating resources that cost nothing, filling in forms, drafting texts, building ads paused, GA4 configuration, DNS records for a domain that isn't live yet | No need to ask. Log console changes in `OPS-LOG.md` |
+| 🟡 **Yellow: do it, then report** (only if the owner pre-approved it in `CLAUDE.md`) | Production deploys **before launch** (no real traffic yet), migrations on the production DB that only add things, submitting WhatsApp templates for review, small fixed costs under the cap (e.g. a Twilio number), merging a QA-passed PR | Do it, put it at the top of the digest, include how to undo it |
+| 🔴 **Red: owner only** | Paying or changing billing, enabling ads or raising budgets, sending any message to a real person (customers, providers, Meta appeals, emails), identity and legal attestations, deleting production data, production deploys **after launch**, DNS changes on a live domain, changing passwords, 2FA or account owners, accepting terms of service on the owner's behalf | Prepare to the last click, queue it in `QUESTIONS.md`, move on |
+
+**Payments always go to the owner, prepared to the last click.** Whenever something needs paying (a plan upgrade, a domain, a phone number, credit top-up, ad billing), the agent stops before any card screen and adds a 💳 item at the **top** of `docs/QUESTIONS.md` with: what it is, the exact price and whether it recurs, what it unlocks and what is blocked until then, a free alternative if there is one, and the direct link or the open Chrome tab with everything else already filled in. Payment items also open the digest. Agents never enter, change or remove card details.
+
+Default for a new project: green + the yellow items before launch. After launch: green only, until the owner says otherwise.
+
+### 20.6 Guard rails that hold even in Auto mode
+
+Rules in prompts get forgotten in long runs; code doesn't. The kit adds:
+
+- **A guard hook** (`.claude/hooks/guard.mjs`, PreToolUse). It blocks:
+  - pushing to `main`/`master` and force pushes;
+  - `vercel --prod`;
+  - `POST` to Twilio's Messages API, which is a real send;
+  - `curl`/`wget` piped into a shell;
+  - `DROP`/`TRUNCATE`/`DELETE` without `WHERE`, and `DELETE` on lead, provider or offer tables through Supabase SQL;
+  - Supabase project create, pause and branch delete/reset/merge calls; and merging PRs once `.claude/autonomy.json` says `live`.
+
+  Blocked calls tell the agent why, so it can queue the task for the owner instead. It is a seat belt, not a security boundary (shell tricks can get around it). Also protect `main` on GitHub.
+- **Permissions** (`.claude/settings.json`): allow normal development, the connectors and the Chrome tools, so nothing stalls overnight; deny `sudo` and force pushes.
+- **The QA rules from section 11 stay in force.** The test-lead guard, owner test numbers only, `/qa` first, and local QA are what make an unattended run safe. The 52-second burst of 40 templates on MoveMatch happened while a person was watching.
+
+### 20.7 How an unattended run works (`/autopilot`)
+
+1. **Start:**
+   - Read `CLAUDE.md`, the playbook, the briefs, `QUESTIONS.md` (with the owner's answers), `DECISIONS.md` and `OPS-LOG.md`.
+   - Run the preflight smoke test if it hasn't run today.
+2. **Plan:**
+   - List every task not done for the current stages.
+   - Mark each green, yellow or red, blocked or not.
+   - Put tasks that take long to approve first (Meta, Twilio, templates, domain), then code.
+3. **Work in parallel where safe:**
+   - The operator agent works the consoles.
+   - The developer agent builds in its own branch or worktree.
+   - Marketing and design write their briefs from the recommended options.
+   - One session merges and deploys.
+4. **Questioning stages without the owner:**
+   - Each agent answers its own questions with the recommended option when the answer is reversible, and logs it in `DECISIONS.md` as "Assumed".
+   - Questions that are irreversible, involve money or are only the owner's (identity, prices, claims about the business) go to `QUESTIONS.md` as multiple choice, so the owner can answer in seconds.
+   - The stage brief is marked "Draft, autopilot", never "Approved". The owner approves in the morning, and anything built on an assumption is listed so it can be redone.
+5. **Waiting for third parties:** schedule a check (in the cloud, a scheduled message to the same session; on the Mac, `/loop`) instead of polling, for example "check Meta template status every 3 hours".
+6. **End:** write the digest, update the tracker artifact, commit and push docs and code to the working branch, and send a push notification if available.
+
+### 20.8 What it would have looked like on MoveMatch
+
+| | MoveMatch (actual) | With autopilot |
+|---|---|---|
+| Night 1 | One-line brief, code started | The owner answers stage 1 (20 min) and does the preflight hour. Overnight: bizdev, product and design drafts from recommended options, repo and Vercel project, Supabase schema and migrations, `/qa` and the test-lead guard, Twilio webhooks, Trust Hub and Meta forms filled to the submit screen, templates drafted as Utility with the link in the body |
+| Morning 2 | | Digest: 14 decisions to confirm, 4 owner clicks (Trust Hub submit, Meta verification submit, Supabase Pro, domain payment), about 15 minutes |
+| Days 2 to 4 | Funnels and feature requests one at a time; WhatsApp ban on day 5 | Funnels built from the approved product brief; templates submitted the moment Meta verification clears; GA4 and Ads (paused) built in the browser |
+| Day 5 | Ban, appeal, rebuild | Launch-ready review: QA go / no-go, the owner enables the campaigns |
+
+### 20.9 Known limits (be honest about them)
+
+- The browser agent stops at CAPTCHAs, new-device logins and 2FA. Sessions expire, often after a few days for Meta and Google Ads, so repeat the smoke test before each unattended run.
+- Meta's and Google's screens change often and are sometimes shown in Hebrew. The agent should describe what it sees and stop if a screen doesn't match the plan, rather than guess.
+- Remote Control from a cloud session to the Mac isn't available on every account yet. Without it, browser work needs setup A.
+- A cloud session's network allows only approved hosts. If an API call is refused by the proxy, the agent asks for the host to be added (an approval prompt). That prompt can't be answered overnight, so allow the hosts during the preflight hour: the live domain, `api.twilio.com`, `api.vercel.com`, Google APIs if used.
+- Usage limits can end a long run. The digest and logs make it possible to resume with `/autopilot` in a new session without losing context.
