@@ -67,7 +67,10 @@ Start the session in **Auto mode** (or accept the kit's `.claude/settings.json`)
 
 Also turn on branch protection for `main` on GitHub. The agent can do this in the browser.
 
-## 7. Smoke test (before every unattended run)
+## 7. Notifications
+Allow notifications from the Claude app on your phone (and enable push notifications in Claude Code if asked). Agents notify you immediately whenever something needs paying.
+
+## 8. Smoke test (before every unattended run)
 Run `/autopilot preflight`. The operator agent fills in this table:
 
 | Check | Result | Date |
