@@ -143,6 +143,25 @@ export function track(event: string, data: Record<string, unknown> = {}) {
   w.gtag?.('event', event, data);
   if (event === 'lead_created') w.fbq?.('track', 'Lead', data);
   if (event === 'lead_complete') w.fbq?.('track', 'CompleteRegistration', data);
+  clarityTags(event, data);
+}
+
+/**
+ * Microsoft Clarity (components/Clarity.tsx): tag the recording so it can be filtered by funnel and furthest step,
+ * and mark leads. Calls are queued until the lazily loaded script arrives. No name or phone is ever sent.
+ */
+function clarityTags(event: string, data: Record<string, unknown>) {
+  if (!process.env.NEXT_PUBLIC_CLARITY_ID) return;
+  type Q = ((...a: unknown[]) => void) & { q?: unknown[] };
+  const w = window as unknown as { clarity?: Q };
+  if (!w.clarity) { const f: Q = (...a: unknown[]) => { (f.q = f.q || []).push(a); }; w.clarity = f; }
+  const c = w.clarity;
+  if (event === 'funnel_step') {
+    if (data.variant_id) c('set', 'funnel', String(data.variant_id));
+    if (data.step_name) c('set', 'step', String(data.step_name));
+  }
+  if (data.lead_id) c('set', 'lead_id', String(data.lead_id));
+  if (event === 'generate_lead' || event === 'lead_complete' || event === 'qualify_lead') { c('set', 'lead', event); c('event', event); }
 }
 
 /**
