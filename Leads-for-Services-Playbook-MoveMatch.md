@@ -3,7 +3,7 @@
 **What this is:** everything learned while building MoveMatch (movematch.co.il, a Hebrew reverse-tender marketplace for home moves in Israel) between 6 and 20 November 2026. It is written so that you, or an LLM, can load it at the start of a new project, for example painters, cleaners, handymen or AC technicians, and skip the mistakes and back-and-forth we already went through.
 
 **Start here (next project in four steps):**
-1. New GitHub repo, then copy `starter-kit/` into it and this file to `docs/PLAYBOOK.md` (`starter-kit/README.md`).
+1. New GitHub repo, then run `bash starter-kit/install.sh <new repo>` from a MoveMatch checkout; it installs the agents, commands, hooks and this file as `docs/PLAYBOOK.md` (`starter-kit/README.md`). The kit is stored inert in MoveMatch and never affects it.
 2. Owner's preflight hour: accounts, connectors, Chrome logins, autonomy level (section 20.3, `docs/OWNER-PREFLIGHT.md`).
 3. `/kickoff <idea>` with the owner for stage 1 (about 20 minutes), then `/autopilot` to let the agents work alone.
 4. Each morning: read the digest, answer `docs/QUESTIONS.md`, press the few buttons only the owner can press.
@@ -11,7 +11,7 @@
 **How to use it:**
 - **If you are an LLM starting a new vertical:** read sections 0 to 3 before you write any code. Use section 14 as the build order. Section 11 (QA) and section 6 (WhatsApp) are not optional: they exist because of a real account ban.
 - **If you are a person:** section 1 is the one-page version. Section 14 is the checklist for the next vertical. Section 19 lists everything MoveMatch added late, with the day-1 question that would have caught it.
-- **To actually start the next project:** use the agent kit in `starter-kit/` (nine Claude Code agents, a gated `/kickoff` process and an unattended `/autopilot` mode; section 20 explains how agents do the console work in the browser instead of the owner). Copy it into the new repo together with this file as `docs/PLAYBOOK.md`; see `starter-kit/README.md`.
+- **To actually start the next project:** use the agent kit in `starter-kit/` (nine Claude Code agents, a gated `/kickoff` process and an unattended `/autopilot` mode; section 20 explains how agents do the console work in the browser instead of the owner). Install it with `starter-kit/install.sh` (it also copies this file as `docs/PLAYBOOK.md`); see `starter-kit/README.md`.
 
 **Sources:** the MoveMatch repository (code, migrations, `CLAUDE.md`, `PAGES.md`, `TRACKING.md`, `LEGAL_REVIEW.md`, commits and PRs #1 to #32), about 45 Claude Code chats from 8 to 20 November 2026 (a second, fuller pass over the owner's messages in every major chat was done for section 19), the "MoveMatch Launch Tracker" and "Message Map" artifacts. Where this document and the code disagree, the code is the source of truth; update this file.
 
@@ -754,7 +754,7 @@ On MoveMatch the owner was the hands. Claude wrote the code, but every console s
 
 The next build should flip this. **Agents do everything a logged-in person can do in a browser or through an API. The owner only does what legally or physically needs a human:** paying, proving identity, two-factor codes, signing. Then the build keeps moving while the owner is away.
 
-This section covers where the agents run, the hour of preparation the owner does once, what each tool allows, the three autonomy levels, and how an unattended run works. The kit implements it in `starter-kit/`: the `operator` agent, the `/autopilot` command, `.claude/settings.json`, a guard hook and `docs/OWNER-PREFLIGHT.md`.
+This section covers where the agents run, the hour of preparation the owner does once, what each tool allows, the three autonomy levels, and how an unattended run works. The kit implements it in `starter-kit/` (installed into the new project as `.claude/`): the `operator` agent, the `/autopilot` command, `.claude/settings.json`, a guard hook and `docs/OWNER-PREFLIGHT.md`.
 
 ### 20.1 The ten rules
 
@@ -829,6 +829,8 @@ The entrepreneur stage asks which level the owner wants. Write the answer into `
 | 🟢 **Green: do it** | Code, branches, PRs, preview deploys, local QA, dev or branch DB migrations, reading every console, creating resources that cost nothing, filling in forms, drafting texts, building ads paused, GA4 configuration, DNS records for a domain that isn't live yet | No need to ask. Log console changes in `OPS-LOG.md` |
 | 🟡 **Yellow: do it, then report** (only if the owner pre-approved it in `CLAUDE.md`) | Production deploys **before launch** (no real traffic yet), migrations on the production DB that only add things, submitting WhatsApp templates for review, small fixed costs under the cap (e.g. a Twilio number), merging a QA-passed PR | Do it, put it at the top of the digest, include how to undo it |
 | 🔴 **Red: owner only** | Paying or changing billing, enabling ads or raising budgets, sending any message to a real person (customers, providers, Meta appeals, emails), identity and legal attestations, deleting production data, production deploys **after launch**, DNS changes on a live domain, changing passwords, 2FA or account owners, accepting terms of service on the owner's behalf | Prepare to the last click, queue it in `QUESTIONS.md`, move on |
+
+**Payments always go to the owner, prepared to the last click.** Whenever something needs paying (a plan upgrade, a domain, a phone number, credit top-up, ad billing), the agent stops before any card screen and adds a 💳 item at the **top** of `docs/QUESTIONS.md` with: what it is, the exact price and whether it recurs, what it unlocks and what is blocked until then, a free alternative if there is one, and the direct link or the open Chrome tab with everything else already filled in. Payment items also open the digest. Agents never enter, change or remove card details.
 
 Default for a new project: green + the yellow items before launch. After launch: green only, until the owner says otherwise.
 

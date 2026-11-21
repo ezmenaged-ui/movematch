@@ -32,7 +32,7 @@ If the argument is `preflight`: have the `operator` agent run the smoke test in 
 ## End of run
 Write `docs/DIGEST-<YYYY-MM-DD>.md`:
 1. **Two-line summary.**
-2. **Waiting for you**, sorted by what unblocks the most, each with a time estimate and the exact place to click.
+2. **💳 Payments needed** first (price, monthly or one-off, what it unlocks, link), then **Waiting for you**, sorted by what unblocks the most, each with a time estimate and the exact place to click.
 3. **Decided for you** (from DECISIONS.md this run), with how to undo.
 4. **Done**: PRs, deploys (preview or production), console changes (OPS-LOG lines), verified or not.
 5. **Health**: WhatsApp quality rating and account status, Twilio errors since the last run, failed deploys, Supabase advisors.

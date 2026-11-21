@@ -9,6 +9,11 @@
 Answer by typing an x next to an option or a line under "Answer". The next /autopilot run applies it.
 
 ## Open
+### 💳 P-002 (operator, ~2 min) Supabase Pro: $25/month, recurring
+Unlocks: video storage over 1 GB and daily backups. Blocked until paid: media upload step. Free alternative: none suitable for launch.
+Open: Chrome tab "Supabase - Billing" (or supabase.com/dashboard → Organization → Billing), press Upgrade, write "done".
+Answer:
+
 ### Q-007 (product, blocks: funnel C build) Should the photo step be required?
 Why we ask: on MoveMatch C's video went required, then back to optional.
 - [ ] Optional, with a "better quotes with photos" hint (Recommended)

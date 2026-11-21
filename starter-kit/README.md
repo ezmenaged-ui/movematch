@@ -4,6 +4,8 @@ A team of nine Claude Code agents, a gated process and an unattended mode, for b
 
 ## What's inside
 
+In the MoveMatch repo the kit is stored **inert**: the folder is `claude/` (not `.claude/`) and the rules file is `CLAUDE.template.md`, so MoveMatch's own Claude sessions never load these agents, commands or hooks. `install.sh` copies them into a new project under their real names. The paths below are where they end up in the new project.
+
 | Path | What it is |
 |---|---|
 | `.claude/agents/entrepreneur.md` | Stage 1. The hard business questions: promise, money, supply, identity, autonomy |
@@ -22,17 +24,14 @@ A team of nine Claude Code agents, a gated process and an unattended mode, for b
 | `.claude/autonomy.json` | `prelaunch` (agents may merge and deploy before launch) or `live` (merges need you). Switch on launch day |
 | `docs/OWNER-PREFLIGHT.md` | Your one-hour checklist before letting agents work alone |
 | `docs/autopilot/README.md` | Templates for `QUESTIONS.md`, `DECISIONS.md`, `OPS-LOG.md` and the daily digest |
-| `CLAUDE.md` | Project rules template (fill in the placeholders) |
+| `CLAUDE.md` (stored as `CLAUDE.template.md`) | Project rules template (fill in the placeholders) |
+| `install.sh` | Copies the kit into a new project (not copied itself) |
 | `docs/briefs/README.md` | Brief template; each stage writes one brief |
 
 ## How to start a new project
 
 1. Create a new empty GitHub repo for the project and open a Claude Code session on it.
-2. Copy into it:
-   - everything in this `starter-kit/` folder (including the hidden `.claude/` folder) to the repo root;
-   - `Leads-for-Services-Playbook-MoveMatch.md` from the MoveMatch repo to `docs/PLAYBOOK.md`.
-
-   Or ask Claude: "Copy the starter kit and the playbook from ezmenaged-ui/movematch into this repo."
+2. Install the kit. Ask Claude: "Clone ezmenaged-ui/movematch to a temporary folder and run `bash starter-kit/install.sh <this repo>`, then commit." The script copies `claude/` → `.claude/`, `CLAUDE.template.md` → `CLAUDE.md`, the `docs/` files, and the playbook → `docs/PLAYBOOK.md`. It refuses to run into the MoveMatch repo or over existing files, and it changes nothing in MoveMatch.
 3. Type `/kickoff painters in central Israel` (or your idea).
 4. Answer stage 1 yourself (about 20 minutes: money, identity, autonomy level, spend cap).
 5. Do the preflight hour (`docs/OWNER-PREFLIGHT.md`): accounts paid for, connectors, Chrome logins, documents folder. Then `/autopilot preflight`.

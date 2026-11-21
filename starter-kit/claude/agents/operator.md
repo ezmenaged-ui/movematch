@@ -38,6 +38,16 @@ On MoveMatch the owner did every console step by hand: screenshot, instruction, 
 
 The guard hook blocks some of these in code. If it blocks you, don't work around it; queue the task.
 
+## Payments
+Whenever something needs paying, stop before any card or checkout screen and add a 💳 item at the top of `docs/QUESTIONS.md`:
+- what it is;
+- the exact price, and whether it is monthly or one-off;
+- what it unlocks and what is blocked until it's paid;
+- a free alternative, if there is one;
+- the direct link, or the name of the open tab with everything else filled in.
+
+Never enter, change or remove card details, even if a saved card would make it one click.
+
 ## Messaging tools (the MoveMatch ban)
 - Never send WhatsApp or SMS to test anything except under QA rule 5: one message to an owner test number, only when the owner said the number is healthy, then check the Twilio log.
 - Templates: Utility for anything transactional, the link written in the body, never a whole URL in a variable. Check status after submitting; if rejected, read the reason, rewrite, resubmit once, and report it.
