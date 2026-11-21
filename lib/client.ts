@@ -136,27 +136,35 @@ export function trackStep(funnel: string, theme: string | null | undefined, n: n
 
 /** Analytics events: pushed to the GTM dataLayer, and sent to GA4 / Meta Pixel when loaded directly. */
 export function track(event: string, data: Record<string, unknown> = {}) {
-  if (getEntry() === 'qa') return; // /qa test area: keep GA4 reports and Google Ads conversions clean
+  const qa = getEntry() === 'qa';
+  // /qa test area: no GA4 / GTM / Pixel (keeps reports and Google Ads conversions clean), but Clarity still records it, tagged env=qa.
+  if (!qa) sendAnalytics(event, data);
+  try { clarityTags(event, data, qa); } catch { /* recordings must never break the funnel */ }
+}
+
+function sendAnalytics(event: string, data: Record<string, unknown>) {
   const w = window as unknown as { dataLayer?: unknown[]; gtag?: (...a: unknown[]) => void; fbq?: (...a: unknown[]) => void };
   w.dataLayer = w.dataLayer || [];
   w.dataLayer.push({ event, ...data });
   w.gtag?.('event', event, data);
   if (event === 'lead_created') w.fbq?.('track', 'Lead', data);
   if (event === 'lead_complete') w.fbq?.('track', 'CompleteRegistration', data);
-  try { clarityTags(event, data); } catch { /* recordings must never break the funnel */ }
 }
 
 /**
  * Microsoft Clarity (components/Clarity.tsx): tag the recording so it can be filtered by funnel and furthest step,
  * and mark leads. Calls are queued until the lazily loaded script arrives. No name or phone is ever sent.
+ * /qa sessions are recorded too (temporarily, for the owner's tests) and tagged env=qa.
  */
-function clarityTags(event: string, data: Record<string, unknown>) {
+function clarityTags(event: string, data: Record<string, unknown>, qa: boolean) {
   if (!process.env.NEXT_PUBLIC_CLARITY_ID) return;
   type Q = ((...a: unknown[]) => void) & { q?: unknown[] };
   const w = window as unknown as { clarity?: Q };
   // typeof check, not truthiness: an element with id="clarity" would show up as window.clarity (see components/Clarity.tsx).
   if (typeof w.clarity !== 'function') { const f: Q = (...a: unknown[]) => { (f.q = f.q || []).push(a); }; w.clarity = f; }
   const c = w.clarity;
+  // env: 'qa' for the /qa test area (filter it out in Clarity: Custom tags → env is not qa), 'live' otherwise.
+  c('set', 'env', qa ? 'qa' : 'live');
   if (event === 'funnel_step') {
     if (data.variant_id) c('set', 'funnel', String(data.variant_id));
     if (data.step_name) c('set', 'step', String(data.step_name));
