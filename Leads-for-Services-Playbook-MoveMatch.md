@@ -988,6 +988,24 @@ The owner emptied the bucket of test videos once by hand (Supabase â†’ Storage â
 
 **Tracker drift.** On launch eve the tracker said 5 active movers and the database had 9 (each with service areas: Jerusalem 7, Center 6, Sharon 6, Shfela 5, Judea and Samaria 2, Haifa 1, South 1). The database is the source of truth. Before launch, have an agent reconcile every number in the tracker with the database and live settings. Target ads only where at least 2 providers are active.
 
+**The pre-launch check (21 Nov, 21:14, the "Pre-launch checklist" chat).** The owner asked what was left before the ads went live at 7 am. The chat checked production directly, read-only, with nothing submitted and nothing sent:
+- **Live site:** running the latest change (#46) with a successful build. The homepage, every funnel page and its next steps, the legal pages, provider sign-up and admin all load.
+- **Database:** on Pro, 4 MB used, 0 leads (clean start).
+- **Twilio:** 166 messages since 18 Nov, all delivered, read or received, with no error codes.
+- **Providers:** 9 active, not the 5 in the tracker. Coverage per area as listed above; no provider for the North, Beersheba and the Negev, or Eilat.
+- **Found one real problem:** two active movers had **never accepted the provider terms** (the 10% + VAT commission and their responsibility for the move). They had been added by hand from admin, so they never saw the sign-up checkbox. The fix: send them the terms link, get a written "I've read and accept" reply, and have Claude record the acceptance. Until then, either they don't get leads or the owner accepts the risk.
+- **Left for the owner:**
+  - the WhatsApp quality rating is green;
+  - Google Ads sends traffic only to D, E and the WhatsApp chat (never the held homepage);
+  - uncovered areas are excluded under Locations;
+  - areas with a single provider will get one offer at most.
+- **On the day:** test only on `/qa`, then run the launch-day check after the first 3 to 5 real leads.
+- **The tracker was out of date:** it said 5 movers, still mentioned the crane question and still said "upgrade to Pro". The chat fixed it and added the terms task.
+
+**Lessons for the kit:**
+- **Every path that activates a provider must record terms acceptance:** the sign-up form, an admin-added provider and an import. Admin should block activation, or show a warning, until acceptance is on record.
+- **Run a read-only "pre-launch check" the evening before launch:** build and pages, database plan and leftovers, Twilio errors, active providers with terms and coverage, and the tracker reconciled with all of it. The QA agent now has this checklist.
+
 **Choosing the recorder.** Before Clarity, the owner asked which screen-recording tool to use. Clarity won because it is free, has no recording cap, offers heatmaps, and masks form input. Decide this on day 1 (marketing agent).
 
 **Follow-ups are scheduled, not remembered.** The Clarity chat set a reminder in the same session for Monday 10:00 to check that the dashboard unlocked, that bot sessions stopped and whether to keep recording `/qa`. Use scheduled check-ins for anything that waits on a third party.

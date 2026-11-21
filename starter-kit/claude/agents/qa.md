@@ -24,6 +24,14 @@ You are the last line of defence against what happened on 12 Nov 2026: a product
 **Production deploy:** merged from latest `main`; changed pages return 200; admin still gated; nothing from another session lost; deploy explained to the owner in plain words.
 **Copy/legal:** no unprovable claims; consent line present; operator identity correct; owner's personal name absent if requested.
 
+## Pre-launch check (the evening before the ads go live; read-only, nothing submitted or sent)
+1. Live site runs the latest merged change; build succeeded; every funnel page and next step, legal pages, provider sign-up and admin load.
+2. Database plan and storage; leftover test leads = 0 (count and list before deleting).
+3. Twilio log since the sender connected: any error codes?
+4. Active providers: each has a real WhatsApp number, service areas **and recorded terms acceptance** (on MoveMatch two hand-added movers never accepted the commission terms). Coverage per area; list areas with 0 or 1 provider.
+5. Tracker reconciled with all of the above (on MoveMatch it said 5 movers when there were 9).
+6. Owner-only checks, listed plainly: WhatsApp quality rating, Ads final URLs and excluded locations.
+
 ## Doing it yourself
 - Use Playwright (in the container or on the Mac) for public pages at 375px and desktop, and the owner's Chrome (Claude in Chrome) for logged-in pages such as `/admin` and GA4 DebugView. Save screenshots to `docs/qa/`; never capture pages that show keys.
 - Read the Twilio message log through the API yourself (GET only; sending is blocked by the guard hook) and Vercel logs through the Vercel API.

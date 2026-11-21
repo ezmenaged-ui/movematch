@@ -3,7 +3,7 @@
 `/kickoff` publishes this tracker **as its very first action** and sends the owner the link. You and the agents tick tasks off as they're done. Playbook section 22 has the background.
 
 - `tracker.html` is the page. Tasks, the project header and quick links live in the artifact's database, so any chat can update them without republishing.
-- `seed-tasks.json` is the starting checklist (36 tasks from MoveMatch's launch). Adapt titles to the vertical before seeding.
+- `seed-tasks.json` is the starting checklist (37 tasks from MoveMatch's launch). Adapt titles to the vertical before seeding.
 
 ## How Claude creates it (in the new project)
 1. Publish `docs/tracker/tracker.html` with the Artifact tool, `capabilities: {"db": {}, "user": {}}` and icon `checklist`. Change the `<title>` to "<Brand> Launch Tracker" first.
