@@ -106,6 +106,7 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
 - Loads only on client funnel pages: `/`, `/a` … `/e` (incl. `/b/steps`, `/c/details` …), `/f`, `/u/<id>`. Never on `/qa`, `/admin`, `/movers`, `/login`, `/t` `/j` `/l` `/o`.
 - `strategy="lazyOnload"`: fetched after the page has loaded and the browser is idle, so the first screen is not slowed.
 - Tags set from `track()` in `lib/client.ts` (queued until the script arrives): `funnel` (= `variant_id`, e.g. `b-photo`), `step`
-  (every `step_name` reached, e.g. `4_when`), `lead_id`, `lead` (`generate_lead` / `lead_complete` / `qualify_lead`), plus Clarity events of the same names.
+  (every `step_name` reached, e.g. `4_when`), `landing` (landing page path, e.g. `/f` vs `/e/photo`), `wa_click` (`yes` when the /f WhatsApp button was tapped, also a Clarity event `wa_cta_click`), `lead_id`, `lead` (`generate_lead` / `lead_complete` / `qualify_lead`), plus Clarity events of the same names.
   In Clarity → Recordings → Filters → Custom tags: e.g. `funnel = d-art` and `step = 4_when` but not `step = 5_video` = people who dropped at the video step.
 - Privacy: no name or phone is sent as a tag; keep the project's masking on "Balanced" (form inputs masked) or "Strict".
+- Funnel F (the WhatsApp chat from the Google Ads message asset) has no web page, so it is never recorded; only `/f`'s button tap is.

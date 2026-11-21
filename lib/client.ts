@@ -159,7 +159,10 @@ function clarityTags(event: string, data: Record<string, unknown>) {
   if (event === 'funnel_step') {
     if (data.variant_id) c('set', 'funnel', String(data.variant_id));
     if (data.step_name) c('set', 'step', String(data.step_name));
+    // Which landing page: /f shares funnel E's tags (e-photo), so this tells /f and /e/photo apart.
+    if (data.step_number === 0) c('set', 'landing', window.location.pathname);
   }
+  if (event === 'wa_cta_click') { c('set', 'wa_click', 'yes'); c('event', 'wa_cta_click'); }
   if (data.lead_id) c('set', 'lead_id', String(data.lead_id));
   if (event === 'generate_lead' || event === 'lead_complete' || event === 'qualify_lead') { c('set', 'lead', event); c('event', event); }
 }
