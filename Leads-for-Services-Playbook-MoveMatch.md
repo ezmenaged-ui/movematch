@@ -470,8 +470,11 @@ Clarity is free with no recording cap. It shows what visitors actually did on ea
 - `strategy="lazyOnload"`, so the first screen isn't slowed.
 - Tags from `track()` in `lib/client.ts`, queued until the script arrives:
   - `funnel` (= `variant_id`) and `step` (every `step_name` reached);
+  - `landing`: the landing page path, so `/f` can be compared with `/e/photo`;
+  - `wa_click`: `yes` when a site WhatsApp button was tapped, plus the Clarity event `wa_cta_click`;
   - `lead_id`;
   - `lead` (`generate_lead` / `lead_complete` / `qualify_lead`), plus Clarity events of the same names.
+- A WhatsApp chat funnel has no web page, so it is never recorded; only the tap on the site's WhatsApp button is.
 
   Filter example: `funnel = d-art` and `step = 4_when` but not `step = 5_video` = people who dropped at the video step.
 - Privacy:
