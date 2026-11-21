@@ -60,7 +60,10 @@ export const roomsText = (a: { rooms?: unknown } | null | undefined) => {
 
 export type Address = {
   city: string;
+  /** "street number", kept for movers, emails and the crew sheet. Forms fill it from `street` + `number`. */
   address: string;
+  street?: string;
+  number?: string; // house number on the street
   floor: string;
   apartment: string;
   elevator: boolean | null;
@@ -70,7 +73,14 @@ export type Address = {
   rooms?: Rooms | ''; // origin only
 };
 
-export const emptyAddress = (): Address => ({ city: '', address: '', floor: '', apartment: '', elevator: null, crane: '', parking: '' });
+export const emptyAddress = (): Address => ({ city: '', address: '', street: '', number: '', floor: '', apartment: '', elevator: null, crane: '', parking: '' });
+
+export const joinAddr = (street: string, number: string) => [street.trim(), number.trim()].filter(Boolean).join(' ');
+
+/** Street and house number; a draft saved before they were split keeps its old full address in the street box. */
+export const addrParts = (a: Address) =>
+  a.street != null || a.number != null ? { street: a.street || '', number: a.number || '' }
+    : ((m) => (m ? { street: m[1], number: m[2] } : { street: a.address || '', number: '' }))((a.address || '').trim().match(/^(.*\D)\s+(\d+[א-ת]?)$/));
 
 /** Normalise to 05XXXXXXXX. Accepts spaces, dashes, +972 / 972 prefixes. */
 export function normalizePhone(raw: string): string {
@@ -88,6 +98,8 @@ export const MSG = {
   phone: 'מספר טלפון לא תקין',
   city: 'נא לבחור עיר',
   address: 'נא למלא כתובת',
+  street: 'נא למלא רחוב',
+  number: 'נא למלא מספר בית',
   floor: 'נא למלא קומה',
   elevator: 'נא לבחור',
   video: 'נא לצרף סרטון, או לבחור לדלג ונחזור אליכם לקבלת הסרטון',
@@ -108,7 +120,9 @@ export function validateAddress(a: Address, origin = false): Partial<Record<keyo
   const e: Partial<Record<keyof Address, string>> = {};
   if (origin && !a.rooms) e.rooms = MSG.rooms;
   if (!a.city.trim()) e.city = MSG.city;
-  if (!a.address.trim()) e.address = MSG.address;
+  const { street, number } = addrParts(a);
+  if (!street.trim()) e.street = MSG.street;
+  if (!number.trim()) e.number = MSG.number;
   if (!a.floor.trim()) e.floor = MSG.floor;
   if (a.elevator == null) e.elevator = MSG.elevator;
   if (a.elevator === true && !a.elevator_type) e.elevator_type = 'נא לבחור את גודל המעלית';
