@@ -143,7 +143,7 @@ export function track(event: string, data: Record<string, unknown> = {}) {
   w.gtag?.('event', event, data);
   if (event === 'lead_created') w.fbq?.('track', 'Lead', data);
   if (event === 'lead_complete') w.fbq?.('track', 'CompleteRegistration', data);
-  clarityTags(event, data);
+  try { clarityTags(event, data); } catch { /* recordings must never break the funnel */ }
 }
 
 /**
@@ -154,7 +154,8 @@ function clarityTags(event: string, data: Record<string, unknown>) {
   if (!process.env.NEXT_PUBLIC_CLARITY_ID) return;
   type Q = ((...a: unknown[]) => void) & { q?: unknown[] };
   const w = window as unknown as { clarity?: Q };
-  if (!w.clarity) { const f: Q = (...a: unknown[]) => { (f.q = f.q || []).push(a); }; w.clarity = f; }
+  // typeof check, not truthiness: an element with id="clarity" would show up as window.clarity (see components/Clarity.tsx).
+  if (typeof w.clarity !== 'function') { const f: Q = (...a: unknown[]) => { (f.q = f.q || []).push(a); }; w.clarity = f; }
   const c = w.clarity;
   if (event === 'funnel_step') {
     if (data.variant_id) c('set', 'funnel', String(data.variant_id));
