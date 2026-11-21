@@ -8,9 +8,10 @@ import type { LeadRef } from '@/lib/client';
  *  plus a live count of videos that arrived from the phone. */
 /** `ownCount`: videos this page already uploaded itself. The lead's video count includes them, so they are subtracted:
  *  only videos that really came from the phone count as "from the phone". */
-/** `returnToDesktop`: the video is not the last step (funnel D: the item list comes after it). The phone then only films,
- *  and tells the client to come back to the computer to continue, instead of offering to finish there. */
-export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0, returnToDesktop = false }: { leadRef: LeadRef; onRemoteCount: (n: number) => void; onCompleted?: () => void; ownCount?: number; returnToDesktop?: boolean }) {
+/** `returnToDesktop`: the client finishes on the computer (funnel D: the item list comes after the video; funnel E: the
+ *  client sends from the computer, where the optional item list is too). The phone then only films, and tells the client
+ *  to come back to the computer, instead of offering to finish there. `nextLabel`: the desktop button to press then. */
+export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0, returnToDesktop = false, nextLabel = 'המשך' }: { leadRef: LeadRef; onRemoteCount: (n: number) => void; onCompleted?: () => void; ownCount?: number; returnToDesktop?: boolean; nextLabel?: string }) {
   const [svg, setSvg] = useState('');
   const [total, setTotal] = useState(0);
   const count = Math.max(0, total - ownCount);
@@ -47,7 +48,7 @@ export function QrHandoff({ leadRef, onRemoteCount, onCompleted, ownCount = 0, r
         <b><Smartphone size={18} strokeWidth={1.5} aria-hidden /> נוח יותר לצלם בטלפון?</b>
         <span>{returnToDesktop ? 'סרקו את הקוד עם מצלמת הטלפון וצלמו שם. אחרי הצילום חזרו לכאן, למחשב, כדי להמשיך.' : 'סרקו את הקוד עם מצלמת הטלפון וצלמו שם. אפשר לסיים בטלפון, או לחזור לכאן ולשלוח מהמחשב.'}</span>
         {count > 0
-          ? <span className="qr-got">✓ {count === 1 ? 'התקבל סרטון אחד' : `התקבלו ${count} סרטונים`}. {returnToDesktop ? 'לחצו "המשך" למטה.' : 'אפשר לשלוח.'}</span>
+          ? <span className="qr-got">✓ {count === 1 ? 'התקבל סרטון אחד' : `התקבלו ${count} סרטונים`}. {returnToDesktop ? `לחצו "${nextLabel}" למטה.` : 'אפשר לשלוח.'}</span>
           : <span className="qr-wait"><i className="qr-dot" /> ממתינים לסרטונים מהטלפון…</span>}
       </div>
     </div>

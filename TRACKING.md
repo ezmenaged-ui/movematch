@@ -103,7 +103,11 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
 ## Microsoft Clarity (session recordings)
 
 `components/Clarity.tsx`, enabled by the env var `NEXT_PUBLIC_CLARITY_ID` (Clarity project ID). Free, no recording cap.
-- Loads only on client funnel pages: `/`, `/a` … `/e` (incl. `/b/steps`, `/c/details` …), `/f`, `/u/<id>`. Never on `/qa`, `/admin`, `/movers`, `/login`, `/t` `/j` `/l` `/o`.
+- Loads only on client funnel pages: `/`, `/a` … `/e` (incl. `/b/steps`, `/c/details` …), `/f`, `/u/<id>`, and for now (owner's request, 21 Nov 2026)
+  the `/qa/<funnel>/<theme>` test area. Never on `/admin`, `/movers`, `/login`, `/t` `/j` `/l` `/o`.
+- Only on `movematch.co.il`: never on `*.vercel.app` deployment URLs (headless bots hit those after every deploy) or localhost.
+- Tag `env`: `qa` for sessions that entered through `/qa`, `live` otherwise. For real-visitor views filter Custom tags → `env` = `live`.
+  /qa still sends nothing to GA4, GTM or the Meta Pixel.
 - `strategy="lazyOnload"`: fetched after the page has loaded and the browser is idle, so the first screen is not slowed.
 - Tags set from `track()` in `lib/client.ts` (queued until the script arrives): `funnel` (= `variant_id`, e.g. `b-photo`), `step`
   (every `step_name` reached, e.g. `4_when`), `landing` (landing page path, e.g. `/f` vs `/e/photo`), `wa_click` (`yes` when the /f WhatsApp button was tapped, also a Clarity event `wa_cta_click`), `lead_id`, `lead` (`generate_lead` / `lead_complete` / `qualify_lead`), plus Clarity events of the same names.

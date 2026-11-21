@@ -6,6 +6,7 @@ import { Countdown } from '@/components/Countdown';
 import '@/app/tender.css';
 import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { getPublicLead, tenderRef } from '@/lib/publicLead';
+import { missingInfo } from '@/lib/moverFormat';
 import { db } from '@/lib/db';
 import { MoverLogo } from '@/components/MoverLogo';
 import { Blueprint, Corners, Header } from '@/components/ui';
@@ -38,7 +39,7 @@ function AddressCard({ title, a, fallbackCity }: { title: string; a: A; fallback
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}</dd>
           <dt>דירה</dt><dd>{s(a?.apartment) || '—'}</dd>
           <dt>מעלית</dt><dd><Elevator v={a?.elevator} />{a?.elevator === true && elevatorText(a).includes('(') ? <span className="muted"> · {elevatorText(a).replace('יש מעלית ', '').replace(/[()]/g, '')}</span> : null}</dd>
-          <dt>מנוף</dt><dd>{craneText(a) || <span className="muted">לא צוין</span>}</dd>
+          {craneText(a) && <><dt>מנוף</dt><dd>{craneText(a)}</dd></>}
           <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || <span className="muted">לא צוין</span>}</dd>
         </dl>
       )}
@@ -69,7 +70,7 @@ export default async function MoverLead({ params, searchParams }: { params: Prom
         <div className="ml-head">
           <div className="kicker">מכרז מס׳ {ref} · נפתח {fmtDate(lead.created_at)}</div>
           <h1>{fromCity || '—'} <ArrowLeft size={34} strokeWidth={2} aria-label="אל" className="ml-arrow" /> {toCity || '—'}</h1>
-          {lead.status !== 'complete' && <p className="ml-warn">הלקוח עוד לא השלים את כל הפרטים. נעדכן כשיתקבלו.</p>}
+          {lead.status !== 'complete' && <p className="ml-warn">הלקוח עוד לא השלים את כל הפרטים{missingInfo(lead).length ? <>. חסרים: <b>{missingInfo(lead).join(', ')}</b></> : ''}. אפשר לתת הצעה לפי מה שיש.</p>}
         </div>
 
         <Blueprint as="section" className="ml-card">

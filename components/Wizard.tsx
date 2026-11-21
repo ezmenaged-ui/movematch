@@ -287,13 +287,13 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   if (!ready) return <FlowShell theme={null} />;
 
   return (
-    <FlowShell theme={theme} progress={`${step}/${TOTAL}`}>
+    <FlowShell theme={theme} progress={`${step}/${TOTAL}${isD && step === S_ITEMS ? ' · רשות' : ''}`}>
         <div className="wiz">
           <div className="progress progress-labeled" style={{ gridTemplateColumns: `repeat(${TOTAL}, 1fr)` }} aria-label={`שלב ${step} מתוך ${TOTAL}`}>
             {LABELS.map((l, i) => {
               const n = i + 1, reachable = step < S_DONE && n <= furthest && n !== step;
               const cls = `item ${n < step || (n <= furthest && n !== step && step < S_DONE) ? 'done' : ''} ${n === step ? 'cur' : ''}`;
-              const body = <><i className={`seg ${n <= Math.max(step, step < S_DONE ? furthest : step) ? 'on' : ''}`} /><b><span>{l}{n !== step && n <= (step < S_DONE ? furthest : step) && n < S_DONE && <Check size={13} strokeWidth={2} />}</span></b></>;
+              const body = <><i className={`seg ${n <= Math.max(step, step < S_DONE ? furthest : step) ? 'on' : ''}`} /><b><span>{l}{isD && n === S_ITEMS && <small className="opt-tag">(רשות)</small>}{n !== step && n <= (step < S_DONE ? furthest : step) && n < S_DONE && <Check size={13} strokeWidth={2} />}</span></b></>;
               return reachable
                 ? <button key={l} type="button" className={`${cls} item-btn`} onClick={() => jump(n)} aria-label={`מעבר לשלב ${l}`}>{body}</button>
                 : <div key={l} className={cls} aria-current={n === step ? 'step' : undefined}>{body}</div>;
@@ -347,6 +347,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
               {step === S_ITEMS && (
                 <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
               )}
+              {isD && step === S_ITEMS && (
+                // The list is optional in D: the request can be sent without it (it only earns the ₪50 discount).
+                <p className="items-optional" role="note"><b>רשימת הפריטים לא חובה.</b> אפשר לשלוח את הבקשה עכשיו גם בלי למלא אותה: המובילים יראו מה עובר בסרטון.</p>
+              )}
 
               {isD && step === S_VIDEO && (
                 <>
@@ -395,7 +399,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <div className="stack" style={{ marginTop: 18 }}>
                       <p className="lead-sub" style={{ margin: 0 }}><b>מה אנחנו מצפים לקבל: סרטון מלא של כ-3 דקות.</b></p>
                       <VideoGuide />
-                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
+                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} returnToDesktop nextLabel="שלחו לי 5 הצעות" ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
                       {up.usable.length > 0 && up.totalDuration > 0 && (
                         <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
                           <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00</span>
@@ -457,7 +461,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <tr><td>מאיפה</td><td>{[from.city, from.floor && `קומה ${from.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>לאן</td><td>{[to.city, to.floor && `קומה ${to.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>מתי</td><td>{whenText(when) || '—'}</td></tr>
-                    {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{itemsCount(items)} פריטים{items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}</td></tr>}
+                    {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{items.list.length
+                      ? `${itemsCount(items)} פריטים${items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}`
+                      // No list (optional in D): don't show the boxes stepper's default 20 as if the client chose it.
+                      : 'לא נשלחה רשימה'}</td></tr>}
                     {(isD || isE) && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : savedVideos ? (savedVideos === 1 ? 'סרטון אחד' : `${savedVideos} סרטונים`) : '—'}</td></tr>}
                   </tbody></table>
                 </div>
