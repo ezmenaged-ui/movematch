@@ -461,7 +461,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <tr><td>מאיפה</td><td>{[from.city, from.floor && `קומה ${from.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>לאן</td><td>{[to.city, to.floor && `קומה ${to.floor}`].filter(Boolean).join(' · ')}</td></tr>
                     <tr><td>מתי</td><td>{whenText(when) || '—'}</td></tr>
-                    {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{itemsCount(items)} פריטים{items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}</td></tr>}
+                    {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{items.list.length
+                      ? `${itemsCount(items)} פריטים${items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}`
+                      // No list (optional in D): don't show the boxes stepper's default 20 as if the client chose it.
+                      : 'לא נשלחה רשימה'}</td></tr>}
                     {(isD || isE) && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : savedVideos ? (savedVideos === 1 ? 'סרטון אחד' : `${savedVideos} סרטונים`) : '—'}</td></tr>}
                   </tbody></table>
                 </div>
