@@ -39,7 +39,7 @@ function Stop({ title, a, fallbackCity }: { title: string; a: A; fallbackCity?: 
           <dt>כתובת</dt><dd>{s(a?.address) || '—'}</dd>
           <dt>קומה</dt><dd>{s(a?.floor) || '—'}{s(a?.apartment) ? ` · דירה ${s(a?.apartment)}` : ''}</dd>
           <dt>מעלית</dt><dd>{a?.elevator === true ? <><Check size={14} /> {elevatorText(a)}</> : a?.elevator === false ? <><X size={14} /> רק מדרגות</> : 'לא צוין'}</dd>
-          <dt>מנוף</dt><dd>{craneText(a) || 'לא צוין'}</dd>
+          {craneText(a) && <><dt>מנוף</dt><dd>{craneText(a)}</dd></>}
           <dt>חניה למשאית</dt><dd>{parkingText(a).replace('חניה למשאית: ', '') || 'לא צוין'}</dd>
         </dl>
       )}

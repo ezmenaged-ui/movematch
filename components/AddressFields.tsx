@@ -1,6 +1,6 @@
 'use client';
 import { type Address, addrParts, joinAddr } from '@/lib/validate';
-import { CityField, CranePicker, ElevatorChoice, ElevatorTypePicker, Field, ParkingPicker, RoomsPicker } from './fields';
+import { CityField, ElevatorChoice, ElevatorTypePicker, Field, ParkingPicker, RoomsPicker } from './fields';
 
 /** `origin`: the address they're moving from, which starts with the home size. */
 export function AddressFields({ value, onChange, errors = {}, origin = false }: {
@@ -23,7 +23,7 @@ export function AddressFields({ value, onChange, errors = {}, origin = false }: 
       </div>
       <ElevatorChoice value={value.elevator} onChange={(v) => onChange({ ...value, elevator: v, elevator_type: v ? value.elevator_type || '' : '' })} error={errors.elevator} />
       {value.elevator === true && <ElevatorTypePicker value={value.elevator_type} onChange={(t) => set('elevator_type', t)} error={errors.elevator_type} />}
-      <CranePicker value={value.crane} onChange={(v) => set('crane', v)} error={errors.crane} />
+      {/* No crane question since 22 Nov 2026 (shorter funnels); older leads keep their answer in `crane`. */}
       <ParkingPicker value={value.parking} onChange={(v) => set('parking', v)} error={errors.parking} />
     </div>
   );

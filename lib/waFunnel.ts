@@ -122,7 +122,7 @@ function missing(a: Partial<Address> | undefined, side: Side): AddrField | null 
   if (a.elevator == null) return 'elevator';
   if (a.elevator && !a.elevator_type) return 'elevator_type';
   if (a.elevator === false && !a.floor) return 'floor';
-  if (!a.crane) return 'crane';
+  // No crane question since 22 Nov 2026 (shorter funnel). Its parsers stay, so a chat waiting on that answer still works.
   if (!a.parking) return 'parking';
   return null;
 }
