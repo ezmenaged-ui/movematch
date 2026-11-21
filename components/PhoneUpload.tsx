@@ -105,7 +105,7 @@ export function PhoneUpload({ id, token, tender, backToDesktop = false }: { id: 
                 <div className="phone-finish" role="status">
                   <span className="done-icon blueprint" style={{ margin: '0 auto', width: 52, height: 52 }}><Corners /><Monitor size={24} strokeWidth={1.5} /></span>
                   <p style={{ margin: 0, fontSize: 20, textAlign: 'center' }}><b>{total === 1 ? 'הסרטון הגיע.' : `${total} סרטונים הגיעו.`} עכשיו חזרו למחשב</b></p>
-                  <p className="muted" style={{ margin: 0, textAlign: 'center' }}>במחשב לחצו &quot;המשך&quot; כדי להשלים את הבקשה. אפשר גם להוסיף כאן עוד סרטונים לפני כן.</p>
+                  <p className="muted" style={{ margin: 0, textAlign: 'center' }}>המשיכו במחשב כדי להשלים ולשלוח את הבקשה. אפשר גם להוסיף כאן עוד סרטונים לפני כן.</p>
                 </div>
               ) : st?.ready ? (
                 <div className="phone-finish">

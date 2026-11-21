@@ -395,7 +395,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <div className="stack" style={{ marginTop: 18 }}>
                       <p className="lead-sub" style={{ margin: 0 }}><b>מה אנחנו מצפים לקבל: סרטון מלא של כ-3 דקות.</b></p>
                       <VideoGuide />
-                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
+                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} returnToDesktop nextLabel="שלחו לי 5 הצעות" ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
                       {up.usable.length > 0 && up.totalDuration > 0 && (
                         <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
                           <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00</span>
