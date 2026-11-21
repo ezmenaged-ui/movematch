@@ -34,7 +34,7 @@ The main session relays your questions (max 4 per round, options with the recomm
 11. Warm-up plan: owner, family and each new provider message the number first; quality rating checked weekly.
 
 **C. Legal (Israel; drafted by Claude, reviewed by a lawyer before scaling)**
-12. Terms of use, privacy policy (what's shared with providers, transfers abroad with countries: e.g. Supabase Frankfurt, Vercel Washington DC; tracking tools; Amendment 13 security and breach handling; retention), accessibility statement (only what was actually checked; coordinator by role), provider agreement (versioned, commission sentence verbatim, confidentiality, discount rule). Which lawyer, and by when?
+12. Terms of use, privacy policy (what's shared with providers, transfers abroad with countries: e.g. Supabase Frankfurt, Vercel Washington DC; tracking tools including Microsoft Clarity session recordings, with what is recorded and that typed form input is masked; Amendment 13 security and breach handling; retention), accessibility statement (only what was actually checked; coordinator by role), provider agreement (versioned, commission sentence verbatim, confidentiality, discount rule). Which lawyer, and by when?
 13. Retention: delete media N days after the job (MoveMatch: 30 days after the move date, 90 if no date), requests after 24 months; automated nightly.
 14. Consent line under every first-step form: SMS/WhatsApp updates and sharing details with providers. Any promotional message later needs its own opt-in.
 
