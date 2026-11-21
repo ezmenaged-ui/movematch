@@ -22,7 +22,7 @@ The main session relays your questions (max 4 per round, 2 to 4 options, recomme
 3. Save the lead on the first screen (name + phone). Confirm. Plus: a 15-minute "started but didn't finish" email to the operator for every funnel. Why: the abandonment email was added on day 4.
 
 **B. What we ask the customer (the request form)**
-4. The full question list for the job, built from the providers' interview in the bizdev brief. For each address: city (with suggestions on every city field), street, floor, apartment, elevator yes/no then size, access questions (MoveMatch: crane, truck parking distance in ranges). For the job: size (rooms incl. living room, or m²), date + flexible, time window + flexible. Why: elevator type, crane, parking and home size were each added later in separate sessions.
+4. The full question list for the job, built from the providers' interview in the bizdev brief. For each address (MoveMatch's final form): city (with suggestions) + street, then house number + floor; floor always asked first and required; elevator as two tiles (has elevator / stairs only) then size; access (truck parking distance in ranges). MoveMatch removed the apartment number and the crane question the night before launch to shorten the funnels: ask the providers which fields they really need, and cut the rest. For the job: size (rooms incl. living room, or m²), date + flexible, time window + flexible. Why: elevator type, crane, parking and home size were each added later in separate sessions.
 5. Rich information: photos, video, or a structured item list? Required or optional per funnel? Max length per clip (MoveMatch: 4 min, multiple clips), filming instructions, QR hand-off desktop→phone, and what the phone says when more steps follow ("go back to the computer"). Why: video rules changed three times (1.5 min → 4 min; skippable → required → skippable).
 6. Item picker (if any): room-by-room list, search on top, multi-select that never deselects, "not on the list" free add, per-item questions (MoveMatch: disassembly/assembly), sticky continue/back on long lists, optional marked clearly with the price benefit. Why: the owner gave this exact feedback on day 4.
 7. Customer incentive mechanics (e.g. discount for photos + full list): exact rule, wording, and where it shows.
@@ -41,8 +41,9 @@ The main session relays your questions (max 4 per round, 2 to 4 options, recomme
 16. WhatsApp chat funnel: yes/no at launch. The customer must send the first message (a prefilled starter from the ad or site); the bot then asks one question at a time. Which AI model and cost per chat? (MoveMatch: Claude Haiku with plain-code parsing for simple answers; Opus was ~40x the cost.)
 
 **E. Admin and reporting**
-17. Admin must-haves: leads as rows that open into cards, instant multi-select filters kept in the URL, copy/send buttons, provider roster with areas, "who receives per area" view, funnel performance tab, money/commission tab, WhatsApp inbox. Which are v1?
-18. Out of scope for v1 (write it down): e.g. invoicing, provider calendar, crew sheets, voice notes.
+17. Operator rescue tools for v1: send any lead to providers by hand (even unfinished, with "missing details" shown), add a WhatsApp or uploaded video to a lead, phone search in any format. Why: MoveMatch added these the evening before launch.
+18. Admin must-haves: leads as rows that open into cards, instant multi-select filters kept in the URL, copy/send buttons, provider roster with areas, "who receives per area" view, funnel performance tab, money/commission tab, WhatsApp inbox. Which are v1?
+19. Out of scope for v1 (write it down): e.g. invoicing, provider calendar, crew sheets, voice notes.
 
 ## Rules
 - Every requirement gets an acceptance check the QA agent can run.

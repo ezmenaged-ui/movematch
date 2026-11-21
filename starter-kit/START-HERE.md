@@ -13,6 +13,7 @@ Brand name / domain if I have one: <… or "not yet">.
 1. Install the MoveMatch starter kit into this repo: clone https://github.com/ezmenaged-ui/movematch into a temporary folder (not inside this repo) and run `bash starter-kit/install.sh <full path of this repo>`. Don't change anything in the movematch repo. Commit the result here.
 2. Read CLAUDE.md and docs/PLAYBOOK.md (start with sections 0, 19 and 20).
 3. Run the kickoff exactly as written in .claude/commands/kickoff.md, as if I typed "/kickoff <my one line>". Start with the entrepreneur stage and ask me its questions as multiple choice: at most 4 at a time, recommended option first, plain words.
+Before the first question, publish the launch tracker (docs/tracker/README.md) and give me its link.
 4. After I approve stage 1, show me only the items in docs/OWNER-PREFLIGHT.md that I still need to do, and run the preflight check when I say I'm done.
 
 Standing choices: ChatGPT builds the Google Ads campaigns from a brief you write (docs/ads/); you paste it into ChatGPT in my Chrome and check what it built. Microsoft Clarity records the funnel pages. Anything that needs paying: stop, add it to the top of docs/QUESTIONS.md and send me a push notification.

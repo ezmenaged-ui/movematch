@@ -1,0 +1,344 @@
+[
+ {
+  "id": "stage1",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 1,
+  "title": "Answer the business questions (stage 1, about 20 minutes)",
+  "detail": "Promise, money, your name on the site, test phone numbers, what the agents may do alone, monthly spend cap. Claude asks them as multiple choice."
+ },
+ {
+  "id": "repo",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 2,
+  "title": "Create the GitHub repo and install the Claude GitHub App on it",
+  "detail": "Private repo. Claude does all GitHub work after this.",
+  "steps": [
+   {
+    "items": [
+     "github.com → New repository → name it → Private → Create",
+     "github.com/apps/claude → Configure → add the new repo",
+     "Reply \"done\" in the chat"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "kit",
+  "section": "setup",
+  "owner": "claude",
+  "status": "open",
+  "order": 3,
+  "title": "Install the starter kit, CLAUDE.md and the playbook",
+  "detail": "Runs starter-kit/install.sh from a MoveMatch checkout. MoveMatch is not changed."
+ },
+ {
+  "id": "accounts",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 4,
+  "title": "Accounts exist and are paid for 💳",
+  "detail": "Vercel, Supabase (paid plan), Twilio (upgraded), Meta Business portfolio, Google Analytics + Ads (billing), ChatGPT, Microsoft Clarity, Anthropic Console, email on the domain. Agents never enter card details."
+ },
+ {
+  "id": "chrome",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 5,
+  "title": "Log in once to every console in Chrome (Claude in Chrome on)",
+  "detail": "Meta Business / WhatsApp Manager, Google Ads, GA4, Search Console, Twilio, Vercel, Supabase, Anthropic, Clarity, ChatGPT, Gmail. Finish 2FA so sessions last.",
+  "steps": [
+   {
+    "items": [
+     "Install Claude in Chrome; in Claude Code run /chrome → Enabled by default",
+     "Open each console in that Chrome profile, sign in, tick \"stay signed in\"",
+     "Tell Claude \"preflight\"; it opens each one and fills in the check table"
+    ]
+   }
+  ]
+ },
+ {
+  "id": "docs-folder",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 6,
+  "title": "Put the business documents in one folder",
+  "detail": "Incorporation certificate or עוסק מורשה, exact registered name, number and address, logo. The agents fill forms from it; you press the final Submit."
+ },
+ {
+  "id": "connectors",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 7,
+  "title": "Connect GitHub, Supabase, Vercel, Gmail and Drive on claude.ai",
+  "detail": "API keys (e.g. Twilio) go into the secure form the agent shows you, never into the chat."
+ },
+ {
+  "id": "notifications",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 8,
+  "title": "Allow Claude app notifications on your phone",
+  "detail": "You get a push notification whenever something needs paying or your OK."
+ },
+ {
+  "id": "briefs",
+  "section": "setup",
+  "owner": "claude",
+  "status": "open",
+  "order": 9,
+  "title": "Stage briefs drafted and approved: bizdev, product, design, marketing",
+  "detail": "Each stage ends with a short summary and \"Approve and move on?\"."
+ },
+ {
+  "id": "domain",
+  "section": "setup",
+  "owner": "you",
+  "status": "open",
+  "order": 10,
+  "title": "Buy the domain and click the registrar's verification email 💳",
+  "detail": "Vercel → Domains → Buy. The contact-verification email must be clicked within 15 days."
+ },
+ {
+  "id": "safety",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 11,
+  "title": "Test area /qa, test-lead guard, kill switch and throttle live",
+  "detail": "Built before any sending code. Test leads (QA names, ?utm_source=qa) send no WhatsApp and nothing to providers."
+ },
+ {
+  "id": "db-plan",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 12,
+  "title": "Upgrade the database to the paid plan 💳",
+  "detail": "Media fills the free plan after a few videos."
+ },
+ {
+  "id": "twilio",
+  "section": "now",
+  "owner": "external",
+  "status": "open",
+  "order": 13,
+  "title": "Twilio Trust Hub profile approved and WhatsApp sender connected",
+  "detail": "The agent fills everything; you press Submit. The email must use the website's domain and the address must match the registry exactly."
+ },
+ {
+  "id": "templates",
+  "section": "now",
+  "owner": "external",
+  "status": "open",
+  "order": 14,
+  "title": "WhatsApp Utility templates submitted and approved; IDs in Vercel",
+  "detail": "Link written in the template body, never a whole URL in a variable. Meta usually answers within a day."
+ },
+ {
+  "id": "webhooks",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 15,
+  "title": "Inbound and status webhooks set and tested with one message from your phone",
+  "detail": "On MoveMatch every inbound message was refused for a week unnoticed."
+ },
+ {
+  "id": "warmup",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 16,
+  "title": "Warm up the WhatsApp number",
+  "detail": "You, a family member and each new provider send a first message before real volume."
+ },
+ {
+  "id": "providers",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 17,
+  "title": "Real providers active, each with a real WhatsApp number and service areas",
+  "detail": "Demo or test providers stay inactive. Claude reconciles this list with the database before launch."
+ },
+ {
+  "id": "areas",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 18,
+  "title": "Coverage table: areas with at least 2 active providers",
+  "detail": "Ads target only these areas."
+ },
+ {
+  "id": "legal",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 19,
+  "title": "Legal pages, consent lines, provider agreement and commission clause live",
+  "detail": "Best-effort draft; a lawyer still signs off."
+ },
+ {
+  "id": "legal-mail",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 20,
+  "title": "Legal mailbox on the domain receives mail",
+  "detail": "Send one test email and confirm it arrives."
+ },
+ {
+  "id": "tracking",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 21,
+  "title": "GA4 events and Ads conversions verified (qualify_lead Primary, lead_complete Secondary, Count: One)",
+  "detail": "No button click is a conversion. A WhatsApp chat funnel shows 0 conversions in Ads; measure it in admin and GA4."
+ },
+ {
+  "id": "clarity",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 22,
+  "title": "Microsoft Clarity live on funnel pages only, production domain only, /qa tagged env=qa",
+  "detail": "Tracking must never break a funnel: guard every call."
+ },
+ {
+  "id": "ads-brief",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 23,
+  "title": "ChatGPT brief written; ChatGPT builds the campaigns Paused; Claude checks them",
+  "detail": "The agent pastes the brief into ChatGPT in your Chrome and checks Google Ads against it."
+ },
+ {
+  "id": "funnels-pick",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 24,
+  "title": "Choose the funnels the ads send people to",
+  "detail": "Few funnels, each with a written hypothesis, so clicks aren't split too thin."
+ },
+ {
+  "id": "homepage",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 25,
+  "title": "Decide whether the homepage is live at launch",
+  "detail": "Until then its leads reach only you."
+ },
+ {
+  "id": "admin",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 26,
+  "title": "Admin ready: leads, filters, providers by area, money tab, funnel results, inbox, manual send and add-video",
+  "detail": "Customers send missing details on WhatsApp; the operator needs these tools on day 1."
+ },
+ {
+  "id": "message-map",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 27,
+  "title": "Message map with the real texts of every automated message",
+  "detail": "Second artifact, linked from Quick links."
+ },
+ {
+  "id": "cleanup",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 28,
+  "title": "Delete demo and test data before paid traffic (count first, your OK)",
+  "detail": "On MoveMatch the owner said 6 and there were 16."
+ },
+ {
+  "id": "go-nogo",
+  "section": "now",
+  "owner": "claude",
+  "status": "open",
+  "order": 29,
+  "title": "QA go / no-go",
+  "detail": "Every funnel at phone width on /qa, Twilio log clean, no page errors, nothing sent from tests."
+ },
+ {
+  "id": "enable-ads",
+  "section": "launch",
+  "owner": "you",
+  "status": "open",
+  "order": 30,
+  "title": "Enable the campaigns 🔴",
+  "detail": "Only you press Enable or raise a budget."
+ },
+ {
+  "id": "launch-check",
+  "section": "launch",
+  "owner": "claude",
+  "status": "open",
+  "order": 31,
+  "title": "Launch-day check after the first 3–5 real leads",
+  "detail": "Twilio error codes (63005, 63016, 63024, 63049, 63051), server logs, the right providers alerted, GA4 events, lead data complete."
+ },
+ {
+  "id": "quality",
+  "section": "launch",
+  "owner": "you",
+  "status": "open",
+  "order": 32,
+  "title": "Check the WhatsApp quality rating weekly and the day after any spike",
+  "detail": "WhatsApp Manager → Account quality. Yellow or red means slow down."
+ },
+ {
+  "id": "lawyer",
+  "section": "launch",
+  "owner": "you",
+  "status": "open",
+  "order": 33,
+  "title": "Lawyer sign-off on terms, privacy and accessibility",
+  "detail": "Most important: commission terms and the privacy law."
+ },
+ {
+  "id": "autonomy-live",
+  "section": "launch",
+  "owner": "you",
+  "status": "open",
+  "order": 34,
+  "title": "Tell Claude \"switch autonomy to live\"",
+  "detail": "After launch, every production deploy needs your OK."
+ },
+ {
+  "id": "retention",
+  "section": "later",
+  "owner": "claude",
+  "status": "open",
+  "order": 35,
+  "title": "Confirm the first automatic deletion of old media",
+  "detail": "Nightly job; verify once a deletion date is reached."
+ },
+ {
+  "id": "parked",
+  "section": "later",
+  "owner": "you",
+  "status": "open",
+  "order": 36,
+  "title": "Review parked decisions",
+  "detail": "Things decided \"not now\" stay here so they aren't forgotten."
+ }
+]

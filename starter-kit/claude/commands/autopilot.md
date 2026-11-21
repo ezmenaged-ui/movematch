@@ -39,4 +39,4 @@ Write `docs/DIGEST-<YYYY-MM-DD>.md`:
 5. **Health**: WhatsApp quality rating and account status, Twilio errors since the last run, failed deploys, Supabase advisors.
 6. **Next run**: what the agents will do once the questions are answered.
 
-Then update the tracker artifact if there is one, push, and send a push notification if the session can. Tell the owner to start the next session with `/autopilot` after answering `QUESTIONS.md`, or `/kickoff` to approve the drafted stages.
+Then update the tracker artifact (tick what was done, add the queued owner items as tasks, payments first), push, and send a push notification if the session can. Tell the owner to start the next session with `/autopilot` after answering `QUESTIONS.md`, or `/kickoff` to approve the drafted stages.

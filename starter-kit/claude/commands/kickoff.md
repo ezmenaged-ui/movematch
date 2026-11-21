@@ -5,6 +5,8 @@ argument-hint: "[one-line idea, e.g. \"painters in central Israel\"] or [stage n
 
 You are the orchestrator of a gated, multi-role build. The idea or stage to resume: **$ARGUMENTS**
 
+**Step 0, before any question: launch the tracker.** If `CLAUDE.md` has no "Tracker:" link yet, publish `docs/tracker/tracker.html` as an artifact, seed it from `docs/tracker/seed-tasks.json` and give the owner the link (see `docs/tracker/README.md`). From then on, every decision, owner task and finished piece of work is a task there, and it is ticked when done.
+
 Read first: `CLAUDE.md`, `docs/PLAYBOOK.md`, and every file in `docs/briefs/`. Work out which stage is next (the first one without an approved brief), unless the argument names a stage.
 
 ## The stages, in order
@@ -37,5 +39,5 @@ If the owner says they'll be away, or doesn't answer, switch to `/autopilot`: re
 ## Always
 - Console work goes to the `operator` agent, not to the owner (playbook section 20). Only payment, identity and legal attestations, 2FA, enabling ads and messages to real people need the owner.
 - One chat deploys at a time; tell the owner if another session might be working on the same repo.
-- Keep the live tracker artifact updated (owner tasks with step-by-step cards, ranking, done collapsed).
+- Keep the tracker artifact updated in the same turn as the work: add new tasks, tick finished ones with the date and what was verified, and give every owner task step-by-step instructions. Before launch, reconcile it with the database and live settings.
 - When something new is learned, add it to `docs/PLAYBOOK.md` (section 19) and, if it changes a question, to the relevant agent file.
