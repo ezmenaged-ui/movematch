@@ -7,6 +7,7 @@ import { hasTemplate, sendWhatsApp, trySendSms, trySendWhatsApp, waEnabled, type
 import { moverAlertSms, operatorAlertSms } from './alertSms';
 import { isHomeHeld, isQaEntry, isTestLead, waFunnelLive } from './qa';
 import { areasOfCity, type Area } from './areas';
+import { missingInfo } from './moverFormat';
 
 type Addr = Record<string, unknown> | null | undefined;
 const secret = () => process.env.MM_ADMIN_SECRET;
@@ -155,4 +156,71 @@ export async function onBid(args: {
   await Promise.all([
     sendAll(args.emailText.split('\n')[0] + ` · ₪${price}`, args.emailText + `\nעדכון ללקוח בוואטסאפ: ${clientStatus}`, { event: 'bid', lead_id: lead.id, price, mover_phone: args.moverPhone }),
   ]);
+}
+
+export type ActiveMover = { id: string; name: string; company_name: string; phone: string; token: string; active?: boolean; status?: string };
+
+/**
+ * Who a manual send (/admin → "שליחה למובילים") goes to: the active movers serving the lead's origin area,
+ * or every active mover when the area is unknown or has no mover (unfinished leads often have no city yet).
+ */
+export type MoverAreaRow = { mover_id: string; areas: string[] };
+
+/** Pure version of the routing below, for previews in /admin (movers and their areas loaded once for the whole page). */
+export function recipientsFrom(l: Pick<LeadRow, 'move_from' | 'city'>, movers: ActiveMover[], areaRows: MoverAreaRow[]) {
+  const active = movers.filter((m) => m.active && m.phone);
+  const areas = areasOfCity((l.move_from?.city as string) || l.city);
+  const byMover = new Map(areaRows.map((r) => [r.mover_id, r.areas]));
+  const matched = areas.length ? active.filter((m) => (byMover.get(m.id) || []).some((a) => (areas as string[]).includes(a))) : [];
+  if (matched.length) return { movers: matched, scope: `אזור ${areas.join(' / ')}`, inArea: matched.length };
+  return { movers: active, scope: areas.length ? `אין מובילים באזור ${areas.join(' / ')}, לכל המובילים הפעילים` : 'אזור לא ידוע, לכל המובילים הפעילים', inArea: 0 };
+}
+
+export async function manualRecipients(l: LeadRow) {
+  const [{ data }, { data: areaRows }] = await Promise.all([
+    db().rpc('mm_admin_movers', { p_secret: secret() }),
+    db().rpc('mm_admin_mover_areas', { p_secret: secret() }),
+  ]);
+  return recipientsFrom(l, (data || []) as ActiveMover[], (areaRows || []) as MoverAreaRow[]);
+}
+
+/** Whether movers already got this lead automatically (then the manual send is not offered, so nobody is alerted twice). */
+export const autoSentToArea = (l: LeadRow & { movers_pinged_at?: string | null }, inArea: number) =>
+  !!l.movers_pinged_at && l.status === 'complete' && !isHomeHeld(l) && !(l.variant === 'chat' && !waFunnelLive()) && inArea > 0;
+
+export type ManualSend = { ok: true; sent: number; total: number; scope: string } | { ok: false; reason: 'not_found' | 'test' | 'already' | 'no_movers' };
+
+/**
+ * The operator sends a lead to movers by hand, finished or not. Unfinished leads go out with a list of what is missing
+ * (in the alert and on the mover pages). Once per lead (claimed in the DB), never for test leads. The client gets no
+ * message now; they hear from us when the first offer comes in (onBid), as usual.
+ */
+export async function adminSendToMovers(id: string): Promise<ManualSend> {
+  const { data } = await db().rpc('mm_admin_lead', { p_secret: secret(), p_id: id });
+  const l = data as (LeadRow & { movers_pinged_at?: string | null; admin_sent_at?: string | null }) | null;
+  if (!l) return { ok: false, reason: 'not_found' };
+  if (isTestLead(l) || l.is_test) return { ok: false, reason: 'test' };
+  if (l.admin_sent_at) return { ok: false, reason: 'already' };
+  const { movers, scope, inArea } = await manualRecipients(l);
+  if (autoSentToArea(l, inArea)) return { ok: false, reason: 'already' };
+  if (!movers.length) return { ok: false, reason: 'no_movers' };
+  const { data: claimed, error } = await db().rpc('mm_admin_send_to_movers', { p_secret: secret(), p_id: id, p_count: movers.length });
+  if (error) console.error('[automations] manual send claim', error);
+  if (!claimed) return { ok: false, reason: 'already' };
+
+  const site = siteUrl();
+  const when = l.move_when && Object.keys(l.move_when).length ? whenText(l.move_when as never) : 'לא צוין';
+  const missing = missingInfo(l);
+  // One line, no newlines: WhatsApp template variables may not contain line breaks.
+  const details = [moveDetails(l), missing.length ? `חסרים פרטים: ${missing.join(', ')}` : ''].filter(Boolean).join(' · ') || 'פרטים בקישור';
+  console.info(`[automations] manual send ${tenderRef(l)}: ${movers.length} movers (${scope}), missing: ${missing.join(', ') || 'nothing'}`);
+  const results = await Promise.all(movers.map((m) => {
+    const hi = firstName(m.name) || m.company_name || 'שלום';
+    const cb = { kind: 'mover_ping', lead: l.id, mover: m.id };
+    const sms = moverAlertSms(l, m, site) + (missing.length ? `\nחסר: ${missing.join(', ')}` : '');
+    return hasTemplate('mover_new_lead_v2')
+      ? alertWithSmsBackup('mover', m.phone, 'mover_new_lead_v2', [hi, `${tenderRef(l)} · ${routeOf(l)}`, when, details, `${l.share_token}?m=${m.token}`], cb, sms)
+      : alertWithSmsBackup('mover', m.phone, 'mover_new_lead', [hi, `${tenderRef(l)} · ${routeOf(l)}`, when, details, `${site}/l/${l.share_token}?m=${m.token}`], cb, sms);
+  }));
+  return { ok: true, sent: results.filter(Boolean).length, total: movers.length, scope };
 }

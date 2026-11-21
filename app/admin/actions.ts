@@ -193,3 +193,57 @@ export async function sendInboxReply(form: FormData) {
   revalidatePath('/admin/inbox');
   redirect(`/admin/inbox?p=${phone}&${r.ok ? 'sent=1' : `err=${r.reason}`}#end`);
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const back = (q: string, extra: string, id?: string) => `/admin?${new URLSearchParams({ ...(q ? { q } : {}), ...Object.fromEntries(new URLSearchParams(extra)) })}${id ? `#lead-${id}` : ''}`;
+
+/** /admin: send a lead (finished or not) to the movers by hand. lib/automations.ts → adminSendToMovers. */
+export async function sendLeadToMovers(form: FormData) {
+  const id = String(form.get('id') || '');
+  const q = String(form.get('q') || '').slice(0, 60);
+  if (!UUID.test(id)) redirect('/admin');
+  const { adminSendToMovers } = await import('@/lib/automations');
+  const r = await adminSendToMovers(id);
+  revalidatePath('/admin');
+  redirect(back(q, `open=${id}&${r.ok ? `sent=${r.sent}&of=${r.total}` : `senderr=${r.reason}`}`, id));
+}
+
+/** /admin: a video the operator uploaded to the lead's folder in storage (components/AdminVideoUpload.tsx). */
+export async function addLeadVideo(id: string, v: { path: string; parts: number; size: number; name: string }) {
+  if (!UUID.test(id) || !v.path.startsWith(id + '/')) return { ok: false };
+  const video = { path: v.path, parts: Math.min(50, Math.max(1, Math.floor(v.parts) || 1)), size: Number(v.size) || null, name: String(v.name || 'הועלה ע״י מנהל').slice(0, 120) };
+  const { data, error } = await db().rpc('mm_admin_add_video', { p_secret: process.env.MM_ADMIN_SECRET, p_id: id, p_video: video });
+  if (error) console.error('[addLeadVideo]', error);
+  revalidatePath('/admin');
+  return { ok: !!data };
+}
+
+/** /admin/inbox: copy a video the client sent on WhatsApp (Twilio media) into the lead's videos. */
+export async function attachInboxVideo(form: FormData) {
+  const { fetchTwilioMedia, isTwilioMedia } = await import('@/lib/inbox');
+  const lead = String(form.get('lead') || '');
+  const url = String(form.get('url') || '');
+  const type = String(form.get('type') || 'video/mp4');
+  const phone = String(form.get('phone') || '').replace(/\D/g, '');
+  const done = (s: string) => redirect(`/admin/inbox?p=${phone}&${s}`);
+  if (!UUID.test(lead) || !isTwilioMedia(url) || !type.startsWith('video/')) done('verr=bad');
+  let ok = false;
+  try {
+    const buf = Buffer.from(await (await fetchTwilioMedia(url)).arrayBuffer());
+    const ext = type.includes('quicktime') ? 'mov' : type.includes('3gpp') ? '3gp' : 'mp4';
+    const path = `${lead}/${Date.now()}-wa-admin.${ext}`;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const r = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/movematch-videos/${path}`, {
+      method: 'POST',
+      headers: { apikey: key, ...(key.startsWith('eyJ') ? { Authorization: `Bearer ${key}` } : {}), 'Content-Type': type, 'x-upsert': 'false' },
+      body: buf,
+    });
+    if (!r.ok) throw new Error(`storage ${r.status} ${(await r.text()).slice(0, 200)}`);
+    const { data, error } = await db().rpc('mm_admin_add_video', { p_secret: process.env.MM_ADMIN_SECRET, p_id: lead, p_video: { path, parts: 1, size: buf.length, name: 'וואטסאפ', src: url } });
+    if (error) throw new Error(error.message);
+    ok = !!data;
+  } catch (e) { console.error('[attachInboxVideo]', e instanceof Error ? e.message : e); }
+  revalidatePath('/admin');
+  revalidatePath('/admin/inbox');
+  done(ok ? `vok=1&lead=${lead}` : 'verr=fail');
+}

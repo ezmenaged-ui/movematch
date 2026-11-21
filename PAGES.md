@@ -68,7 +68,8 @@ Short addresses forward automatically, and tracking parameters (`?utm_…`) are 
 | Page | What it is |
 |---|---|
 | `/admin` | All leads, mover offers, sending tenders to movers and clients. |
-| `/admin/inbox` | WhatsApp inbox: messages sent to the business number (with images) and replies from the business number (24h window). |
+| `/admin` → lead card | **Manual send to movers** (migration 028): "שליחה ל-N מובילים" sends any lead, finished or not, once. It goes to the active movers of the origin area, or to all active movers when the area is unknown or has none. Unfinished leads go out with "חסרים פרטים: …" in the alert and on the mover pages. Not offered for test leads or leads already sent to their area automatically. The client gets no message until the first offer. **Videos**: "העלאת סרטון לליד" uploads a file; the search box finds a phone typed with dashes or +972. |
+| `/admin/inbox` | WhatsApp inbox: messages sent to the business number (with images) and replies from the business number (24h window). Under each video a client sent: "הוספה לליד #…" copies it into their latest lead (matched by phone). |
 | `/admin/movers` | Mover roster, sign-up approvals, ratings, panel logins (send access by email). |
 | `/admin/movers/areas` | Tab "מי מקבל לפי אזור": which active movers receive a new tender per area (live from the DB, same rule as `routeByArea` in `lib/automations.ts`), a city checker (`?city=`), gaps, and a mover × area table. |
 | `/login` | Admin password page (remembered for 180 days). |

@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { ArrowRight, Check, CheckCheck, Clock, FileText, MessageCircle, Phone, TriangleAlert } from 'lucide-react';
 import { AdminHero, AdminShell } from '@/components/AdminShell';
-import { db } from '@/lib/db';
+import { db, LeadRow } from '@/lib/db';
+import { tenderRef } from '@/lib/publicLead';
 import { Conversation, displayPhone, hoursText, InboxMsg, mediaProxyUrl, windowLeftMs } from '@/lib/inbox';
-import { sendInboxReply } from '../actions';
+import { attachInboxVideo, sendInboxReply } from '../actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'WhatsApp · MoveMatch', robots: { index: false } };
@@ -24,14 +25,19 @@ const STATUS: Record<string, React.ReactNode> = {
  * WhatsApp inbox: messages people sent to the business number, and our replies (migration 024, lib/inbox.ts).
  * The operator normally answers by replying to the WhatsApp alert; this page is the backup and the history.
  */
-export default async function InboxPage({ searchParams }: { searchParams: Promise<{ p?: string; sent?: string; err?: string }> }) {
+export default async function InboxPage({ searchParams }: { searchParams: Promise<{ p?: string; sent?: string; err?: string; vok?: string; verr?: string }> }) {
   const sp = await searchParams;
   const sel = (sp.p || '').replace(/\D/g, '');
   const secret = process.env.MM_ADMIN_SECRET;
-  const [{ data: listData, error }, { data: threadData }] = await Promise.all([
+  const [{ data: listData, error }, { data: threadData }, { data: leadData }] = await Promise.all([
     db().rpc('mm_inbox_list', { p_secret: secret }),
     sel ? db().rpc('mm_inbox_thread', { p_secret: secret, p_phone: sel }) : Promise.resolve({ data: [] }),
+    sel ? db().rpc('mm_admin_list', { p_secret: secret, p_limit: 500 }) : Promise.resolve({ data: [] }),
   ]);
+  // The client's latest lead (phones: inbox 9725XXXXXXXX, leads 05XXXXXXXX).
+  const local = sel.startsWith('972') ? '0' + sel.slice(3) : sel;
+  const lead = ((leadData || []) as LeadRow[]).find((l) => l.phone === local) || null;
+  const inLead = (url: string) => !!lead?.videos.some((v) => (v as { src?: string }).src === url);
   if (error) return <main style={{ padding: 24 }}>שגיאה בטעינת ההודעות: {error.message} (האם מיגרציה 024 הוחלה?)</main>;
   const convs = (listData || []) as Conversation[];
   const thread = (threadData || []) as InboxMsg[];
@@ -80,6 +86,9 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                   <b>{conv?.name || displayPhone(sel)}</b>
                   <small dir="ltr">{displayPhone(sel)}</small>
                 </div>
+                {lead
+                  ? <a className="mmx-btn ghost" href={`/admin?q=${lead.phone}&open=${lead.id}#lead-${lead.id}`}>ליד {tenderRef(lead)} ({lead.status === 'complete' ? 'מלא' : 'חלקי'})</a>
+                  : <span className="small muted">אין ליד למספר הזה</span>}
                 <a className="mmx-btn ghost" href={`tel:+${sel}`}><Phone size={15} /> חיוג</a>
               </header>
 
@@ -91,7 +100,18 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                       return f.type.startsWith('image/')
                         ? <a key={i} href={src} target="_blank" rel="noreferrer"><img src={src} alt="תמונה שנשלחה" loading="lazy" /></a>
                         : f.type.startsWith('video/')
-                          ? <video key={i} src={src} controls preload="metadata" />
+                          ? <span key={i} className="mmx-vid">
+                              <video src={src} controls preload="metadata" />
+                              {m.dir === 'in' && lead && (inLead(f.url)
+                                ? <small>✓ נוסף לליד {tenderRef(lead)}</small>
+                                : <form action={attachInboxVideo}>
+                                    <input type="hidden" name="lead" value={lead.id} />
+                                    <input type="hidden" name="url" value={f.url} />
+                                    <input type="hidden" name="type" value={f.type} />
+                                    <input type="hidden" name="phone" value={sel} />
+                                    <button className="mmx-btn" type="submit">הוספה לליד {tenderRef(lead)}</button>
+                                  </form>)}
+                            </span>
                           : f.type.startsWith('audio/')
                             ? <audio key={i} src={src} controls preload="none" />
                             : <a key={i} href={src} target="_blank" rel="noreferrer" className="mmx-file"><FileText size={16} /> קובץ ({f.type})</a>;
@@ -108,6 +128,8 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
               </div>
 
               {sp.sent && <div className="mmx-inbox-ok">✓ נשלח</div>}
+              {sp.vok && lead && <div className="mmx-inbox-ok">✓ הסרטון נוסף לליד. <a href={`/admin?q=${lead.phone}&open=${lead.id}#lead-${lead.id}`}>לליד, ומשם שליחה למובילים</a></div>}
+              {sp.verr && <div className="mmx-inbox-err">הוספת הסרטון לליד נכשלה. אפשר להוריד אותו ולהעלות ידנית בכרטיס הליד.</div>}
               {sp.err && <div className="mmx-inbox-err">{ERR[sp.err] || ERR.failed}</div>}
 
               {left > 0 ? (

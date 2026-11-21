@@ -6,6 +6,7 @@ import { Countdown } from '@/components/Countdown';
 import '@/app/tender.css';
 import { craneText, elevatorText, parkingText, roomsText, whenText } from '@/lib/validate';
 import { getPublicLead, tenderRef } from '@/lib/publicLead';
+import { missingInfo } from '@/lib/moverFormat';
 import { db } from '@/lib/db';
 import { MoverLogo } from '@/components/MoverLogo';
 import { Blueprint, Corners, Header } from '@/components/ui';
@@ -69,7 +70,7 @@ export default async function MoverLead({ params, searchParams }: { params: Prom
         <div className="ml-head">
           <div className="kicker">מכרז מס׳ {ref} · נפתח {fmtDate(lead.created_at)}</div>
           <h1>{fromCity || '—'} <ArrowLeft size={34} strokeWidth={2} aria-label="אל" className="ml-arrow" /> {toCity || '—'}</h1>
-          {lead.status !== 'complete' && <p className="ml-warn">הלקוח עוד לא השלים את כל הפרטים. נעדכן כשיתקבלו.</p>}
+          {lead.status !== 'complete' && <p className="ml-warn">הלקוח עוד לא השלים את כל הפרטים{missingInfo(lead).length ? <>. חסרים: <b>{missingInfo(lead).join(', ')}</b></> : ''}. אפשר לתת הצעה לפי מה שיש.</p>}
         </div>
 
         <Blueprint as="section" className="ml-card">
