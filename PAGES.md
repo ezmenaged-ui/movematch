@@ -16,7 +16,7 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
 | 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
-| 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. |
+| 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. On desktop, a video filmed on the phone via the QR code sends the client back to the computer to finish (like D). |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
 
 **/f · E with a WhatsApp option** (`app/f/page.tsx`): funnel E's photo landing page, unchanged, plus a WhatsApp block at the top of the
@@ -56,7 +56,7 @@ Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload pa
 under the city on A's form; in F the bot asks it right after the street (tap pick-list `mm_chat_rooms`, or a typed "3", "3.5", "בית פרטי").
 Stored as `move_from.rooms` (`r1`…`r6`, `house`; A saves `move_from = { city, rooms }`). Shown to movers (lead page, WhatsApp alert text, crew sheet) and in `/admin`.
 
-**Every address (from and to)** asks: floor, apartment, elevator (yes / stairs only, then size: small / medium / large), **crane possible?** (yes / no / don't know) and **distance from truck parking to the entrance** (up to 10 m, 10–30, 30–60, 60–100, over 100 m / no parking). Stored in `move_from` / `move_to` as `crane` and `parking`.
+**Every address (from and to)** asks: elevator (yes / stairs only, the same two tiles on phone and desktop; with an elevator its size: small / medium / large; **the floor is asked only for stairs only**; no apartment number since 21 Nov 2026), **crane possible?** (yes / no / don't know) and **distance from truck parking to the entrance** (up to 10 m, 10–30, 30–60, 60–100, over 100 m / no parking). Stored in `move_from` / `move_to` as `crane` and `parking`.
 
 Short addresses forward automatically, and tracking parameters (`?utm_…`) are kept:
 `/a` → `/a/photo` · `/b` → `/b/photo` · `/c` → `/c/photo` · `/d` → `/d/photo` · `/e` → `/e/photo` · old `/wizard` → `/b/photo` · old `/form` → `/c/photo`.

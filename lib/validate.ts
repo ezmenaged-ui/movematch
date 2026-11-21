@@ -109,7 +109,9 @@ export function validateAddress(a: Address, origin = false): Partial<Record<keyo
   if (origin && !a.rooms) e.rooms = MSG.rooms;
   if (!a.city.trim()) e.city = MSG.city;
   if (!a.address.trim()) e.address = MSG.address;
-  if (!a.floor.trim()) e.floor = MSG.floor;
+  // The floor is asked only for stairs-only buildings; with an elevator it isn't needed.
+  if (a.elevator == null) e.elevator = MSG.elevator;
+  else if (a.elevator === false && !a.floor.trim()) e.floor = MSG.floor;
   if (a.elevator === true && !a.elevator_type) e.elevator_type = 'נא לבחור את גודל המעלית';
   if (!a.crane) e.crane = MSG.crane;
   if (!a.parking) e.parking = MSG.parking;

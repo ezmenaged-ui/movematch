@@ -109,19 +109,15 @@ export function ElevatorTypePicker({ value, onChange, error }: { value: Elevator
 }
 
 export function ElevatorChoice({ value, onChange, error }: { value: boolean | null; onChange: (v: boolean) => void; error?: string }) {
+  // Same two tiles on every screen: the answer must be explicit, since "רק מדרגות" is what opens the floor question.
   return (
-    <div>
-      <div className="mobile-only" style={{ display: undefined }}>
-        <CheckRow checked={value === true} onChange={(v) => onChange(v)}>יש מעלית בכניסה לבניין</CheckRow>
+    <div role="radiogroup" aria-label="יש מעלית בכניסה לבניין?">
+      <div className="small" style={{ marginBottom: 8, color: 'var(--color-neutral-700)' }}>יש מעלית בכניסה לבניין?</div>
+      <div className={`choice-tiles ${error ? 'invalid' : ''}`}>
+        <CheckRow checked={value === true} onChange={() => onChange(true)}>יש מעלית</CheckRow>
+        <CheckRow checked={value === false} onChange={() => onChange(false)}>רק מדרגות</CheckRow>
       </div>
-      <div className="desktop-only" role="radiogroup" aria-label="יש מעלית בכניסה לבניין?">
-        <div className="small" style={{ marginBottom: 8, color: 'var(--color-neutral-700)' }}>יש מעלית בכניסה לבניין?</div>
-        <div className={`choice-tiles ${error ? 'invalid' : ''}`}>
-          <CheckRow checked={value === true} onChange={() => onChange(true)}>יש מעלית</CheckRow>
-          <CheckRow checked={value === false} onChange={() => onChange(false)}>רק מדרגות</CheckRow>
-        </div>
-        {error && <div className="field-error" role="alert">{error}</div>}
-      </div>
+      {error && <div className="field-error" role="alert">{error}</div>}
     </div>
   );
 }
