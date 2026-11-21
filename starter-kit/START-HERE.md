@@ -15,7 +15,7 @@ Brand name / domain if I have one: <… or "not yet">.
 3. Run the kickoff exactly as written in .claude/commands/kickoff.md, as if I typed "/kickoff <my one line>". Start with the entrepreneur stage and ask me its questions as multiple choice: at most 4 at a time, recommended option first, plain words.
 4. After I approve stage 1, show me only the items in docs/OWNER-PREFLIGHT.md that I still need to do, and run the preflight check when I say I'm done.
 
-Standing choices: ChatGPT builds the Google Ads campaigns from a brief you write (docs/ads/), and you check what it built. Microsoft Clarity records the funnel pages. Anything that needs paying: stop, add it to the top of docs/QUESTIONS.md and send me a push notification.
+Standing choices: ChatGPT builds the Google Ads campaigns from a brief you write (docs/ads/); you paste it into ChatGPT in my Chrome and check what it built. Microsoft Clarity records the funnel pages. Anything that needs paying: stop, add it to the top of docs/QUESTIONS.md and send me a push notification.
 ```
 
 ## After that
@@ -23,5 +23,5 @@ Standing choices: ChatGPT builds the Google Ads campaigns from a brief you write
 - **To keep working with the agents:** say "continue the kickoff", or start a new session and type `/kickoff`. The commands work by name from the second session on.
 - **To leave it running** (overnight, or when you're busy): type `/autopilot`. Keep the Mac plugged in and awake.
 - **Each morning:** read `docs/DIGEST-<date>.md` and answer `docs/QUESTIONS.md` (payments 💳 first). Then `/kickoff` to approve drafts and `/autopilot` again.
-- **Ads:** when the marketing stage is done, paste `docs/ads/CHATGPT-BRIEF.md` into ChatGPT, unless you allowed the agent to do it. Claude checks the result; you press Enable.
+- **Ads:** the agent pastes the brief into ChatGPT in your Chrome, and Claude checks the result. You only press Enable.
 - **Launch day:** QA says go, you enable the ads, then tell Claude "switch autonomy to live".

@@ -20,7 +20,7 @@ The main session relays your questions (max 4 per round, recommended option firs
 4. How many variants at launch? Recommend 2 web funnels × 1 design + 1 WhatsApp ad. Each variant needs a written hypothesis and its own URL or starter code. Why: ten pages split the clicks; three WhatsApp starters were merged into one because no one remembered why they existed.
 5. Is there another campaign on the same Google Ads account? If yes, our conversions must be campaign-specific goals. Why: another account campaign on Maximize Conversions could have optimised for MoveMatch leads.
 6. Which GA4 property and Ads account? Confirm the measurement ID in the site matches the property linked to Ads. Why: the site used one ID and the brief mentioned another.
-7. ChatGPT builds the campaigns (the owner's standing choice). Ask only: will you paste the brief into ChatGPT yourself, or may the operator paste it into ChatGPT in your logged-in Chrome? Is ChatGPT (agent mode) signed in to the right Google Ads account? Why: on MoveMatch the hand-off between ChatGPT and Claude happened ad hoc on launch eve; make it a fixed loop.
+7. ChatGPT builds the campaigns, and the operator pastes the brief into ChatGPT in the owner's Chrome (the owner's standing choice). Ask only: is ChatGPT (agent mode) signed in, and connected to the right Google Ads account? Why: on MoveMatch the hand-off between ChatGPT and Claude happened ad hoc on launch eve; make it a fixed loop.
 
 ## Tracking plan (fixed; adapt names only before launch)
 - `funnel_step` per step with `funnel`, `theme`, `variant_id`, `step_number`, `step_name` (`0_landing`, `1_contact`, ...). Never rename after launch; if a step changes, note the date.
@@ -33,7 +33,7 @@ The main session relays your questions (max 4 per round, recommended option firs
 
 ## Campaigns: ChatGPT builds, Claude briefs and checks
 1. Write `docs/ads/CHATGPT-BRIEF.md` from `docs/ads/CHATGPT-BRIEF.template.md`: every campaign, ad group, final URL, starter text and `#code`, geo, devices, budget, bidding, conversion goal, allowed claims, negatives. It must tell ChatGPT to create everything **Paused**, and to end with the report format in the template.
-2. Hand-off: the owner pastes it into ChatGPT, or the operator does it in the owner's Chrome if allowed. Queue it in `docs/QUESTIONS.md` with the file link if the owner does it.
+2. Hand-off: the operator pastes it into ChatGPT in the owner's Chrome and saves ChatGPT's final report. If ChatGPT isn't logged in, queue the paste for the owner in `docs/QUESTIONS.md`.
 3. When `docs/ads/CHATGPT-REPORT.md` exists, have the operator check Google Ads read-only against the brief, field by field. Write `docs/ads/CHECK-<date>.md` with pass/fail rows and a ready-to-paste correction prompt for ChatGPT.
 4. Repeat until all pass, then queue "Enable campaigns" for the owner (red).
 

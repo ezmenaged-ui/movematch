@@ -49,7 +49,7 @@ Agents never enter card details. Tick each one:
 | Anthropic Console | console.anthropic.com | ☐ |
 | Gmail / Workspace admin | mail.google.com | ☐ |
 | Microsoft Clarity | clarity.microsoft.com | ☐ |
-| ChatGPT (only if the operator may paste the brief) | chatgpt.com | ☐ |
+| ChatGPT (the agent pastes the ads brief here) | chatgpt.com | ☐ |
 
 3. To run unattended in a cloud session that uses this browser: Claude desktop app → Settings → Claude Code → Remote Control, and keep the Mac awake. Plug it in, turn off sleep, or run `caffeinate -dims` in Terminal.
 
