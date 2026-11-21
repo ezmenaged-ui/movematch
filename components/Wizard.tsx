@@ -287,13 +287,13 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   if (!ready) return <FlowShell theme={null} />;
 
   return (
-    <FlowShell theme={theme} progress={`${step}/${TOTAL}`}>
+    <FlowShell theme={theme} progress={`${step}/${TOTAL}${isD && step === S_ITEMS ? ' · רשות' : ''}`}>
         <div className="wiz">
           <div className="progress progress-labeled" style={{ gridTemplateColumns: `repeat(${TOTAL}, 1fr)` }} aria-label={`שלב ${step} מתוך ${TOTAL}`}>
             {LABELS.map((l, i) => {
               const n = i + 1, reachable = step < S_DONE && n <= furthest && n !== step;
               const cls = `item ${n < step || (n <= furthest && n !== step && step < S_DONE) ? 'done' : ''} ${n === step ? 'cur' : ''}`;
-              const body = <><i className={`seg ${n <= Math.max(step, step < S_DONE ? furthest : step) ? 'on' : ''}`} /><b><span>{l}{n !== step && n <= (step < S_DONE ? furthest : step) && n < S_DONE && <Check size={13} strokeWidth={2} />}</span></b></>;
+              const body = <><i className={`seg ${n <= Math.max(step, step < S_DONE ? furthest : step) ? 'on' : ''}`} /><b><span>{l}{isD && n === S_ITEMS && <small className="opt-tag">(רשות)</small>}{n !== step && n <= (step < S_DONE ? furthest : step) && n < S_DONE && <Check size={13} strokeWidth={2} />}</span></b></>;
               return reachable
                 ? <button key={l} type="button" className={`${cls} item-btn`} onClick={() => jump(n)} aria-label={`מעבר לשלב ${l}`}>{body}</button>
                 : <div key={l} className={cls} aria-current={n === step ? 'step' : undefined}>{body}</div>;
@@ -346,6 +346,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
               )}
               {step === S_ITEMS && (
                 <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
+              )}
+              {isD && step === S_ITEMS && (
+                // The list is optional in D: the request can be sent without it (it only earns the ₪50 discount).
+                <p className="items-optional" role="note"><b>רשימת הפריטים לא חובה.</b> אפשר לשלוח את הבקשה עכשיו גם בלי למלא אותה: המובילים יראו מה עובר בסרטון.</p>
               )}
 
               {isD && step === S_VIDEO && (

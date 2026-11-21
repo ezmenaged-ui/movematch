@@ -14,7 +14,7 @@ Each funnel starts on its landing page, where the client gives name and phone (t
 | 4 | B · art | `/b/art` | `/b/steps` | Same as B, illustrated design. |
 | 5 | C · photo | `/c/photo` | `/c/details` | One page with from, to, when and video (can be skipped: "we'll call you for the video"; no item list). |
 | 6 | C · art | `/c/art` | `/c/details` | Same as C, illustrated design. |
-| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off). |
+| 7 | D · photo | `/d/photo` | `/d/steps` | Same wizard as B up to "when", then a **required video** step, then the item list (**optional**: filling it earns ₪50 off; marked "(רשות)" in the progress bar and counter, with a "not required" note under the list). |
 | 8 | D · art | `/d/art` | `/d/steps` | Same as D, illustrated design. |
 | 9 | E · photo | `/e/photo` | `/e/steps` | Same wizard as D up to "when", then **one information page**: the client picks a full ~3-minute walk-through video of the apartment **or** the item list (that one is required; the other can be added as an optional extra). Videos under 3 minutes get a warning but can still be sent. Adding the other one too earns ₪50 off. On desktop, a video filmed on the phone via the QR code sends the client back to the computer to finish (like D). |
 | 10 | E · art | `/e/art` | `/e/steps` | Same as E, illustrated design. |
@@ -46,6 +46,8 @@ To make the homepage live: set `HOME_LEADS_LIVE=1` in Vercel and redeploy.
 Safe to send to anyone: the lead is saved as a test lead (`entry = 'qa'`), the operator gets the **email only**, and **no WhatsApp
 or SMS goes to anyone** (not the phone entered, not movers, not the operator). It skips the 30-day phone rule, sends no
 GA4 / Google Ads events, and every page shows a purple "סביבת בדיקות" strip. Not indexed by Google.
+
+Every date box opens its calendar on a click anywhere on the box, not only on the calendar icon (`components/DatePickerOnClick.tsx`, site-wide).
 
 Each uploaded video may be up to 4 minutes long (C, D, E and the phone upload page `/u`). Every video step shows the same filming guide (`VideoGuide` in `components/VideoUploader.tsx`).
 
