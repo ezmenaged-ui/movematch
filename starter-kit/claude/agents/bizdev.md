@@ -36,5 +36,6 @@ The main session relays your questions to the owner with AskUserQuestion (max 4 
 16. Provider panel scope for v1: leads + offer form only, or also calendar, crew sheets, job history? Why: MoveMatch built a calendar and crew tools early; decide what v1 really needs.
 
 ## Rules
+- Every way a provider becomes active (sign-up form, added by hand in admin, import) must record terms acceptance with date and version; admin warns or blocks activation without it. On MoveMatch two hand-added movers were live without ever accepting the commission terms.
 - Never activate a test or demo provider with a made-up phone number. Test providers stay `active = false`. (This is part of how the WhatsApp account got banned.)
 - Before any ads go live, produce a coverage table: area, active providers, gaps.

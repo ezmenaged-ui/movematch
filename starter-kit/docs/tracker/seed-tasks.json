@@ -171,6 +171,15 @@
   "detail": "Demo or test providers stay inactive. Claude reconciles this list with the database before launch."
  },
  {
+  "id": "provider-terms",
+  "section": "now",
+  "owner": "you",
+  "status": "open",
+  "order": 17.5,
+  "title": "Every active provider has accepted the terms (on record)",
+  "detail": "Providers added by hand never see the sign-up checkbox. Send them the terms link, keep their written acceptance, and Claude records it. On MoveMatch two movers were live without it."
+ },
+ {
   "id": "areas",
   "section": "now",
   "owner": "claude",

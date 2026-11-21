@@ -23,7 +23,7 @@ In the MoveMatch repo the kit is stored **inert**: the folder is `claude/` (not 
 | `.claude/hooks/guard.mjs` | Blocks pushes to `main`, force pushes, CLI production deploys, real Twilio sends and destructive SQL, even in Auto mode |
 | `.claude/autonomy.json` | `prelaunch` (agents may merge and deploy before launch) or `live` (merges need you). Switch on launch day |
 | `docs/OWNER-PREFLIGHT.md` | Your one-hour checklist before letting agents work alone |
-| `docs/tracker/` | The launch tracker artifact: `/kickoff` publishes it first, seeded with a 36-task launch checklist; everyone ticks tasks off as they're done |
+| `docs/tracker/` | The launch tracker artifact: `/kickoff` publishes it first, seeded with a 37-task launch checklist; everyone ticks tasks off as they're done |
 | `docs/ads/CHATGPT-BRIEF.template.md` | The brief ChatGPT uses to build the Google Ads campaigns (Paused), with the report format Claude checks against |
 | `START-HERE.md` | What to do first and the message to paste (not copied into the project) |
 | `docs/autopilot/README.md` | Templates for `QUESTIONS.md`, `DECISIONS.md`, `OPS-LOG.md` and the daily digest |
