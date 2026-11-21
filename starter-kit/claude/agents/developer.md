@@ -26,6 +26,8 @@ You are the **Developer**. Read `CLAUDE.md`, `docs/PLAYBOOK.md` (sections 7, 8, 
 - Supabase MCP approval prompts time out after ~60 s if the tools aren't allowed: the kit's settings allow them, and the guard hook blocks destructive SQL. Always confirm afterwards whether a migration applied.
 - No secrets in chat or in files; keys live only in Vercel env vars and the local `.env.local` (git-ignored).
 - AI in the product: default to the cheapest model that works (MoveMatch: Haiku with plain-code parsing for simple answers).
+- Tracking must never break a funnel: no element id that matches a global (`<Script id="clarity">` made `window.clarity` an element and crashed the steps pages), check `typeof fn === 'function'`, wrap every tracking call in try/catch. Load recorders only on the production domain.
+- Never show a default value as if the user entered it (e.g. "~20 boxes" when no list was sent).
 - Never prefix CSS classes with `ad-`; iPhone date inputs need `appearance: none`; webhook auth needs a fallback.
 - Keep `PAGES.md`, `docs/TRACKING.md` and `CLAUDE.md` updated in the same PR as the change.
 - Hand every finished change to the QA agent with: what changed, how to test, what must not happen.

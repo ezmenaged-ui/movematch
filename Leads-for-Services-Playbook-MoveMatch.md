@@ -40,6 +40,8 @@
 18. [Appendix: reference material](#18-appendix-reference-material)
 19. [What we added late, and the day-1 question that would have caught it](#19-what-we-added-late-and-the-day-1-question-that-would-have-caught-it)
 20. [The autonomous build: agents that do the work, browser included](#20-the-autonomous-build-agents-that-do-the-work-browser-included)
+21. [The evening before launch (21 Nov 2026, from 18:00)](#21-the-evening-before-launch-21-nov-2026-from-1800)
+22. [The launch tracker: an artifact with every task, ticked off as we go](#22-the-launch-tracker-an-artifact-with-every-task-ticked-off-as-we-go)
 
 ---
 
@@ -56,7 +58,7 @@ Follow these from the first message. Each one comes from something that went wro
 7. **Do the console work yourself** (section 20): connectors and APIs first, the owner's logged-in Chrome second. Stop only for payment, identity, 2FA and final legal submits, and prepare those to the last click. Only when you truly can't reach a console, walk the owner through it one screen at a time: ask for a screenshot after each screen, then say exactly which field gets which value and which button to press. Long multi-step instructions caused "I keep going in circles".
 8. **Verify on the live site after every deploy** (pages return 200, the changed feature appears), and say plainly what you could not verify (for example admin pages behind a password).
 9. **Supabase MCP approval prompts time out after about 60 seconds.** When a migration or delete times out, say so, confirm nothing was applied, and ask the owner to watch for the prompt on the retry.
-10. **Keep a live tracker artifact** (tasks with owner: You / Claude / Meta / Waiting) and a "message map" of every automated message. The owner used both daily.
+10. **Publish the tracker artifact first, before the first question (section 22), and keep it live:** (tasks with owner: You / Claude / Meta / Waiting) and a "message map" of every automated message. The owner used both daily.
 11. **Write all user-facing text in Hebrew, RTL, and check it in a browser on a phone width** before calling it done.
 12. **Do not invent marketing claims** (star ratings, "thousands of customers", "save 30%"). Use only facts the owner can back up.
 
@@ -177,6 +179,12 @@ A **reverse tender ("מכרז")** for a local home service:
 - Filters apply instantly, each dropdown multi-select, filters kept in the URL.
 - Copy buttons everywhere: copy link, copy ready message, send on WhatsApp.
 - One button that both saves a provider's password and copies the login message (two separate buttons caused wrong passwords).
+- **Manual rescue tools (added 21 Nov, the evening before launch):**
+  - the admin search finds a phone however it's typed (`054-…`, `054…`, `+972…`);
+  - **add a video to a lead**, from a WhatsApp video in the inbox ("הוספה לליד", never added twice) or by uploading a file;
+  - **send any lead to providers by hand**, even an unfinished one. Before confirming, it shows who will receive it. Providers then see "חסרים פרטים: …" in the alert and on the lead page and can still quote.
+  - Safety rules: once per lead, never for QA leads, no button when the lead already went out automatically, no message to the customer, and an unfinished lead still counts as partial in reports and fires no conversions.
+  - Lesson: real customers send the missing piece on WhatsApp instead of finishing the form. Plan these operator tools from day 1.
 
 ---
 
@@ -200,9 +208,11 @@ Each web funnel exists in two designs (photo and illustrated) → 10 pages, plus
 - **Lead saved on the first screen.** Show "שמרנו את הפרטים. נחזור אליכם בכל מקרה."
 - **UTM parameters and click ids (`gclid`, `gbraid`, `wbraid`) carried through every step** and stored on the lead.
 - **The first page's city pre-fills the "from" city.**
-- **Each address asks:** city (with suggestions), street, floor, apartment, elevator yes/no then size (small/medium/large), crane possible (yes/no/don't know), distance from truck parking to the entrance (up to 10 m, 10 to 30, 30 to 60, 60 to 100, over 100 m / no parking). The floor is asked only when there is no elevator in the chat flow.
+- **Each address asks (final version, 21 Nov):** two rows of two boxes: city (with suggestions) + street, then house number + floor. The **floor is always asked, before the elevator, and is required**. The elevator question is two explicit tiles ("יש מעלית" / "רק מדרגות") that the user must tap; an unticked checkbox silently meant "no elevator". With an elevator, its size follows (small/medium/large). After that comes the distance from truck parking to the entrance (up to 10 m, 10 to 30, 30 to 60, 60 to 100, over 100 m / no parking).
+  - **Removed on purpose to shorten the funnels:** the apartment number and the crane question (web and chat). Pages for older leads still show those fields when they exist.
+  - **Lesson:** every field costs completions. Ask only what the provider needs to quote, and let the provider ask the rest on the phone.
 - **Home size on the origin only**, Israeli room count including the living room: 1–1.5 · 2–2.5 · 3–3.5 · 4–4.5 · 5–5.5 · 6+ · private house. Required in B to E, optional in A.
-- **Date:** future dates only, plus an "I'm flexible on the date" checkbox. **Time:** morning 7–11, noon 11–15, afternoon 15–19, plus "flexible on time". Small tip under it: flexibility can lower the price.
+- **Date:** future dates only, plus an "I'm flexible on the date" checkbox. A click anywhere in the date box opens the calendar (`showPicker()`), not only the small icon. **Time:** morning 7–11, noon 11–15, afternoon 15–19, plus "flexible on time". Small tip under it: flexibility can lower the price.
 - **Video rules:** up to 4 minutes per clip, as many clips as they like, file container signature checked (non-video files rejected), resumable upload in 45 MB pieces, a shared filming guide on every video step.
 - **QR hand-off:** on desktop, a QR code opens the same lead on the phone for filming. Videos appear on the desktop within seconds. If the video is the last step, the client can finish on the phone; if more steps follow (D), the phone says "the video arrived, now go back to the computer" and shows no finish button.
 - **Phone Back button walks the steps** (each step gets a browser history entry). Back from step 2 returns to the landing page with the details filled and continues the same lead.
@@ -211,7 +221,9 @@ Each web funnel exists in two designs (photo and illustrated) → 10 pages, plus
 - **The last step re-checks every step** (progress-bar jumps and browser Forward can skip checks).
 - **Consent line under every first-step form:** SMS/WhatsApp updates about the tender, and sharing details with providers.
 - **Honeypot field** against bots.
-- **Done screen** summarises what was sent and says offers will arrive on the phone.
+- **Done screen** summarises what was sent and says offers will arrive on the phone. Never show a default value as if the user had entered it: D showed "0 items · ~20 boxes" (the boxes stepper's default) when no list was sent, which was fixed to "לא נשלחה רשימה".
+- **Optional steps must look optional everywhere:** the progress-bar label ("פריטים (רשות)"), the counter ("6/7 · רשות"), a note under the list, and a send button that names the trade-off ("שליחה בלי רשימה (בלי ההנחה)").
+- **QR filming always returns to the computer** when the request was started on a computer (D and E alike). The phone films and sends; the computer finishes.
 - **Tender page while waiting:** an animated walking mover with "אנחנו עובדים על זה במרץ 💪 … no need to wait here, we'll message you". Respects reduced-motion.
 
 ### 4.3 The WhatsApp chat funnel (F) in detail
@@ -464,7 +476,19 @@ GA4 key events, the Ads–GA4 link and the conversion import are done and verifi
 
 ### 10.5 Microsoft Clarity (session recordings, added 21 Nov 2026)
 Clarity is free with no recording cap. It shows what visitors actually did on each funnel step, which GA4 can't. MoveMatch's setup, worth copying as is:
-- `components/Clarity.tsx` in the root layout, enabled by `NEXT_PUBLIC_CLARITY_ID`. It loads **only on client funnel pages** (`/`, `/a` to `/e` and their follow-up pages, `/f`, the video upload page). It never loads on `/qa`, admin, provider pages, login, or the tender and offer pages, which show personal details.
+- `components/Clarity.tsx` in the root layout, enabled by `NEXT_PUBLIC_CLARITY_ID`. It loads **only on client funnel pages** (`/`, `/a` to `/e` and their follow-up pages, `/f`, the video upload page) **and `/qa`**, tagged `env = qa` (`env = live` for real visitors), so the owner can watch their own tests. It never loads on admin, provider pages, login, or the tender and offer pages, which show personal details. `/qa` still sends nothing to GA4, GTM or the Meta Pixel.
+- **Only on the production domain.** After each deploy, headless bots opened the `*.vercel.app` preview URLs and filled the recordings list. The script now loads only when the host is the live domain.
+- **The crash to avoid (21 Nov, PR #40):** `<Script id="clarity">` turned `window.clarity` into the `<script>` element, because browsers expose element ids as globals. `track()` then called a non-function, and the `/b`, `/d` and `/e` steps pages crashed. Rules:
+  - never give an element an id that matches a global name;
+  - check `typeof x === 'function'` before calling a tracker;
+  - wrap every tracking call so it can never throw into the funnel.
+- **How Clarity behaves, so nobody panics:**
+  - Live recordings disappear from the Live list when the visitor leaves.
+  - Finished sessions reach "All recordings" only after processing, up to about 2 hours, and longer on a new project's first day. Dashboard and Heatmaps stay greyed out until then.
+  - An ad blocker on the owner's browser stops the owner's sessions completely.
+  - The project's "Website URL" setting doesn't limit what is recorded; the script on the page does.
+  - To find your own session, read your Clarity User ID from the `_clck` cookie, or use a test tag.
+  - Every page that records must set the same tags (the `/u/` upload page lacked `env`, so an `env` filter hid it).
 - `strategy="lazyOnload"`, so the first screen isn't slowed.
 - Tags from `track()` in `lib/client.ts`, queued until the script arrives:
   - `funnel` (= `variant_id`) and `step` (every `step_name` reached);
@@ -928,3 +952,95 @@ Rules in prompts get forgotten in long runs; code doesn't. The kit adds:
 - Remote Control from a cloud session to the Mac isn't available on every account yet. Without it, browser work needs setup A.
 - A cloud session's network allows only approved hosts. If an API call is refused by the proxy, the agent asks for the host to be added (an approval prompt). That prompt can't be answered overnight, so allow the hosts during the preflight hour: the live domain, `api.twilio.com`, `api.vercel.com`, Google APIs if used.
 - Usage limits can end a long run. The digest and logs make it possible to resume with `/autopilot` in a new session without losing context.
+
+---
+
+## 21. The evening before launch (21 Nov 2026, from 18:00)
+
+Six chats ran in parallel the evening before the ads went live. Each one shipped a change to production and verified it on the live site. What they changed and what they taught:
+
+| Change (PR) | Why the owner wanted it | Lesson for the next build |
+|---|---|---|
+| Floor always asked first and required; elevator as two tiles; no apartment number (#41) | Simpler, clearer address step; an unticked checkbox had silently meant "no elevator" | Every yes/no is two explicit tiles. Decide the address fields with the providers on day 1 (product agent) |
+| Address in two rows: city + street, house number + floor (#43) | One "full address" box gave messy data | Separate street and number fields from the start; save them joined for providers |
+| Crane question removed; D item list clearly optional; date box opens on any click (#44) | Shorter funnels the night before paid traffic | Cut fields that only some providers need. If optional, it must look optional on the bar, the counter and the button |
+| D done screen: no fake "20 boxes" when no list was sent (#45) | The summary showed a default as if the user had chosen it | Never display defaults as user input |
+| Admin: send any lead to providers by hand, add WhatsApp or uploaded videos to a lead (#46, migration 028) | Customers send videos on WhatsApp and leave forms half done | Build operator rescue tools before launch (section 3.3) |
+| Clarity crash fix (#40), `/qa` recorded as `env = qa`, production domain only (#42) | The steps pages crashed after Clarity went live; preview bots filled the recordings | Tracking must never break a funnel; tag test traffic instead of hiding it (section 10.5) |
+
+**Conversions, as explained to the owner before switching the campaigns on:**
+- No button click is a conversion; the backend's confirmation is.
+- For D and E:
+  - `generate_lead` (name and phone saved) is not imported into Ads;
+  - `lead_complete` (final button, only after the server saved the full lead) is Secondary;
+  - `qualify_lead` is **Primary**. It fires once per lead, when the lead passes `lib/qualify.ts`: a real non-QA name, a 05X mobile, both cities and the street, and a date or "flexible".
+- **F (WhatsApp chat) shows 0 conversions in Google Ads** because a chat can't carry a click id. Measure it in `/admin/funnels` and GA4 instead, and tell the owner before launch so the zero doesn't look like a failure.
+
+**Video retention, confirmed.** The owner asked for a way to delete videos without doing it by hand; it was already automatic. A nightly job at 03:17 Israel time deletes:
+- videos 30 days after the move date;
+- videos 90 days after the tender opened when there's no fixed date;
+- uploads of deleted (e.g. QA) leads after 7 days;
+- everything after 24 months.
+
+The owner emptied the bucket of test videos once by hand (Supabase → Storage → bucket → Edit bucket → Empty bucket). Keep the 30 days: the video is evidence if a customer and a provider argue about damage.
+
+**QA cleanup.** The owner asked to delete "the 6 QA leads", and there were 16. Always count first, show the number, then ask. Before paid traffic, the database was left with zero leads and an empty bucket.
+
+**Tracker drift.** On launch eve the tracker said 5 active movers and the database had 9 (each with service areas: Jerusalem 7, Center 6, Sharon 6, Shfela 5, Judea and Samaria 2, Haifa 1, South 1). The database is the source of truth. Before launch, have an agent reconcile every number in the tracker with the database and live settings. Target ads only where at least 2 providers are active.
+
+**Choosing the recorder.** Before Clarity, the owner asked which screen-recording tool to use. Clarity won because it is free, has no recording cap, offers heatmaps, and masks form input. Decide this on day 1 (marketing agent).
+
+**Follow-ups are scheduled, not remembered.** The Clarity chat set a reminder in the same session for Monday 10:00 to check that the dashboard unlocked, that bot sessions stopped and whether to keep recording `/qa`. Use scheduled check-ins for anything that waits on a third party.
+
+---
+
+## 22. The launch tracker: an artifact with every task, ticked off as we go
+
+The "MoveMatch Launch Tracker" (a claude.ai artifact) was the one place the owner and every chat looked at. The next project gets one **on day 1**: `/kickoff` publishes it as its first action, seeds it with the launch checklist below, and every agent ticks tasks off as they finish. The template is in `starter-kit/docs/tracker/` (`tracker.html` and `seed-tasks.json`). Preview of the template, seeded with the checklist: https://claude.ai/artifact/1e2JMry8hu8xhxEwPL3Dqe. The original MoveMatch tracker: https://claude.ai/artifact/54FXYKJdNMUrX6ZbSwqEVt.
+
+### 22.1 What made it work
+- **Live and shared.** Tasks live in the artifact's database, not in the page code, so any chat can add, update or tick a task without republishing. The owner ticks a box and every chat sees it.
+- **Each task has:** a title, an owner chip (You / Claude / Meta or another outside party / Waiting), a section (Waiting on someone else · Before launch · Launch week · Later · Done), a short status line with dates, and for owner tasks **step-by-step instructions** in a fold-out ("Step-by-step instructions" with numbered screens).
+- **The owner ranks their own tasks** with ▲▼, and done tasks fold into a collapsed "Done" group with the date they were done.
+- **A counter line** at the top: before launch · for you · for Claude · done, plus a countdown to the launch date.
+- **Quick links** to every console and admin page (site, `/qa`, admin, funnel results, inbox, the funnel sheet, Twilio templates, WhatsApp Manager, Supabase, Vercel, GitHub).
+- **Reference under the tasks:** a funnel comparison table (what each funnel asks: video? list? how many screens? goes to providers?), one card per funnel ("what the client does", "how it differs", "what to expect", URLs), all page URLs with who uses them and how to get in, the analytics step names, storage limits (Free vs Pro), and the best-effort legal review with each finding's status.
+- **A private notes box** for the owner's logins. It is visible only to the owner and Claude doesn't read it, so passwords never go into chat.
+
+### 22.2 Rules
+1. **Publish it first.** The tracker exists before the first question of stage 1 is asked, and its link goes in `CLAUDE.md`.
+2. **One task per thing the owner must decide or do**, with the exact click path. Claude's own work appears as tasks too, so the owner sees progress.
+3. **Tick it when it's done, with the date and what was verified**, not when it's "probably done".
+4. **The database and the live site beat the tracker.** Before launch, reconcile every number in it (active providers, areas, plan, template status). On MoveMatch it said 5 movers when there were 9.
+5. **Pronoun-neutral, plain words**, owner chips that say who acts.
+6. Keep the **message map** (every automated message and its exact text) as a second artifact, linked from the tracker.
+
+### 22.3 The launch checklist (generic, from MoveMatch's 43 tasks)
+
+| Section | Task | Owner |
+|---|---|---|
+| Before launch | Code on GitHub, `main` = production, CLAUDE.md with QA rules | Claude |
+| Before launch | Test area `/qa` and the test-lead guard live; homepage held until decided | Claude |
+| Before launch | Decide whether the homepage is live at launch | You |
+| Before launch | Upgrade the database to the paid plan (storage for media) 💳 | You |
+| Before launch | WhatsApp: Utility templates submitted, approved, IDs in Vercel | Claude → Meta |
+| Before launch | Warm up the WhatsApp number (owner, family, each new provider send a first message) | You |
+| Before launch | Real providers active, each with a real WhatsApp number and service areas; demo providers inactive | You + Claude |
+| Before launch | Demo and test data deleted (count first, approve) | Claude, with your OK |
+| Before launch | Limit ads to areas with at least 2 active providers | You (via ChatGPT) |
+| Before launch | Choose the funnels the ads send people to (few, each with a hypothesis) | You |
+| Before launch | GA4 + Ads conversions set up and verified (qualify_lead Primary, lead_complete Secondary, Count: One) | Claude (operator) |
+| Before launch | ChatGPT builds the campaigns Paused from the brief; Claude checks them | ChatGPT → Claude |
+| Before launch | Clarity live on funnel pages only, production domain only | Claude |
+| Before launch | Commission clause and provider sign-up checkbox live | Claude, with your OK |
+| Before launch | Legal mailbox on the domain receives mail | You |
+| Before launch | Admin: money and commissions tab, funnel performance tab, inbox, manual send / add video | Claude |
+| Before launch | Message map with the real texts | Claude |
+| Launch week | Enable the campaigns 🔴 | You |
+| Launch week | Launch-day check after the first 3–5 real leads: Twilio errors, server logs, right providers alerted, GA4 events | Claude |
+| Launch week | WhatsApp quality rating checked weekly and the day after any spike | You |
+| Launch week | Lawyer sign-off on terms, privacy, accessibility | You |
+| Launch week | A person's accessibility check of the funnels (optional) | You |
+| Launch week | Update the funnel sheet / comparison for every funnel change | Claude |
+| Later | Automatic deletion of media and old requests (confirm the first real deletion) | Claude |
+| Later | Decisions parked on purpose (e.g. Meta Pixel skipped, provider login by WhatsApp not needed, discount handled by hand) | You |

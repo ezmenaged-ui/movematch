@@ -1,0 +1,258 @@
+<title>Launch Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Heebo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Launch tracker template (from MoveMatch). One working column: tasks first (live, tickable, from the db),
+   then quick links (db), then reference sections that Claude fills in by editing this page as the build goes.
+   Tasks: collection "tasks" {title, owner: you|claude|external, section: setup|now|launch|later, status: open|waiting|done,
+   order, detail, steps:[{h, items[], note}], done_on}. Project: doc "meta/project" {name, lede, launch_date: "YYYY-MM-DD"}.
+   Links: collection "links" {label, url, note, order}. */
+:root {
+  --bg: #f4f6f5; --surface: #ffffff; --fg: #1b2320; --muted: #5b6862; --line: #d4dbd7;
+  --accent: #1f6b47; --accent-soft: #e2f0e8; --warn: #9c5a00; --warn-soft: #fcf0da;
+  --info: #2a5bd7; --info-soft: #e6edfc; --ext: #6a3fc7; --ext-soft: #efe8fc;
+  --display: "Rubik", "Segoe UI", system-ui, sans-serif; --body: "Heebo", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --surface: #1b211e; --fg: #e6ebe8; --muted: #9aa69f; --line: #2d3531;
+  --accent: #4fd08e; --accent-soft: #173226; --warn: #f0a640; --warn-soft: #3a2b14; --info: #7ea2ff; --info-soft: #1c2640; --ext: #b495ff; --ext-soft: #2a2140;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1b211e; --fg: #e6ebe8; --muted: #9aa69f; --line: #2d3531;
+  --accent: #4fd08e; --accent-soft: #173226; --warn: #f0a640; --warn-soft: #3a2b14; --info: #7ea2ff; --info-soft: #1c2640; --ext: #b495ff; --ext-soft: #2a2140;
+  color-scheme: dark; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 32px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(26px, 4vw, 34px); font-weight: 700; }
+h2 { font-size: 20px; font-weight: 600; }
+h3 { font-size: 15.5px; font-weight: 600; }
+p { margin: 0; }
+a { color: var(--info); }
+section { display: grid; gap: 12px; min-width: 0; }
+.lede { color: var(--muted); max-width: 70ch; margin-top: 6px; }
+.countdown { display: inline-block; margin-top: 10px; font-family: var(--display); font-weight: 600; font-size: 14px; color: var(--warn); background: var(--warn-soft); padding: 3px 10px; border-radius: 6px; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted); }
+.summary b { color: var(--fg); font-family: var(--display); font-size: 18px; font-variant-numeric: tabular-nums; margin-right: 4px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.links a { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); text-decoration: none; color: var(--fg); font-size: 14px; }
+.links a:hover, .links a:focus-visible { border-color: var(--accent); outline: none; }
+.links .k { color: var(--muted); font-size: 12px; }
+.group { display: grid; gap: 8px; }
+.group-h { display: flex; align-items: baseline; gap: 10px; }
+.group-h .n { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+summary.group-h { cursor: pointer; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+summary.group-h h3 { display: inline; }
+details.group[open] > summary { margin-bottom: 8px; }
+.task { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.task.ranked { grid-template-columns: 28px 1fr auto; }
+.task.done { opacity: 0.62; }
+.task.done .t-title { text-decoration: line-through; text-decoration-color: var(--muted); }
+.task input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.task input:focus-visible, .rank button:focus-visible, .t-steps summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.t-body { display: grid; gap: 4px; min-width: 0; }
+.t-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.t-title { font-weight: 600; }
+.t-detail { color: var(--muted); font-size: 14px; white-space: pre-line; }
+.sub { font-size: 12.5px; color: var(--muted); }
+.chip { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 4px; white-space: nowrap; }
+.chip.you { color: var(--warn); background: var(--warn-soft); }
+.chip.claude { color: var(--accent); background: var(--accent-soft); }
+.chip.external { color: var(--ext); background: var(--ext-soft); }
+.chip.waiting { color: var(--info); background: var(--info-soft); }
+.t-steps { margin-top: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--bg); }
+.t-steps summary { cursor: pointer; font-weight: 600; color: var(--accent); font-size: 14px; }
+.t-steps h4 { font-family: var(--display); font-size: 14.5px; margin: 12px 0 4px; }
+.t-steps ol { margin: 0; padding-inline-start: 22px; display: grid; gap: 4px; font-size: 14px; }
+.rank { display: grid; gap: 4px; }
+.rank button { width: 32px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font-size: 11px; cursor: pointer; }
+.rank button:disabled { opacity: 0.3; cursor: default; }
+.state { color: var(--muted); font-size: 14px; padding: 14px; border: 1px dashed var(--line); border-radius: 10px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+#notes { width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); resize: vertical; }
+.notes-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+#notes-save { font: inherit; font-weight: 600; padding: 7px 18px; border-radius: 8px; border: 0; background: var(--accent); color: var(--bg); cursor: pointer; }
+#notes-save:disabled { opacity: 0.5; cursor: default; }
+@media (prefers-reduced-motion: no-preference) { .task { transition: opacity .2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 id="p-name">Launch tracker</h1>
+    <p class="lede" id="p-lede">Everything to do from kickoff to launch. Tick a task when it's done; Claude reads and updates the same list from any chat.</p>
+    <span class="countdown" id="countdown" hidden></span>
+  </header>
+
+  <section aria-labelledby="tasks-h">
+    <div>
+      <h2 id="tasks-h">What's left</h2>
+      <div class="summary" id="summary" aria-live="polite"></div>
+    </div>
+    <div id="tasks"><p class="state">Loading the task list…</p></div>
+  </section>
+
+  <section aria-labelledby="links-h">
+    <h2 id="links-h">Quick links</h2>
+    <div class="links" id="links"><span class="sub">Links to the site, the test area, admin and every console appear here once they exist.</span></div>
+  </section>
+
+  <!-- Reference: Claude replaces this section as the build goes (funnel comparison table, one card per funnel,
+       all page URLs with who uses them, analytics step names, storage limits, legal review status). -->
+  <section aria-labelledby="ref-h">
+    <h2 id="ref-h">Reference</h2>
+    <p class="state">The funnel comparison, page list, analytics steps and legal review go here once the product brief is approved.</p>
+  </section>
+
+  <section aria-labelledby="notes-h">
+    <div>
+      <h2 id="notes-h">Your logins and passwords</h2>
+      <p class="lede">A private box for admin passwords and other logins. Only you can see what you save here; Claude doesn't read it.</p>
+    </div>
+    <div class="panel">
+      <label for="notes" class="sub">Private notes</label>
+      <textarea id="notes" rows="4" dir="auto" placeholder="Admin password: …" disabled></textarea>
+      <div class="notes-row"><button id="notes-save" type="button" disabled>Save</button><span id="notes-state" class="sub" aria-live="polite">Loading…</span></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const SECTIONS = [['waiting', 'Waiting on someone else'], ['setup', 'Setup and decisions'], ['now', 'Before launch'], ['launch', 'Launch week'], ['later', 'Later'], ['done', 'Done']];
+const OWNER = { you: 'You', claude: 'Claude', external: 'Outside party' };
+const box = document.getElementById('tasks'), summary = document.getElementById('summary');
+let tasks = [], canWrite = false, dbRef = null, doneOpen = false;
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function showProject(p) {
+  if (!p) return;
+  if (p.name) document.getElementById('p-name').textContent = p.name;
+  if (p.lede) document.getElementById('p-lede').textContent = p.lede;
+  const c = document.getElementById('countdown');
+  if (!p.launch_date) { c.hidden = true; return; }
+  const [y, m, d] = String(p.launch_date).split('-').map(Number);
+  const launch = new Date(y, (m || 1) - 1, d || 1); const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((launch - today) / 86400000);
+  const label = launch.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+  c.textContent = days > 1 ? `Launch: ${label} · ${days} days to go` : days === 1 ? `Launch: tomorrow, ${label}` : days === 0 ? 'Launch day' : `Launched ${label}`;
+  c.hidden = false;
+}
+
+function showLinks(list) {
+  const box = document.getElementById('links');
+  if (!list.length) return;
+  box.textContent = '';
+  for (const l of list.sort((a, b) => (a.order ?? 99) - (b.order ?? 99))) {
+    if (!/^https:\/\//.test(l.url || '')) continue;
+    const a = el('a'); a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; a.append(document.createTextNode(l.label || l.url));
+    if (l.note) a.append(el('span', 'k', l.note));
+    box.append(a);
+  }
+}
+
+function render() {
+  box.textContent = '';
+  if (!tasks.length) { box.append(el('p', 'state', 'No tasks yet. Claude adds them here at kickoff and from any chat.')); summary.textContent = ''; return; }
+  const open = tasks.filter(t => t.status !== 'done');
+  summary.textContent = '';
+  for (const [n, label] of [[open.filter(t => t.status !== 'waiting' && (t.section === 'now' || t.section === 'setup')).length, 'before launch'], [open.filter(t => t.owner === 'you').length, 'for you'], [open.filter(t => t.owner === 'claude').length, 'for Claude'], [tasks.length - open.length, 'done']]) {
+    const s = el('span'); s.append(el('b', null, String(n)), document.createTextNode(label)); summary.append(s);
+  }
+  for (const [key, label] of SECTIONS) {
+    const list = tasks.filter(t => key === 'done' ? t.status === 'done' : (t.status !== 'done' && (key === 'waiting' ? t.status === 'waiting' : (t.status !== 'waiting' && t.section === key))))
+      .sort((a, b) => key === 'done' ? String(b.done_on || '').localeCompare(String(a.done_on || '')) : (a.order ?? 99) - (b.order ?? 99));
+    if (!list.length) continue;
+    const isDone = key === 'done';
+    const g = el(isDone ? 'details' : 'div', 'group');
+    const h = el(isDone ? 'summary' : 'div', 'group-h'); h.append(el('h3', null, label), el('span', 'n', String(list.length))); g.append(h);
+    if (isDone) { g.open = doneOpen; h.append(el('span', 'n', 'click to show or hide')); g.addEventListener('toggle', () => { doneOpen = g.open; }); }
+    const mine = list.filter(x => x.owner === 'you' && x.status !== 'done' && x.status !== 'waiting');
+    for (const t of list) {
+      const row = el('div', 'task' + (t.status === 'done' ? ' done' : ''));
+      const cb = el('input'); cb.type = 'checkbox'; cb.id = 'cb-' + t.id; cb.checked = t.status === 'done';
+      cb.disabled = !canWrite; cb.setAttribute('aria-label', 'Mark done: ' + (t.title || ''));
+      cb.addEventListener('change', () => toggle(t, cb));
+      const body = el('div', 't-body'), top = el('div', 't-top');
+      const title = el('label', 't-title', t.title || ''); title.htmlFor = cb.id; top.append(title);
+      if (t.owner) top.append(el('span', 'chip ' + (OWNER[t.owner] ? t.owner : 'external'), OWNER[t.owner] || t.owner));
+      if (t.status === 'waiting') top.append(el('span', 'chip waiting', 'Waiting'));
+      body.append(top);
+      if (t.detail) body.append(el('p', 't-detail', t.detail));
+      if (Array.isArray(t.steps) && t.steps.length) {
+        const d = el('details', 't-steps'); d.append(el('summary', null, 'Step-by-step instructions'));
+        for (const part of t.steps) {
+          if (part.h) d.append(el('h4', null, part.h));
+          const ol = el('ol'); for (const s of (part.items || [])) ol.append(el('li', null, s)); d.append(ol);
+          if (part.note) d.append(el('p', 't-detail', part.note));
+        }
+        body.append(d);
+      }
+      if (t.status === 'done' && t.done_on) body.append(el('p', 'sub', 'Done ' + t.done_on));
+      const i = mine.indexOf(t);
+      if (canWrite && i >= 0 && key !== 'done' && key !== 'waiting') {
+        const rk = el('div', 'rank');
+        const up = el('button', null, '▲'); up.type = 'button'; up.setAttribute('aria-label', 'Move up: ' + (t.title || '')); up.disabled = i <= 0;
+        const down = el('button', null, '▼'); down.type = 'button'; down.setAttribute('aria-label', 'Move down: ' + (t.title || '')); down.disabled = i >= mine.length - 1;
+        up.addEventListener('click', () => move(mine, i, -1, rk)); down.addEventListener('click', () => move(mine, i, 1, rk));
+        rk.append(up, down); row.classList.add('ranked'); row.append(cb, body, rk);
+      } else row.append(cb, body);
+      g.append(row);
+    }
+    box.append(g);
+  }
+}
+
+async function move(mine, i, dir, rk) {
+  const j = i + dir; if (!dbRef || j < 0 || j >= mine.length) return;
+  rk.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  const next = mine.slice(); [next[i], next[j]] = [next[j], next[i]];
+  const base = Math.min(...mine.map(x => x.order ?? 50));
+  try { for (const [k, x] of next.entries()) if (x.order !== base + k) await dbRef.collection('tasks').doc(x.id).update({ order: base + k }); }
+  catch (e) { box.prepend(el('p', 'state', "Couldn't save the new order. Try again.")); render(); }
+}
+
+async function toggle(t, cb) {
+  if (!dbRef) return;
+  cb.disabled = true; const done = cb.checked;
+  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  try {
+    await dbRef.collection('tasks').doc(t.id).update(done ? { status: 'done', done_on: today, prev_status: t.status } : { status: t.prev_status && t.prev_status !== 'done' ? t.prev_status : 'open', done_on: null });
+  } catch (e) { cb.checked = !done; box.prepend(el('p', 'state', "Couldn't save that change. You may not have edit access to this page.")); }
+  finally { cb.disabled = !canWrite; }
+}
+
+async function startNotes(db, user) {
+  const ta = document.getElementById('notes'), btn = document.getElementById('notes-save'), st = document.getElementById('notes-state');
+  let ref = null;
+  try {
+    const uid = user ? await user.id() : null; if (!uid) throw new Error('no user');
+    ref = db.collection('data/users/' + uid).doc('notes');
+    const snap = await ref.get();
+    ta.value = (snap.exists && snap.data() && snap.data().text) || '';
+    ta.disabled = false; btn.disabled = false; st.textContent = '';
+  } catch (e) { st.textContent = 'Private notes are available when you are signed in to claude.ai.'; return; }
+  ta.addEventListener('input', () => { st.textContent = 'Not saved yet'; });
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; st.textContent = 'Saving…';
+    try { await ref.set({ text: ta.value }); st.textContent = 'Saved'; } catch (e) { st.textContent = "Couldn't save. Try again."; } finally { btn.disabled = false; }
+  });
+}
+
+async function start() {
+  const timer = setTimeout(() => { if (!tasks.length) box.replaceChildren(el('p', 'state', "The task list didn't load. Open this page signed in to claude.ai to see it.")); }, 10000);
+  const db = await claude.use('db');
+  if (!db) { clearTimeout(timer); box.replaceChildren(el('p', 'state', 'The task list is available when you open this page signed in to claude.ai.')); return; }
+  dbRef = db;
+  const user = await claude.use('user');
+  try { canWrite = user ? (user.can('data.write') ?? true) : false; } catch { canWrite = false; }
+  startNotes(db, user);
+  db.doc('meta/project').onSnapshot(s => { try { showProject(s.exists ? s.data() : null); } catch {} }, () => {});
+  db.collection('links').onSnapshot(s => { try { showLinks(s.docs.map(d => d.data() || {})); } catch {} }, () => {});
+  db.collection('tasks').onSnapshot(snap => {
+    clearTimeout(timer);
+    tasks = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+    render();
+  }, () => { clearTimeout(timer); box.replaceChildren(el('p', 'state', "The task list couldn't load. Reload the page to try again.")); });
+}
+if (window.claude && window.claude.use) start();
+else box.replaceChildren(el('p', 'state', 'The task list is available when you open this page in claude.ai.'));
+</script>

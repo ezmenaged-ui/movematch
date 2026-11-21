@@ -2,7 +2,7 @@
 
 <One line: Hebrew RTL services marketplace for <service> in Israel. Domain, Vercel project, Supabase project ref and schema go here once created.>
 
-Built with the MoveMatch starter kit. Read `docs/PLAYBOOK.md` before any work. Page map: `PAGES.md`. Tracking: `docs/TRACKING.md`. Briefs: `docs/briefs/`.
+Tracker: <artifact link, created by /kickoff step 0>. Built with the MoveMatch starter kit. Read `docs/PLAYBOOK.md` before any work. Page map: `PAGES.md`. Tracking: `docs/TRACKING.md`. Briefs: `docs/briefs/`.
 
 ## How we work (gated stages)
 Run `/kickoff` to start or resume, or `/autopilot` when the owner is away. Stages: entrepreneur → bizdev → product → design → marketing → developer → QA, with ops-legal starting right after the entrepreneur stage because approvals take days. Each stage asks the owner its questions (AskUserQuestion, max 4 per round, recommended option first, plain words), writes a brief, and waits for the owner's approval before the next stage starts. Agent definitions: `.claude/agents/`.

@@ -12,6 +12,7 @@ You are the last line of defence against what happened on 12 Nov 2026: a product
 - Every test lead starts with `QA ` and/or uses `?utm_source=qa` or the `/qa` area. Only the owner's own test numbers (listed in `CLAUDE.md`). Never made-up numbers, never real customers.
 - No active test providers with fake numbers. Before any test, list active providers and confirm each has a real WhatsApp number.
 - Test WhatsApp itself with one message to the owner, then read the Twilio log before anything else.
+- Before deleting test data, count it and show the number (the owner said 6, there were 16).
 - After any test: Twilio error codes (63005, 63016, 63024, 63049, 63051), server logs, then list the QA leads and ask before deleting them.
 - Test-mode copy must say it is a test (the owner panicked when a QA chat ended with "providers are receiving your details").
 
@@ -19,7 +20,7 @@ You are the last line of defence against what happened on 12 Nov 2026: a product
 **Funnels:** each step at 375px and desktop; no horizontal scroll; closed questions tappable; Back walks the steps; finished requests don't reopen; validation messages; lead saved on screen 1; UTMs and click ids stored; media upload, QR hand-off and "go back to the computer"; recovery if the lead is deleted mid-way.
 **Messaging:** kill switch works; throttle works; test leads send no WhatsApp and nothing to providers; inbound webhook accepted (signature or `?k=`) and refusals logged; operator 24h-window behaviour understood.
 **Routing:** run the city matcher on common spellings of every targeted city (hyphens, abbreviations); "who receives per area" matches expectations; uncovered city alerts the operator.
-**Tracking:** expected events in order with `lead_id`; test leads send none; conversions fire once; a click on a WhatsApp button is not a conversion. Clarity: the script loads on funnel pages and **not** on `/qa`, admin, provider, login or tender pages; tags carry no name or phone; form inputs show masked in a recording.
+**Tracking:** expected events in order with `lead_id`; test leads send none; conversions fire once; a click on a WhatsApp button is not a conversion. Clarity: the script loads on funnel pages (and on `/qa` tagged `env = qa`), only on the production domain, and **not** on admin, provider, login or tender pages; a tracking call can never crash a page (check the steps pages after any tracking change); tags carry no name or phone; form inputs show masked in a recording.
 **Production deploy:** merged from latest `main`; changed pages return 200; admin still gated; nothing from another session lost; deploy explained to the owner in plain words.
 **Copy/legal:** no unprovable claims; consent line present; operator identity correct; owner's personal name absent if requested.
 
