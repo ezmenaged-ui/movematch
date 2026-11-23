@@ -28,7 +28,10 @@
 .lp-logo i { color: var(--lp-teal); }
 
 /* Highlighted word with underline swoosh */
-.lp-hl { position: relative; display: inline-block; white-space: nowrap; }
+.lp-hl { position: relative; display: inline-block; }
+/* Keep the underlined words on one line in Hebrew only. Chrome Translate (and any future language) changes <html lang>,
+   and longer translated text must be free to wrap, or it spills out of the card over the headline. */
+:lang(he) .lp-hl { white-space: nowrap; }
 .lp-swoosh { position: absolute; inset-inline: 0; bottom: -0.16em; width: 100%; height: 0.24em; }
 
 /* Trust items */
@@ -211,7 +214,10 @@
 @media (prefers-reduced-motion: reduce) { .lp-btn { transition: none; } }
 
 .ph-br { display: inline; }
-@media (min-width: 1180px) { .lp-photo .lp-card-title { font-size: 2.35vw; white-space: nowrap; } }
+@media (min-width: 1180px) {
+  .lp-photo .lp-card-title { font-size: 2.35vw; }
+  :lang(he) .lp-photo .lp-card-title { white-space: nowrap; }
+}
 @media (min-width: 1025px) { .lp-perks li { font-size: 16px; } }
 .ph-media picture { display: block; width: 100%; height: 100%; }
 
@@ -357,3 +363,62 @@
   .lp-photo.lp-has-wa .lp-input input { height: clamp(42px, 3.2vw, 62px); }
   .lp-photo.lp-has-wa .lp-btn { margin-top: 1vw; min-height: clamp(46px, 3.9vw, 72px); }
 }
+
+/* ---------- Floating WhatsApp button, bottom-left on every landing page (components/themed/WhatsAppFloat.tsx) ---------- */
+.wa-float {
+  --wa-green: #1f9e4f; --wa-green-dk: #17803f; --wa-navy: #0b1f4d; --wa-muted: #4a5a72;
+  position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  font-family: 'Heebo', 'Assistant', system-ui, sans-serif;
+}
+.wa-fab {
+  position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 60px; min-width: 60px;
+  padding: 0; border-radius: 999px; background: var(--wa-green); color: #fff; text-decoration: none;
+  box-shadow: 0 10px 24px rgba(23, 128, 63, .35), 0 2px 6px rgba(0, 0, 0, .12); transition: transform .15s, background .15s;
+}
+.wa-fab:hover { background: var(--wa-green-dk); transform: translateY(-2px); }
+.wa-fab:focus-visible { outline: 3px solid #7fd6a0; outline-offset: 3px; }
+.wa-fab-ico { display: grid; place-items: center; width: 60px; height: 60px; flex: none; }
+.wa-fab-label { display: none; font-size: 18px; font-weight: 700; white-space: nowrap; padding-inline-end: 22px; }
+/* Phone: a round button with a soft pulse so it is noticed without covering the form. */
+.wa-fab::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 0 rgba(31, 158, 79, .55); animation: wa-pulse 2.4s ease-out infinite; pointer-events: none; }
+@keyframes wa-pulse { 0% { box-shadow: 0 0 0 0 rgba(31, 158, 79, .55); } 70%, 100% { box-shadow: 0 0 0 16px rgba(31, 158, 79, 0); } }
+.wa-float[data-open] .wa-fab::after { animation: none; }
+/* Desktop: a labelled pill ("הצעת מחיר בוואטסאפ"). In RTL the icon sits on the right, the label to its left. */
+@media (min-width: 900px) {
+  .wa-float { left: 24px; bottom: 24px; }
+  .wa-fab { min-height: 64px; }
+  .wa-fab-ico { width: 64px; height: 64px; }
+  .wa-fab-label { display: inline; }
+}
+.lp-foot { padding-bottom: 96px; } /* room for the floating button over the footer links */
+@media (min-width: 900px) { .lp-foot { padding-bottom: 22px; } .lp-foot .lp-wrap { padding-inline-start: 16px; padding-inline-end: 300px; } }
+
+.wa-panel {
+  width: min(410px, calc(100vw - 32px)); border-radius: 18px; overflow: hidden; background: #fff;
+  box-shadow: 0 24px 60px rgba(11, 31, 77, .28), 0 2px 8px rgba(11, 31, 77, .12); animation: wa-in .18s ease-out;
+}
+@keyframes wa-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.wa-panel-head { position: relative; padding: 18px 20px 16px; background: linear-gradient(135deg, #128c4a, #1f9e4f 60%, #25b25a); color: #fff; }
+.wa-panel-head h2 { margin: 10px 0 4px; font-size: 22px; font-weight: 800; line-height: 1.25; color: #fff; }
+.wa-panel-head p { margin: 0; font-size: 15px; line-height: 1.45; color: #eafff1; }
+.wa-panel-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, .18); font-size: 13px; font-weight: 600; }
+.wa-panel-badge i { width: 8px; height: 8px; border-radius: 50%; background: #b7ffcf; box-shadow: 0 0 0 3px rgba(183, 255, 207, .3); }
+.wa-panel-x { position: absolute; top: 12px; left: 12px; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .2); color: #fff; cursor: pointer; }
+.wa-panel-x:hover { background: rgba(255, 255, 255, .32); }
+.wa-panel-x:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.wa-panel-chat { padding: 16px; background: #efeae2; }
+.wa-bubble { position: relative; max-width: 88%; padding: 9px 12px 18px; border-radius: 4px 12px 12px 12px; background: #fff; color: #111b21; font-size: 15px; line-height: 1.45; box-shadow: 0 1px 1px rgba(0, 0, 0, .08); }
+.wa-bubble time { position: absolute; bottom: 4px; left: 10px; font-size: 11px; color: #667781; }
+.wa-panel-foot { display: flex; align-items: center; gap: 16px; padding: 16px 18px 18px; }
+.wa-panel-go { flex: 1; display: flex; flex-direction: column; align-items: stretch; gap: 8px; text-align: center; }
+.wa-panel-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 14px; border-radius: 999px; background: var(--wa-green); color: #fff; font-size: 17px; font-weight: 700; white-space: nowrap; text-decoration: none; box-shadow: 0 6px 16px rgba(31, 158, 79, .3); }
+.wa-panel-btn:hover { background: var(--wa-green-dk); }
+.wa-panel-btn:focus-visible { outline: 3px solid #7fd6a0; outline-offset: 2px; }
+.wa-panel-note { font-size: 13px; color: var(--wa-muted); }
+.wa-panel-qr { margin: 0; flex: none; width: 112px; text-align: center; }
+.wa-qr-box { width: 112px; height: 112px; }
+.wa-qr-box svg { display: block; width: 100%; height: 100%; }
+.wa-panel-qr figcaption { margin-top: 6px; font-size: 12px; color: var(--wa-muted); }
+@media (prefers-reduced-motion: reduce) { .wa-fab, .wa-panel { transition: none; animation: none; } .wa-fab::after { animation: none; } }
+@media print { .wa-float { display: none; } }

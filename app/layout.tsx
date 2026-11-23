@@ -4,11 +4,15 @@ import Clarity from '@/components/Clarity';
 import DatePickerOnClick from '@/components/DatePickerOnClick';
 import './ds.css';
 import './globals.css';
+import { DEFAULT_LOCALE, LOCALES, t } from '@/lib/i18n';
+
+const L = LOCALES[DEFAULT_LOCALE];
+const M = t(DEFAULT_LOCALE).meta;
 
 export const metadata: Metadata = {
-  title: 'MoveMatch · 5 הצעות מחיר ממובילים מדורגים',
-  description: 'עוברים דירה? מעלים את פרטי ההובלה פעם אחת, מקבלים הצעות מחיר מכמה חברות הובלה מדורגות ובוחרים את המחיר הטוב ביותר. חינם ובלי התחייבות.',
-  openGraph: { title: 'MoveMatch · 5 הצעות ממובילים מדורגים', description: 'מעלים פרטים פעם אחת, מקבלים כמה הצעות ובוחרים את המחיר הטוב ביותר. חינם ובלי התחייבות.', locale: 'he_IL', type: 'website' },
+  title: M.title,
+  description: M.description,
+  openGraph: { title: M.ogTitle, description: M.ogDescription, locale: L.og, type: 'website' },
   robots: { index: true, follow: true },
 };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#f2f2f3' };
@@ -17,10 +21,17 @@ const GA = process.env.NEXT_PUBLIC_GA_ID;
 const GTM = process.env.NEXT_PUBLIC_GTM_ID;
 const PIXEL = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
+const TRANSLATE_GUARD = `(function(){if(typeof Node!=='function'||!Node.prototype)return;var P=Node.prototype,r=P.removeChild,i=P.insertBefore;P.removeChild=function(c){if(c.parentNode!==this){return c}return r.apply(this,arguments)};P.insertBefore=function(n,ref){if(ref&&ref.parentNode!==this){return n}return i.apply(this,arguments)}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang={L.lang} dir={L.dir}>
       <head>
+        {/* Page translators (Chrome / Google Translate, Edge) swap text nodes for <font> tags behind React's back; React then
+            throws "removeChild / insertBefore: not a child of this node" on the next update (a button turning into a spinner,
+            a step changing) and the page goes blank. This keeps React working on a translated page: when the node React
+            expects is no longer where it left it, skip the move instead of crashing. Must run before hydration. */}
+        <script dangerouslySetInnerHTML={{ __html: TRANSLATE_GUARD }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}

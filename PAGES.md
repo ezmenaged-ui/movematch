@@ -25,6 +25,15 @@ The button opens `wa.me/<LEGAL.whatsapp>` (the business number) with the starter
 prefilled (not sent). That starter starts the chat bot below, labelled **FL** (not F2). The form is E's form: saved as variant `choice`,
 continues to `/e/steps`, same GA4 events as `e-photo`; tell /f leads apart by `leads.landing_path = '/f'` or GA4's landing page.
 
+**Floating WhatsApp button** (`components/themed/WhatsAppFloat.tsx`): bottom-left on every landing page (`/`, `/a`…`/e` both designs, `/f`; not `/qa`).
+Phone: a round green button that opens WhatsApp with `היי, הגעתי מהאתר של MoveMatch ואני רוצה הצעת מחיר להובלה.` typed (not sent).
+Desktop: a "הצעת מחיר בוואטסאפ" pill that opens a panel with a WhatsApp Web button and a QR code for the phone. The chat runs as funnel F, labelled **FW**.
+
+**Languages** (`lib/i18n/`): all landing-page text lives in `lib/i18n/he.ts`; components read it with `t(locale)`. To add a language, copy
+`he.ts`, add it to `lib/i18n/index.ts`, and add a route that passes `locale`. The pages also survive Chrome Translate: `app/layout.tsx` has a
+guard that stops React from crashing when a translator rewrites the page, and long translated headings wrap instead of spilling out
+(`:lang(he)`-only `nowrap` in `app/landing.css`). The funnel steps, validation messages, emails and WhatsApp texts are still Hebrew-only.
+
 **Funnel F · WhatsApp chat** (no page): the Google Ads WhatsApp button (message asset) opens a chat with a starter message
 already typed, e.g. `היי, אני רוצה הצעת מחיר להובלה #G1` (`#G1` = ad-group code, saved as the lead's `utm_campaign`). There is one WhatsApp ad, starter `היי, אני רוצה הצעת מחיר להובלה.`, saved as
 `utm_campaign` F2. The old variants (`…להובלה!`, `…להובלה בבקשה`, once F1 / F3) also count as F2. The customer taps

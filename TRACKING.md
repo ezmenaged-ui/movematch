@@ -99,6 +99,10 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
   **not a lead**: no `generate_lead` / `lead_created`. Don't mark it as a key event or import it into Ads.
 - If the visitor sends the prefilled message, the chat runs as funnel F and is labelled **`ad_group` / `utm_campaign` = FL**
   (`lib/waFunnel.ts` → `starterSource`), so it is not counted as the Google Ads WhatsApp ad (F2).
+- **Floating WhatsApp button** (every landing page except `/qa`, `components/themed/WhatsAppFloat.tsx`): a phone tap fires
+  `wa_cta_click` with `placement: 'float'`; on desktop the button opens a panel (`wa_float_open`) and its green button fires
+  `wa_cta_click` with `placement: 'float_panel'`. Both carry `funnel`, `theme`, `variant_id` and `landing_page` (`home`, `a`…`e`, `f`).
+  Clicks, not leads. Chats from it are labelled **FW**.
 
 ## Microsoft Clarity (session recordings)
 

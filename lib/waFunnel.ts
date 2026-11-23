@@ -60,6 +60,7 @@ const isQaStarter = (body: string) => /^\s*QA\b/i.test(body);
  *   "היי, אני רוצה הצעת מחיר להובלה."  → F2
  * The earlier variants ("…להובלה!", "…להובלה בבקשה", once F1 / F3) are also counted as F2, in case an old ad is still live.
  * The /f landing page's starter ("היי, הגעתי דרך MoveMatch …") → FL (site, not an ad).
+ * The floating WhatsApp button on the landing pages ("היי, הגעתי מהאתר של MoveMatch …") → FW (site, not an ad).
  * A "#code" in the starter (e.g. #G1) also works. Anything else: null (unknown).
  */
 export function starterSource(body: string): string | null {
@@ -69,6 +70,8 @@ export function starterSource(body: string): string | null {
   // The /f landing page's green button (components/themed/WhatsAppCta.tsx): "היי, הגעתי דרך MoveMatch ואני רוצה…" → FL,
   // so chats from the site are not counted as the Google Ads WhatsApp ad (F2).
   if (/הגעתי דרך MoveMatch/i.test(t)) return 'FL';
+  // The floating WhatsApp button on every landing page (components/themed/WhatsAppFloat.tsx) → FW.
+  if (/הגעתי מהאתר של MoveMatch/i.test(t)) return 'FW';
   if (/(בבקשה[.!]?|[.!])$/.test(t)) return 'F2';
   return null;
 }

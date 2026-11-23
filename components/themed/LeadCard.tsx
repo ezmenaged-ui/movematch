@@ -8,7 +8,8 @@ import { CityDatalist } from '../fields';
 import { Theme, useCallbackLead } from '../CallbackForm';
 import { Spinner } from '../ui';
 import { ROOMS_OPTIONS } from '@/lib/validate';
-import { Swoosh } from './Logo';
+import { DEFAULT_LOCALE, t, type Locale } from '@/lib/i18n';
+import { HlTitle } from './HlTitle';
 import { WhatsAppCta } from './WhatsAppCta';
 
 type FP = {
@@ -38,7 +39,8 @@ function IconField({ icon, label, value, onChange, error, type = 'text', inputMo
  * The quote-request card used by both themes. Same lead logic as the original first step.
  * whatsapp: the /f landing adds a WhatsApp option between the heading and the fields; the form itself is unchanged.
  */
-export function LeadCard({ funnel, theme, entry = null, whatsapp = false }: { funnel: Funnel; theme: Theme; entry?: Entry; whatsapp?: boolean }) {
+export function LeadCard({ funnel, theme, entry = null, whatsapp = false, locale = DEFAULT_LOCALE }: { funnel: Funnel; theme: Theme; entry?: Entry; whatsapp?: boolean; locale?: Locale }) {
+  const d = t(locale).card;
   const { v, set, rooms, setRooms, err, busy, done, fail, hp, setHp, submit } = useCallbackLead(funnel, theme, '.lp-form');
 
   useEffect(() => { setEntry(entry); getAttribution(); /* keep the ad click (gclid, UTMs) for this visitor */ track('landing_view', funnelParams(funnel, theme)); trackStep(funnel, theme, 0, 'landing'); }, [funnel, theme, entry]);
@@ -47,8 +49,8 @@ export function LeadCard({ funnel, theme, entry = null, whatsapp = false }: { fu
     return (
       <div className="lp-card lp-done" role="status">
         <CircleCheck size={44} strokeWidth={1.5} aria-hidden />
-        <h2>תודה! נחזור אליכם בקרוב עם 5 הצעות.</h2>
-        <p>נציג יתקשר מהמספר שלנו בהקדם, בדרך כלל באותו יום.</p>
+        <h2>{d.doneTitle}</h2>
+        <p>{d.doneBody}</p>
       </div>
     );
   }
@@ -57,19 +59,17 @@ export function LeadCard({ funnel, theme, entry = null, whatsapp = false }: { fu
   return (
     <form className="lp-card lp-form" onSubmit={submit} noValidate>
       <h2 className="lp-card-title">
-        {art
-          ? <>קבלו <span className="lp-hl">5<Swoosh /></span> הצעות להובלה בחינם</>
-          : <>קבלו עד 5 <span className="lp-hl">הצעות<Swoosh /></span> להובלה</>}
+        <HlTitle parts={art ? d.titleArt : d.titlePhoto} />
       </h2>
-      {whatsapp && <WhatsAppCta funnel={funnel} theme={theme} />}
+      {whatsapp && <WhatsAppCta funnel={funnel} theme={theme} locale={locale} />}
       <CityDatalist />
       <div className="lp-fields">
-        <IconField icon={<User size={22} strokeWidth={1.5} />} label="שם מלא" name="name" autoComplete="name" value={v.name} onChange={set('name')} error={err.name} />
-        <IconField icon={<Phone size={21} strokeWidth={1.5} />} label="מספר טלפון" name="phone" type="tel" inputMode="tel" autoComplete="tel" value={v.phone} onChange={set('phone')} error={err.phone} />
-        <IconField icon={<MapPin size={22} strokeWidth={1.5} />} label="עיר מוצא" name="city" list="il-cities" autoComplete="address-level2" value={v.city} onChange={set('city')} error={err.city} chevron />
+        <IconField icon={<User size={22} strokeWidth={1.5} />} label={d.name} name="name" autoComplete="name" value={v.name} onChange={set('name')} error={err.name} />
+        <IconField icon={<Phone size={21} strokeWidth={1.5} />} label={d.phone} name="phone" type="tel" inputMode="tel" autoComplete="tel" value={v.phone} onChange={set('phone')} error={err.phone} />
+        <IconField icon={<MapPin size={22} strokeWidth={1.5} />} label={d.city} name="city" list="il-cities" autoComplete="address-level2" value={v.city} onChange={set('city')} error={err.city} chevron />
         {funnel === 'a' && ( // A has no origin step: optional home size here (B–E ask it, required, on their origin step)
-          <div className="lp-rooms" role="radiogroup" aria-label="כמה חדרים בדירה? (לא חובה)">
-            <div className="lp-rooms-q">כמה חדרים בדירה? <span>(כולל סלון, לא חובה)</span></div>
+          <div className="lp-rooms" role="radiogroup" aria-label={d.roomsAria}>
+            <div className="lp-rooms-q"><span>{d.roomsQ}</span> <span>{d.roomsHint}</span></div>
             <div className="lp-rooms-chips">
               {ROOMS_OPTIONS.map((o) => (
                 <button key={o.v} type="button" role="radio" aria-checked={rooms === o.v} aria-label={o.label}
@@ -82,18 +82,18 @@ export function LeadCard({ funnel, theme, entry = null, whatsapp = false }: { fu
       <input className="visually-hidden" tabIndex={-1} autoComplete="off" aria-hidden name="website" value={hp} onChange={(e) => setHp(e.target.value)} />
       <button type="submit" className="lp-btn" aria-busy={busy} disabled={busy}>
         {busy && <Spinner />}
-        {art ? <>קבלו הצעות עכשיו <ChevronLeft size={24} strokeWidth={2.5} aria-hidden /></> : <>קבלו 5 הצעות בחינם <ArrowLeft size={24} strokeWidth={2.25} aria-hidden /></>}
+        {art ? <><span>{d.submitArt}</span> <ChevronLeft size={24} strokeWidth={2.5} aria-hidden /></> : <><span>{d.submitPhoto}</span> <ArrowLeft size={24} strokeWidth={2.25} aria-hidden /></>}
       </button>
-      <LegalNote className="lp-legal" />
+      <LegalNote className="lp-legal" locale={locale} />
       {fail && <div className="lp-err" role="alert" style={{ textAlign: 'center' }}>{fail}</div>}
       {art ? (
         <ul className="lp-perks">
-          <li><Tag size={30} strokeWidth={1.4} aria-hidden />עד 5 הצעות מחיר</li>
-          <li><Timer size={30} strokeWidth={1.4} aria-hidden />תוך דקות</li>
-          <li><Coins size={30} strokeWidth={1.4} aria-hidden />ללא עלות</li>
+          <li><Tag size={30} strokeWidth={1.4} aria-hidden /><span>{d.perks[0]}</span></li>
+          <li><Timer size={30} strokeWidth={1.4} aria-hidden /><span>{d.perks[1]}</span></li>
+          <li><Coins size={30} strokeWidth={1.4} aria-hidden /><span>{d.perks[2]}</span></li>
         </ul>
       ) : (
-        <p className="lp-secure"><Lock size={16} strokeWidth={1.75} aria-hidden /> ללא עלות וללא התחייבות</p>
+        <p className="lp-secure"><Lock size={16} strokeWidth={1.75} aria-hidden /> <span>{d.secure}</span></p>
       )}
     </form>
   );
