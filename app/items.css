@@ -1,6 +1,6 @@
 /* Funnel D items step (components/ItemsPicker.tsx). Clean, soft, rounded. */
 .it { --it-ink: #0f2a43; --it-muted: #5b6b7f; --it-soft: #eef4fb; --it-line: #dbe5f0; --it-blue: #1f6fd1; --it-green: #1f9254;
-  display: flex; flex-direction: column; gap: 14px; text-align: right; }
+  display: flex; flex-direction: column; gap: 14px; text-align: start; }
 
 .it-chat { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; padding: 4px 2px; scroll-behavior: smooth; }
 .it-turn { display: flex; flex-direction: column; gap: 8px; }
@@ -21,7 +21,7 @@
 .it-input > button { width: 46px; height: 46px; flex: none; border: 0; border-radius: 14px; background: var(--it-blue); color: #fff; display: grid; place-items: center; cursor: pointer; }
 .it-input > button:disabled { opacity: .35; cursor: default; }
 .it-suggest { position: absolute; inset-inline: 0; bottom: calc(100% + 8px); margin: 0; padding: 6px; list-style: none; background: #fff; border: 1px solid var(--it-line); border-radius: 16px; box-shadow: 0 12px 34px rgba(15,42,67,.16); max-height: 300px; overflow-y: auto; }
-.it-suggest button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 0; background: none; border-radius: 10px; font: inherit; font-size: 15px; color: var(--it-ink); cursor: pointer; text-align: right; }
+.it-suggest button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 0; background: none; border-radius: 10px; font: inherit; font-size: 15px; color: var(--it-ink); cursor: pointer; text-align: start; }
 .it-suggest button:hover, .it-suggest button:focus-visible { background: var(--it-soft); }
 .it-suggest small { margin-inline-start: auto; color: var(--it-muted); font-size: 12px; }
 

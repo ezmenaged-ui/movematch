@@ -14,6 +14,9 @@ export default {
       { source: '/c', destination: '/c/photo', permanent: false },
       { source: '/d', destination: '/d/photo', permanent: false },
       { source: '/e', destination: '/e/photo', permanent: false },
+      // English site (/en): D and E exist in the photo design only.
+      { source: '/en/:funnel(d|e)', destination: '/en/:funnel/photo', permanent: false },
+      { source: '/en/:funnel(d|e)/art', destination: '/en/:funnel/photo', permanent: false },
       // Test area (see PAGES.md): /qa/<funnel> opens its photo version. Capital /QA is handled in middleware.ts.
       { source: '/qa/:funnel(a|b|c|d|e)', destination: '/qa/:funnel/photo', permanent: false },
       // Mover panel moved from /mover to /movers (links already sent keep working).

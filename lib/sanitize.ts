@@ -1,4 +1,5 @@
 import { normalizePhone, ROOMS_VALUES } from './validate';
+import { toHeCity } from './cities';
 
 const s = (v: unknown, max = 200) => (typeof v === 'string' ? v.trim().slice(0, max) : undefined);
 
@@ -6,7 +7,7 @@ function addr(v: unknown) {
   if (!v || typeof v !== 'object') return undefined;
   const a = v as Record<string, unknown>;
   return {
-    city: s(a.city, 80) || '',
+    city: toHeCity(s(a.city, 80)) || '', // the English site sends English city names: saved in Hebrew
     // Forms send street + house number separately; `address` stays "street number" for everything that reads it.
     address: (typeof a.street === 'string' || typeof a.number === 'string'
       ? [s(a.street, 120), s(a.number, 10)].filter(Boolean).join(' ') : s(a.address, 200)) || '',
@@ -26,7 +27,7 @@ export function cleanLeadInput(b: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
   if (b.name !== undefined) out.name = s(b.name, 120);
   if (b.phone !== undefined) out.phone = normalizePhone(String(b.phone));
-  if (b.city !== undefined) out.city = s(b.city, 80);
+  if (b.city !== undefined) out.city = toHeCity(s(b.city, 80));
   if (b.move_from !== undefined) out.move_from = addr(b.move_from);
   if (b.move_to !== undefined) out.move_to = addr(b.move_to);
   if (b.move_when && typeof b.move_when === 'object') {
@@ -51,6 +52,7 @@ export function cleanLeadInput(b: Record<string, unknown>) {
   }
   if (typeof b.video_skipped === 'boolean') out.video_skipped = b.video_skipped;
   if (b.theme === 'photo' || b.theme === 'art') out.theme = b.theme;
+  if (b.lang === 'en') out.lang = 'en'; // lead from the English site (migration 029)
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'landing_path']) if (b[k] !== undefined) out[k] = s(b[k], 200);
   // Google Ads click ids and GA4 ids (lib/client.ts → getAttribution / gaIds): plain tokens only.
   for (const k of ['gclid', 'gbraid', 'wbraid']) { const v = s(b[k], 200); if (v && /^[\w.-]+$/.test(v)) out[k] = v; }

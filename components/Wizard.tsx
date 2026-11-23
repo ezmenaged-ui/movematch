@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { clearHandoff, FlowTheme, liveHandoff, loadHandoff, saveHandoff, VARIANT } from '@/lib/handoff';
 import { FlowShell } from './themed/FlowShell';
 import { createLead, fmtDuration, funnelParams, LeadGoneError, LeadRef, PhoneRecentError, track, trackOnce, trackStep, updateLead } from '@/lib/client';
-import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, MSG, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
+import { Address, emptyAddress, emptyWhen, isValidName, isValidPhone, msgs, phoneRecentMsg, normalizePhone, validateAddress, validateWhen, When, whenText } from '@/lib/validate';
+import { lp } from '@/lib/i18n';
+import { cityEn } from '@/lib/cities';
+import { useLocale, useT } from './Locale';
 import { PriorityScale } from './PriorityScale';
 import { ItemsPicker } from './ItemsPicker';
 import { asmAnswered, emptyItems, ItemsValue, itemsCount } from '@/lib/items';
@@ -37,7 +40,9 @@ const fmtMin = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)
  */
 export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   const isD = funnel === 'd', isE = funnel === 'e';
-  const LABELS = isD ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'סרטון', 'פריטים', 'סיום'] : isE ? ['פרטים', 'מאיפה', 'לאן', 'מתי', 'מה עובר', 'סיום'] : ['פרטים', 'מאיפה', 'לאן', 'מתי', 'פריטים', 'סיום'];
+  const locale = useLocale();
+  const T = useT(), w = T.wiz, MSG = msgs(locale);
+  const LABELS = isD ? w.labelsD : isE ? w.labelsE : w.labelsB;
   const S_ITEMS = isE ? -1 : isD ? 6 : 5, S_INFO = isE ? 5 : -1, S_VIDEO = isD ? 5 : -1, S_DONE = isD ? 7 : 6, TOTAL = S_DONE, S_LAST = S_DONE - 1;
   const STORE = isD ? 'mm_wizard_d2' : isE ? 'mm_wizard_e1' : 'mm_wizard_b5';
   const router = useRouter();
@@ -78,18 +83,20 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   // Start from the lead created on the first page (/b). Resume mid-way after a refresh.
   useEffect(() => {
     const h0 = loadHandoff(funnel);
-    if (!h0) { router.replace(`/${funnel}/photo` + window.location.search); return; }
+    if (!h0) { router.replace(lp(locale, `/${funnel}/photo`) + window.location.search); return; }
     (async () => {
     const h = await liveHandoff(h0);
-    if (!h) { router.replace(`/${funnel}/photo` + window.location.search); return; }
+    if (!h) { router.replace(lp(locale, `/${funnel}/photo`) + window.location.search); return; }
+    // The English site shows English city names (a lead resumed from the tender page has the saved Hebrew name).
+    const startCity = locale === 'en' ? cityEn(h.city) : h.city || '';
     try {
       const s: Saved = JSON.parse(localStorage.getItem(STORE) || 'null');
       if (s && (s.ref?.id === h.ref.id || s.ref?.id === h0.ref.id) && s.step < S_DONE) {
         setStep(Math.max(2, Math.min(s.step, S_LAST))); setFurthest(Math.max(2, Math.min(Math.max(s.furthest || 0, s.step), S_LAST))); setFrom(s.from); setTo(s.to); setWhen(s.when || emptyWhen()); setPriority(s.priority || 3); if (s.items) setItems(s.items); if (s.mode) setMode(s.mode);
       } else {
-        setFrom({ ...emptyAddress(), city: h.city || '' });
+        setFrom({ ...emptyAddress(), city: startCity });
       }
-    } catch { setFrom({ ...emptyAddress(), city: h.city || '' }); }
+    } catch { setFrom({ ...emptyAddress(), city: startCity }); }
     setRef(h.ref); setName(h.name); setPhone(h.phone); up.attach(h.ref); setTheme(h.theme || 'photo');
     setReady(true);
     })();
@@ -120,7 +127,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
     if (!ready) return;
     try { window.history.replaceState({ ...(window.history.state || {}), mmStep: stepRef.current }, ''); } catch { /* ignore */ }
     const onPop = (e: PopStateEvent) => {
-      if (stepRef.current >= S_DONE) { router.replace(`/${funnel}/${theme}` + window.location.search); return; }
+      if (stepRef.current >= S_DONE) { router.replace(lp(locale, `/${funnel}/${locale === 'en' ? 'photo' : theme}`) + window.location.search); return; }
       const n = Number((e.state as { mmStep?: unknown } | null)?.mmStep);
       if (Number.isInteger(n) && n >= 2 && n <= S_LAST) show(n);
     };
@@ -135,11 +142,11 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
     if (n === step || busy) return;
     if (ref) {
       if (step === 1 && isValidName(name) && isValidPhone(phone)) updateLead(ref, { name: name.trim(), phone: normalizePhone(phone) }).catch(() => {});
-      if ((step === 2 || step === 3) && !Object.keys(validateAddress(step === 2 ? from : to, step === 2)).length) {
+      if ((step === 2 || step === 3) && !Object.keys(validateAddress(step === 2 ? from : to, step === 2, locale)).length) {
         const a = step === 2 ? from : to, norm = { ...a, elevator: a.elevator ?? false };
         updateLead(ref, step === 2 ? { move_from: norm } : { move_to: norm }).catch(() => {});
       }
-      if (step === S_WHEN && !validateWhen(when).date) updateLead(ref, { move_when: when, priority }).catch(() => {});
+      if (step === S_WHEN && !validateWhen(when, locale).date) updateLead(ref, { move_when: when, priority }).catch(() => {});
       if ((step === S_ITEMS || step === S_INFO) && items.list.length) updateLead(ref, { items }).catch(() => {});
     }
     setErr({}); setWhenErr('');
@@ -163,14 +170,14 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
         else { r = await createLead('wizard', { ...fields, furthest_step: 1 }, hp); setRef(r); up.attach(r); track('lead_created', funnelParams(funnel, theme)); trackOnce('generate_lead', r.id, funnelParams(funnel, theme)); trackStep(funnel, theme, 1, 'contact'); }
         go(2);
       } catch (e) {
-        if (e instanceof PhoneRecentError) setErr({ phone: phoneRecentMsg(e.until) });
-        else setFail('משהו השתבש. נסו שוב בעוד רגע.');
+        if (e instanceof PhoneRecentError) setErr({ phone: phoneRecentMsg(e.until, locale) });
+        else setFail(T.common.fail);
       } finally { setBusy(false); }
       return;
     }
     if (step === 2 || step === 3) {
       const a = step === 2 ? from : to;
-      const er = validateAddress(a, step === 2);
+      const er = validateAddress(a, step === 2, locale);
       setAddrErr(er);
       if (Object.keys(er).length) return;
       const norm = { ...a, elevator: a.elevator ?? false };
@@ -179,7 +186,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       return;
     }
     if (step === S_WHEN) {
-      const er = validateWhen(when);
+      const er = validateWhen(when, locale);
       setWhenErr(er.date || '');
       if (er.date) return;
       if (ref) updateLead(ref, { move_when: when, priority, furthest_step: S_WHEN }).catch(() => {});
@@ -187,7 +194,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       return;
     }
     if (step === S_VIDEO) {
-      if (!(up.usable.length > 0 || remote > 0)) { setFail('צלמו או העלו סרטון של הדירה. בלי סרטון המובילים לא יכולים לתת מחיר מדויק.'); return; }
+      if (!(up.usable.length > 0 || remote > 0)) { setFail(w.errNeedVideo); return; }
       // Same soft warning as E: under 3 minutes of known length, warn once, then let them continue.
       const known = !remote && up.usable.every((c) => c.duration != null);
       if (known && up.totalDuration < E_VIDEO_TARGET_S && !shortWarn) {
@@ -200,10 +207,10 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
       return;
     }
     if (step === S_INFO) {
-      if (!mode) { setFail('בחרו איך לספר למובילים מה עובר: סרטון של הדירה או רשימת פריטים.'); return; }
+      if (!mode) { setFail(w.errChooseMode); return; }
       const hasVideo = up.usable.length > 0 || remote > 0;
       if (mode === 'video') {
-        if (!hasVideo) { setFail('צלמו או העלו את סרטון הדירה. אפשר גם לבחור ברשימת פריטים במקום.'); return; }
+        if (!hasVideo) { setFail(w.errNeedVideoE); return; }
         // Warn (once) when the known length is under 3 minutes. Videos sent from the phone (QR) have no known length here.
         const known = !remote && up.usable.every((c) => c.duration != null);
         if (known && up.totalDuration < E_VIDEO_TARGET_S && !shortWarn) {
@@ -211,35 +218,35 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
           requestAnimationFrame(() => document.getElementById('e-short')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
           return;
         }
-      } else if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
+      } else if (!items.list.length) { setFail(w.errNeedItem); return; }
       // Items are the main option, or were added as an extra: they need the disassembly answer like in B and D.
       if (items.list.length && !asmAnswered(items)) {
         // In video mode the list is the optional extra and may be folded away (e.g. items were added before switching
         // to video): open it, so the client sees which items the question is about.
         if (mode === 'video') setExtraOpen(true);
         setFlagsMissing(true);
-        setFail('סמנו אילו פריטים צריכים פירוק או הרכבה, או סמנו שאף פריט לא צריך.');
+        setFail(w.errNeedAsm);
         requestAnimationFrame(() => document.getElementById('it-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         return;
       }
     }
     if (step === S_ITEMS && !(isD && !items.list.length)) { // D: the list is optional (an empty list goes straight on)
-      if (!items.list.length) { setFail('הוסיפו לפחות פריט אחד: בחרו מהרשימה, או הוסיפו פריט שלא ברשימה.'); return; }
+      if (!items.list.length) { setFail(w.errNeedItem); return; }
       if (!asmAnswered(items)) {
         setFlagsMissing(true);
-        setFail('סמנו אילו פריטים צריכים פירוק או הרכבה, או סמנו שאף פריט לא צריך.');
+        setFail(w.errNeedAsm);
         requestAnimationFrame(() => document.getElementById('it-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         return;
       }
     }
     if (step === S_LAST) {
       // Steps can be reached without passing their checks (progress bar, browser Forward): check everything once more.
-      const fromErr = validateAddress(from, true), toErr = validateAddress(to);
+      const fromErr = validateAddress(from, true, locale), toErr = validateAddress(to, false, locale);
       if (Object.keys(fromErr).length) { go(2); setAddrErr(fromErr); return; }
       if (Object.keys(toErr).length) { go(3); setAddrErr(toErr); return; }
-      if (validateWhen(when).date) { go(S_WHEN); setWhenErr(validateWhen(when).date || ''); return; }
+      if (validateWhen(when, locale).date) { go(S_WHEN); setWhenErr(validateWhen(when, locale).date || ''); return; }
       // (Funnel E's last step is its own info step, checked just above.)
-      if (isD && !up.usable.length && !remote) { go(S_VIDEO); setFail('צלמו או העלו סרטון של הדירה.'); return; }
+      if (isD && !up.usable.length && !remote) { go(S_VIDEO); setFail(w.errNeedVideoShort); return; }
       if (!isD && S_ITEMS > 0 && (!items.list.length || !asmAnswered(items))) { go(S_ITEMS); setFlagsMissing(!asmAnswered(items)); return; }
       setBusy(true);
       try {
@@ -278,7 +285,7 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
           if (res?.new_qualified) trackOnce('qualify_lead', sent.id, { ...ev, has_inventory: !!res.has_inventory });
         }
         go(S_DONE);
-      } catch { setFail('משהו השתבש. נסו שוב בעוד רגע.'); } finally { setBusy(false); }
+      } catch { setFail(T.common.fail); } finally { setBusy(false); }
     }
   }
 
@@ -287,15 +294,15 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
   if (!ready) return <FlowShell theme={null} />;
 
   return (
-    <FlowShell theme={theme} progress={`${step}/${TOTAL}${isD && step === S_ITEMS ? ' · רשות' : ''}`}>
+    <FlowShell theme={theme} progress={`${step}/${TOTAL}${isD && step === S_ITEMS ? ` · ${w.optional}` : ''}`}>
         <div className="wiz">
-          <div className="progress progress-labeled" style={{ gridTemplateColumns: `repeat(${TOTAL}, 1fr)` }} aria-label={`שלב ${step} מתוך ${TOTAL}`}>
+          <div className="progress progress-labeled" style={{ gridTemplateColumns: `repeat(${TOTAL}, 1fr)` }} aria-label={w.stepAria(step, TOTAL)}>
             {LABELS.map((l, i) => {
               const n = i + 1, reachable = step < S_DONE && n <= furthest && n !== step;
               const cls = `item ${n < step || (n <= furthest && n !== step && step < S_DONE) ? 'done' : ''} ${n === step ? 'cur' : ''}`;
-              const body = <><i className={`seg ${n <= Math.max(step, step < S_DONE ? furthest : step) ? 'on' : ''}`} /><b><span>{l}{isD && n === S_ITEMS && <small className="opt-tag">(רשות)</small>}{n !== step && n <= (step < S_DONE ? furthest : step) && n < S_DONE && <Check size={13} strokeWidth={2} />}</span></b></>;
+              const body = <><i className={`seg ${n <= Math.max(step, step < S_DONE ? furthest : step) ? 'on' : ''}`} /><b><span>{l}{isD && n === S_ITEMS && <small className="opt-tag">{w.optionalParen}</small>}{n !== step && n <= (step < S_DONE ? furthest : step) && n < S_DONE && <Check size={13} strokeWidth={2} />}</span></b></>;
               return reachable
-                ? <button key={l} type="button" className={`${cls} item-btn`} onClick={() => jump(n)} aria-label={`מעבר לשלב ${l}`}>{body}</button>
+                ? <button key={l} type="button" className={`${cls} item-btn`} onClick={() => jump(n)} aria-label={w.jumpAria(l)}>{body}</button>
                 : <div key={l} className={cls} aria-current={n === step ? 'step' : undefined}>{body}</div>;
             })}
           </div>
@@ -303,13 +310,13 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
           <Blueprint className="wiz-card">
             <form onSubmit={next} noValidate key={step} className="step-anim">
               <CityDatalist />
-              {step !== 1 && <h1 className="visually-hidden">בקשת הצעות מחיר להובלה עם רשימת פריטים</h1>}
+              {step !== 1 && <h1 className="visually-hidden">{w.hiddenH1}</h1>}
               {step === 1 && (
                 <>
-                  <h1>עוברים דירה? מעלים את כל פרטי ההובלה פעם אחת, מקבלים כמה הצעות מחיר ובוחרים את המחיר הטוב ביותר.</h1>
-                  <p className="lead-sub">תנו לנו קצת פרטים ו־2 דקות ואנחנו חוזרים אליכם עם 5 הצעות מחברות הובלה מדורגות.</p>
+                  <h1>{w.step1Title}</h1>
+                  <p className="lead-sub">{w.step1Sub}</p>
                   <div className="stack">
-                    <Field label="שם מלא" value={name} onChange={(v) => { setName(v); setErr((e) => ({ ...e, name: '' })); }} error={err.name} autoComplete="name" />
+                    <Field label={w.name} value={name} onChange={(v) => { setName(v); setErr((e) => ({ ...e, name: '' })); }} error={err.name} autoComplete="name" />
                     <PhoneField value={phone} onChange={(v) => { setPhone(v); setErr((e) => ({ ...e, phone: '' })); }} error={err.phone} />
                     <input className="visually-hidden" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} />
                     <div className="mobile-only">{HAS_MOVERS_PHOTO ? <MoversTrustRow /> : <MidragBadge />}</div>
@@ -320,59 +327,59 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
 
               {step === 2 && (
                 <>
-                  <div className="saved-line"><Check size={15} strokeWidth={2} /> שמרנו את הפרטים. נחזור אליכם בכל מקרה.</div>
-                  <h2>מאיפה עוברים?</h2>
+                  <div className="saved-line"><Check size={15} strokeWidth={2} /> {w.saved}</div>
+                  <h2>{w.fromQ}</h2>
                   <AddressFields value={from} onChange={setFrom} errors={addrErr} origin />
                 </>
               )}
 
               {step === 3 && (
                 <>
-                  <h2>לאן עוברים?</h2>
+                  <h2>{w.toQ}</h2>
                   <AddressFields value={to} onChange={setTo} errors={addrErr} />
                 </>
               )}
 
               {step === S_WHEN && (
                 <>
-                  <h2>מתי עוברים?</h2>
+                  <h2>{w.whenQ}</h2>
                   <WhenFields value={when} onChange={(w) => { setWhen(w); setWhenErr(''); }} error={whenErr} />
                   <PriorityScale value={priority} onChange={setPriority} />
                 </>
               )}
 
               {isD && step === S_ITEMS && (
-                <p className="vid-bonus" role="note">🎁 <b>ממלאים את רשימת הפריטים המלאה? מקבלים 50 ₪ הנחה</b> על התשלום הסופי להובלה. רשות, לא חובה.</p>
+                <p className="vid-bonus" role="note">🎁 <b>{w.bonusD[0]}</b>{w.bonusD[1]}</p>
               )}
               {step === S_ITEMS && (
                 <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
               )}
               {isD && step === S_ITEMS && (
                 // The list is optional in D: the request can be sent without it (it only earns the ₪50 discount).
-                <p className="items-optional" role="note"><b>רשימת הפריטים לא חובה.</b> אפשר לשלוח את הבקשה עכשיו גם בלי למלא אותה: המובילים יראו מה עובר בסרטון.</p>
+                <p className="items-optional" role="note"><b>{w.itemsOptional[0]}</b>{w.itemsOptional[1]}</p>
               )}
 
               {isD && step === S_VIDEO && (
                 <>
-                  <h2>צלמו סרטון של הדירה</h2>
-                  <p className="lead-sub">חובה. לפי הסרטון המובילים נותנים מחיר מדויק, ולא הערכה.</p>
+                  <h2>{w.videoTitle}</h2>
+                  <p className="lead-sub">{w.videoSub}</p>
                   <div className="stack">
                     <VideoGuide />
                     {ref && <div className="qr-compact"><QrHandoff leadRef={ref} returnToDesktop ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_VIDEO) go(S_DONE); }} /></div>}
                     {up.usable.length > 0 && up.totalDuration > 0 && (
                       <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
-                        <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00 מומלצות</span>
+                        <span>{w.meter(fmtMin(up.totalDuration))[0]}<b>{fmtMin(up.totalDuration)}</b>{w.meter('')[2]}</span>
                         <i><em style={{ width: `${Math.min(100, (up.totalDuration / E_VIDEO_TARGET_S) * 100)}%` }} /></i>
                       </div>
                     )}
                     <ClipList clips={up.clips} onRemove={(k) => { up.remove(k); setShortWarn(false); }} />
                     {up.clips.some((c) => c.state === 'error') && (
-                      <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
+                      <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>{T.common.retryUpload}</button>
                     )}
                     {up.usable.length > 0 && <VideoButtons onFiles={(f) => { up.add(f); setShortWarn(false); }} more />}
                     {shortWarn && (
                       <div id="e-short" className="e-warn" role="alert">
-                        <b>הסרטון קצר מ-3 דקות ({fmtMin(up.totalDuration)}).</b> סרטון קצר עלול לא להראות למובילים את כל מה שעובר, ואז קשה להם לתת מחיר מדויק. מומלץ להוסיף סרטון של מה שחסר. אפשר גם להמשיך כך.
+                        <b>{w.short(fmtMin(up.totalDuration))}</b>{w.shortContinue}
                       </div>
                     )}
                   </div>
@@ -381,12 +388,12 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
 
               {step === S_INFO && (
                 <>
-                  <h2>ספרו למובילים מה עובר</h2>
-                  <p className="lead-sub">כדי לתת מחיר מדויק, המוביל צריך לדעת בדיוק מה הוא מעביר. בחרו דרך אחת:</p>
-                  <div className="e-choice" role="radiogroup" aria-label="איך לספר למובילים מה עובר">
+                  <h2>{w.infoTitle}</h2>
+                  <p className="lead-sub">{w.infoSub}</p>
+                  <div className="e-choice" role="radiogroup" aria-label={w.infoAria}>
                     {([
-                      ['video', <Video key="v" size={30} strokeWidth={1.5} aria-hidden />, 'סרטון מלא של הדירה', 'כ-3 דקות, חדר אחרי חדר, ומסבירים בקול'],
-                      ['items', <ClipboardList key="i" size={30} strokeWidth={1.5} aria-hidden />, 'רשימת פריטים', 'בוחרים מהרשימה את כל מה שעובר'],
+                      ['video', <Video key="v" size={30} strokeWidth={1.5} aria-hidden />, w.optVideo[0], w.optVideo[1]],
+                      ['items', <ClipboardList key="i" size={30} strokeWidth={1.5} aria-hidden />, w.optItems[0], w.optItems[1]],
                     ] as const).map(([m, ico, t, sub]) => (
                       <button key={m} type="button" role="radio" aria-checked={mode === m} className={`e-opt ${mode === m ? 'on' : ''}`}
                         onClick={() => { if (mode !== m) { setMode(m); setExtraOpen(false); setShortWarn(false); setFail(''); track('info_choice', { ...funnelParams(funnel, theme), choice: m, info_choice: m, ...(ref ? { lead_id: ref.id } : {}) }); if (ref) updateLead(ref, { info_choice: m }).catch(() => {}); } }}>
@@ -397,27 +404,27 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
 
                   {mode === 'video' && (
                     <div className="stack" style={{ marginTop: 18 }}>
-                      <p className="lead-sub" style={{ margin: 0 }}><b>מה אנחנו מצפים לקבל: סרטון מלא של כ-3 דקות.</b></p>
+                      <p className="lead-sub" style={{ margin: 0 }}><b>{w.expectVideo}</b></p>
                       <VideoGuide />
-                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} returnToDesktop nextLabel="שלחו לי 5 הצעות" ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
+                      {ref && <div className="qr-compact"><QrHandoff leadRef={ref} returnToDesktop nextLabel={T.common.send5} ownCount={up.clips.filter((c) => c.state === 'done').length} onRemoteCount={onRemote} onCompleted={() => { if (stepRef.current === S_INFO) go(S_DONE); }} /></div>}
                       {up.usable.length > 0 && up.totalDuration > 0 && (
                         <div className={`e-meter ${up.totalDuration >= E_VIDEO_TARGET_S ? 'ok' : ''}`} aria-live="polite">
-                          <span>אורך הסרטון: <b>{fmtMin(up.totalDuration)}</b> מתוך 3:00</span>
+                          <span>{w.meterE('')[0]}<b>{fmtMin(up.totalDuration)}</b>{w.meterE('')[2]}</span>
                           <i><em style={{ width: `${Math.min(100, (up.totalDuration / E_VIDEO_TARGET_S) * 100)}%` }} /></i>
                         </div>
                       )}
                       <ClipList clips={up.clips} onRemove={(k) => { up.remove(k); setShortWarn(false); }} />
                       {up.clips.some((c) => c.state === 'error') && (
-                        <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
+                        <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>{T.common.retryUpload}</button>
                       )}
                       <VideoButtons onFiles={(f) => { up.add(f); setFail(''); setShortWarn(false); }} more={up.usable.length > 0} />
                       {shortWarn && (
                         <div id="e-short" className="e-warn" role="alert">
-                          <b>הסרטון קצר מ-3 דקות ({fmtMin(up.totalDuration)}).</b> סרטון קצר עלול לא להראות למובילים את כל מה שעובר, ואז קשה להם לתת מחיר מדויק. מומלץ להוסיף סרטון של מה שחסר. אפשר גם לשלוח כך.
+                          <b>{w.short(fmtMin(up.totalDuration))}</b>{w.shortSend}
                         </div>
                       )}
                       <details className="e-extra" open={extraOpen} onToggle={(e) => setExtraOpen((e.target as HTMLDetailsElement).open)}>
-                        <summary>🎁 הוסיפו גם רשימת פריטים מלאה וקבלו 50 ₪ הנחה <span>(רשות)</span></summary>
+                        <summary>{w.extraItems} <span>{w.optionalParen}</span></summary>
                         {extraOpen && <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />}
                       </details>
                     </div>
@@ -427,13 +434,13 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
                     <div className="stack" style={{ marginTop: 18 }}>
                       <ItemsPicker value={items} flagsMissing={flagsMissing && !asmAnswered(items)} onChange={(v) => { setItems(v); setFail(''); if (asmAnswered(v)) setFlagsMissing(false); }} />
                       <details className="e-extra" open={extraOpen} onToggle={(e) => setExtraOpen((e.target as HTMLDetailsElement).open)}>
-                        <summary>🎁 הוסיפו גם סרטון של הדירה וקבלו 50 ₪ הנחה <span>(רשות)</span></summary>
+                        <summary>{w.extraVideo} <span>{w.optionalParen}</span></summary>
                         {extraOpen && (
                           <div className="stack" style={{ marginTop: 12 }}>
                             <VideoGuide compact />
                             <ClipList clips={up.clips} onRemove={up.remove} />
                             {up.clips.some((c) => c.state === 'error') && (
-                              <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>נסו להעלות שוב</button>
+                              <button type="button" className="btn-link" onClick={up.retryFailed} style={{ alignSelf: 'flex-start' }}>{T.common.retryUpload}</button>
                             )}
                             <VideoButtons compact onFiles={(f) => { up.add(f); setFail(''); }} more={up.usable.length > 0} />
                           </div>
@@ -447,25 +454,23 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
               {step === S_DONE && (
                 <div className="done-wrap">
                   <span className="done-icon blueprint"><Corners /><Check size={28} strokeWidth={1.5} /></span>
-                  <h2 style={{ marginBottom: 14 }}>קיבלנו. ההצעות בדרך.</h2>
+                  <h2 style={{ marginBottom: 14 }}>{w.doneTitle}</h2>
                   <p className="muted" style={{ maxWidth: 420, marginInline: 'auto' }}>
                     {isE
-                      ? `שלחנו את ${[(up.usable.length || remote || savedVideos) && 'הסרטון', items.list.length && 'רשימת הפריטים'].filter(Boolean).join(' ואת ') || 'הפרטים'} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
-                      : isD
-                      ? `שלחנו את הסרטון${items.list.length ? ' ואת רשימת הפריטים' : ''} למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.`
-                      : 'שלחנו את רשימת הפריטים למובילים מדורגים באזור שלכם. ההצעות יגיעו אליכם לטלפון.'}
+                      ? w.doneE({ video: !!(up.usable.length || remote || savedVideos), items: items.list.length > 0 })
+                      : isD ? w.doneD(items.list.length > 0) : w.doneB}
                   </p>
-                  {uploading && <p className="small" style={{ color: 'var(--color-accent-700)' }}>הסרטונים עדיין עולים. השאירו את הדף פתוח עד שההעלאה תסתיים.</p>}
+                  {uploading && <p className="small" style={{ color: 'var(--color-accent-700)' }}>{w.stillUploading}</p>}
                   {uploading && <ClipList clips={up.clips} onRemove={up.remove} />}
                   <table className="summary"><tbody>
-                    <tr><td>מאיפה</td><td>{[from.city, from.floor && `קומה ${from.floor}`].filter(Boolean).join(' · ')}</td></tr>
-                    <tr><td>לאן</td><td>{[to.city, to.floor && `קומה ${to.floor}`].filter(Boolean).join(' · ')}</td></tr>
-                    <tr><td>מתי</td><td>{whenText(when) || '—'}</td></tr>
-                    {(!isE || items.list.length > 0) && <tr><td>פריטים</td><td>{items.list.length
-                      ? `${itemsCount(items)} פריטים${items.boxes ? ` · כ-${items.boxes} קרטונים` : ''}`
+                    <tr><td>{w.sumFrom}</td><td>{[from.city, from.floor && w.floorN(from.floor)].filter(Boolean).join(' · ')}</td></tr>
+                    <tr><td>{w.sumTo}</td><td>{[to.city, to.floor && w.floorN(to.floor)].filter(Boolean).join(' · ')}</td></tr>
+                    <tr><td>{w.sumWhen}</td><td>{whenText(when, locale) || '—'}</td></tr>
+                    {(!isE || items.list.length > 0) && <tr><td>{w.sumItems}</td><td>{items.list.length
+                      ? w.itemsSum(itemsCount(items), items.boxes)
                       // No list (optional in D): don't show the boxes stepper's default 20 as if the client chose it.
-                      : 'לא נשלחה רשימה'}</td></tr>}
-                    {(isD || isE) && <tr><td>סרטון</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : up.usable.length === 1 ? 'סרטון אחד' : `${up.usable.length} סרטונים`) : remote ? (remote === 1 ? 'סרטון אחד מהטלפון' : `${remote} סרטונים מהטלפון`) : savedVideos ? (savedVideos === 1 ? 'סרטון אחד' : `${savedVideos} סרטונים`) : '—'}</td></tr>}
+                      : w.noList}</td></tr>}
+                    {(isD || isE) && <tr><td>{w.sumVideo}</td><td>{up.usable.length ? (up.totalDuration ? fmtDuration(up.totalDuration) : w.videosN(up.usable.length)) : remote ? w.phoneVideosN(remote) : savedVideos ? w.videosN(savedVideos) : '—'}</td></tr>}
                   </tbody></table>
                 </div>
               )}
@@ -474,27 +479,27 @@ export function Wizard({ funnel = 'b' }: { funnel?: 'b' | 'd' | 'e' }) {
 
               {step < S_DONE && (
                 <div className={`wiz-actions ${step === S_ITEMS || (step === S_INFO && mode === 'items') ? 'wiz-actions-sticky' : ''} ${isD && step === S_VIDEO ? 'vid-d' : ''}`}>
-                  {step > 2 && !(isD && step === S_VIDEO) ? <button type="button" className="btn-link" onClick={() => go(step - 1)}>חזרה</button> : !(isD && step === S_VIDEO) && <span />}
+                  {step > 2 && !(isD && step === S_VIDEO) ? <button type="button" className="btn-link" onClick={() => go(step - 1)}>{T.common.back}</button> : !(isD && step === S_VIDEO) && <span />}
                   {isD && step === S_VIDEO ? (
                     <>
                       <div className={`vid-d-row ${up.usable.length || remote ? 'has' : ''}`}>
                         {!up.usable.length && !remote && <VideoButtons compact onFiles={(f) => { up.add(f); setFail(''); }} />}
-                        {(up.usable.length > 0 || remote > 0) && <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn ? 'המשך בכל זאת' : 'המשך'}</button>}
+                        {(up.usable.length > 0 || remote > 0) && <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn ? T.common.nextAnyway : T.common.next}</button>}
                       </div>
-                      <button type="button" className="btn-link" onClick={() => go(step - 1)}>חזרה</button>
+                      <button type="button" className="btn-link" onClick={() => go(step - 1)}>{T.common.back}</button>
                     </>
                   ) : step === S_INFO ? (
-                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy || !mode} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn && mode === 'video' ? 'שליחה בכל זאת' : 'שלחו לי 5 הצעות'}{mode === 'items' && itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
+                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy || !mode} aria-busy={busy}><Corners />{busy && <Spinner />} {shortWarn && mode === 'video' ? w.sendAnyway : T.common.send5}{mode === 'items' && itemsCount(items) > 0 ? w.itemsSuffix(itemsCount(items)) : ''}</button>
                   ) : step === S_ITEMS ? (
-                    <button type="submit" className={`btn ${isD && !items.list.length ? 'btn-secondary' : 'btn-primary'} btn-lg blueprint`} disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {isD && !items.list.length ? 'שליחה בלי רשימה (בלי ההנחה)' : 'שלחו לי 5 הצעות'}{itemsCount(items) > 0 ? ` (${itemsCount(items)} פריטים)` : ''}</button>
+                    <button type="submit" className={`btn ${isD && !items.list.length ? 'btn-secondary' : 'btn-primary'} btn-lg blueprint`} disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {isD && !items.list.length ? w.sendNoList : T.common.send5}{itemsCount(items) > 0 ? w.itemsSuffix(itemsCount(items)) : ''}</button>
                   ) : (
-                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} המשך</button>
+                    <button type="submit" className="btn btn-primary btn-lg blueprint" disabled={busy} aria-busy={busy}><Corners />{busy && <Spinner />} {T.common.next}</button>
                   )}
                 </div>
               )}
             </form>
           </Blueprint>
-          {step > 1 && step < S_DONE && <p className="wiz-note">שמרנו את השם והטלפון. אם תצטרכו לעצור, נחזור אליכם.</p>}
+          {step > 1 && step < S_DONE && <p className="wiz-note">{w.note}</p>}
         </div>
     </FlowShell>
   );

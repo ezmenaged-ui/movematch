@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { CalendarDays, History, Inbox, LogOut, Send, Truck, UserRound, Users } from 'lucide-react';
 import { MoverLogo } from './MoverLogo';
-import { logout } from '@/app/movers/actions';
+import { logout } from '@/app/(he)/movers/actions';
 import type { Me } from '@/lib/mover';
 import '../app/admin.css';
 import '../app/mover.css';

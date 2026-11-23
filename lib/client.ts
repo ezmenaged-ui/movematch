@@ -1,5 +1,6 @@
 'use client';
 import type { Variant } from './validate';
+import { pageLocale } from './i18n';
 
 const UTM_KEY = 'mm_utm';
 const ATTR_KEY = 'mm_attr';
@@ -100,7 +101,8 @@ async function leadFail(r: Response, msg: string): Promise<never> {
 export async function createLead(variant: Variant, fields: Record<string, unknown>, honeypot = ''): Promise<LeadRef> {
   const r = await fetch('/api/leads', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ variant, ...getAttribution(), ...(await gaIds()), ...fields, entry: getEntry(), website: honeypot }),
+    // lang: the English site (/en) saves its leads with lang 'en' (movers see "English speaker", the client gets English SMS).
+    body: JSON.stringify({ variant, ...getAttribution(), ...(await gaIds()), ...fields, entry: getEntry(), ...(pageLocale() === 'en' ? { lang: 'en' } : {}), website: honeypot }),
   });
   if (!r.ok) await leadFail(r, 'create failed');
   return r.json();
@@ -128,7 +130,8 @@ export async function updateLead(ref: LeadRef, fields: Record<string, unknown>) 
  */
 export function funnelParams(funnel: string, theme?: string | null) {
   const t = theme || 'photo';
-  return { funnel, theme: t, variant_id: `${funnel}-${t}` };
+  // site_lang: 'en' on the English site (/en). Same funnel / variant_id as the Hebrew pages, so reports can split by language.
+  return { funnel, theme: t, variant_id: `${funnel}-${t}`, ...(pageLocale() === 'en' ? { site_lang: 'en' } : {}) };
 }
 export function trackStep(funnel: string, theme: string | null | undefined, n: number, name: string, extra: Record<string, unknown> = {}) {
   track('funnel_step', { ...funnelParams(funnel, theme), step_number: n, step_name: `${n}_${name}`, ...extra });
@@ -252,4 +255,4 @@ export function videoDuration(file: File): Promise<number | null> {
 }
 
 export const fmtDuration = (s: number | null | undefined) =>
-  s == null ? '' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} דק׳`;
+  s == null ? '' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} ${pageLocale() === 'en' ? 'min' : 'דק׳'}`;

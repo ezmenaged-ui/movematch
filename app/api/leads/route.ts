@@ -8,17 +8,8 @@ import { homeLeadsLive, isQaEntry, isTestLead } from '@/lib/qa';
 import { siteUrl } from '@/lib/notify';
 import { cleanLeadInput } from '@/lib/sanitize';
 import { isValidName, isValidPhone } from '@/lib/validate';
+import { tenderOpenedSms } from '@/lib/clientSms';
 
-/** "Your tender is open" SMS. Hebrew SMS segments are 67 chars, so this stays around 3 segments. */
-function tenderOpenedSms(l: LeadRow) {
-  const first = l.name.trim().split(/\s+/)[0];
-  return [
-    `היי ${first}, מכרז הובלה מס׳ ${l.tender_no} נפתח בהצלחה.`,
-    'בדף המכרז שלך אפשר לראות את הצעות המחיר מהמובילים בזמן אמת ולבחור את המוביל שלך:',
-    `${siteUrl()}/t/${l.client_code}`,
-    'צוות MoveMatch',
-  ].join('\n');
-}
 
 /**
  * "Tender opened" to the client: WhatsApp first (cheaper, richer). If WhatsApp can't be used or Twilio refuses it,

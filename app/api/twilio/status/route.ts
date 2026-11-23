@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { tenderOpenedSms } from '@/lib/clientSms';
 import { NextRequest, NextResponse } from 'next/server';
 import { db, LeadRow } from '@/lib/db';
 import { siteUrl } from '@/lib/notify';
@@ -56,13 +57,7 @@ export async function POST(req: NextRequest) {
   const { data } = await db().rpc('mm_admin_lead', { p_secret: process.env.MM_ADMIN_SECRET, p_id: lead });
   const l = data as LeadRow | null;
   if (l?.client_code) {
-    const first = l.name.trim().split(/\s+/)[0];
-    await trySendSms('tender-open-fallback', l.phone, [
-      `היי ${first}, מכרז הובלה מס׳ ${l.tender_no} נפתח בהצלחה.`,
-      'בדף המכרז שלך אפשר לראות את הצעות המחיר מהמובילים בזמן אמת ולבחור את המוביל שלך:',
-      `${siteUrl()}/t/${l.client_code}`,
-      'צוות MoveMatch',
-    ].join('\n'));
+    await trySendSms('tender-open-fallback', l.phone, tenderOpenedSms(l)); // English for English-site clients
   }
   return new NextResponse(null, { status: 204 });
 }

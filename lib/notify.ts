@@ -36,6 +36,7 @@ export function leadText(event: LeadEvent, l: LeadRow, siteUrl: string) {
     l.entry === 'home' ? (l.variant === 'chat' ? '💬 משפך F (צ׳אט וואטסאפ) בבדיקה: לא נשלח למובילים. ליד אמיתי? להעביר ידנית מ-/admin' : '🏠 דף הבית (סביבת בדיקות): לא נשלח למובילים. ליד אמיתי? להעביר ידנית מ-/admin') : '',
     `${head} — MoveMatch${l.tender_no ? ` · מכרז ${l.tender_no}` : ''}`,
     `שם: ${l.name}`,
+    l.lang === 'en' ? '🇬🇧 הגיע/ה מהאתר באנגלית: לדבר איתו/ה באנגלית' : '',
     `טלפון: ${l.phone}`,
     l.city ? `עיר: ${l.city}` : '',
     l.move_from ? `מאיפה: ${addr(l.move_from)}` : '',

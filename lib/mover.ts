@@ -48,6 +48,8 @@ export type MoverLead = {
   video_skipped: boolean; priority: number | null; bid_count: number; my_bid: MyBid | null;
   /** Migration 028: an unfinished lead the operator sent by hand is 'partial'. */
   status?: 'partial' | 'complete'; admin_sent?: boolean;
+  /** Migration 029: 'en' = the client speaks English (came from the English site). */
+  lang?: 'en' | null;
 };
 export type MoverLeadSummary = MoverLead & { videos: number; items: number };
 export type MoverLeadFull = MoverLead & {

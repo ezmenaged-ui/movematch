@@ -51,6 +51,14 @@ These rules exist so that never happens again.
   owner's phone, one chat at a time.
 - Every WhatsApp alert has an SMS backup (immediate on refusal, or via `/api/twilio/status` when Meta reports undelivered).
 
+## English site (/en)
+
+- Hebrew pages live in `app/(he)/`, English in `app/(en)/en/`; each group has its own root layout (`components/RootShell.tsx`), so `<html lang dir>` is right.
+  All client-facing text is in `lib/i18n/he.ts` / `en.ts`; client components use `useT()` / `useLocale()` (`components/Locale.tsx`), links use `lp(locale, path)`.
+- Saved values never change with the language: cities in Hebrew (`lib/cities.ts` → `toHeCity`), option codes, Hebrew item names. Leads get `lang = 'en'`.
+- WhatsApp **templates** are Hebrew-only; do not create or send English templates without Meta approval. English clients get English SMS.
+- QA for the English site follows the same rules: QA name + owner's phone, `/qa` has no English copy, so test English pages locally (see PAGES.md).
+
 ## Analytics (GA4 + Google Ads)
 
 `lib/client.ts` → `trackStep` sends one `funnel_step` event per step reached, with `funnel`, `theme`, `variant_id`,

@@ -1,7 +1,7 @@
 'use client';
 import { Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { importEvents, type IcsEvent } from '@/app/movers/actions';
+import { importEvents, type IcsEvent } from '@/app/(he)/movers/actions';
 
 const TZ = 'Asia/Jerusalem';
 function inIsrael(instant: Date) {

@@ -2,10 +2,13 @@
 import type { FlowTheme } from '@/lib/handoff';
 import { Logo } from './Logo';
 import { QaBanner } from '../QaBanner';
+import { useLocale } from '../Locale';
+import { lp, t } from '@/lib/i18n';
 import '../../app/landing.css';
 
 /** Page frame for the follow-up pages (/b/steps, /c/details) so they keep the landing page's theme. */
 export function FlowShell({ theme, progress, children }: { theme: FlowTheme | null; progress?: string; children?: React.ReactNode }) {
+  const locale = useLocale();
   if (!theme) return <div className="fl-blank" />;
   return (
     <div className={`lp lp-${theme} lp-flow`}>
@@ -29,14 +32,14 @@ export function FlowShell({ theme, progress, children }: { theme: FlowTheme | nu
         )}
       </div>
       <header className="fl-head lp-wrap">
-        <Logo />
+        <Logo href={lp(locale, '/')} />
         {progress && <span className="fl-progress">{progress}</span>}
       </header>
       <main className="fl-main">{children}</main>
       <footer className="lp-foot">
         <div className="lp-wrap">
           <span>© {new Date().getFullYear()} MoveMatch</span>
-          <span>השירות ללא עלות ללקוח. הפרטים שלכם מועברים רק למובילים לצורך הצעת מחיר, ועדכונים על המכרז וההצעות יישלחו אליכם ב-SMS ובוואטסאפ. <a href="/privacy">מדיניות פרטיות</a></span>
+          <span>{t(locale).flow.note} <a href={lp(locale, '/privacy')}>{t(locale).footer.privacy}</a></span>
         </div>
       </footer>
     </div>

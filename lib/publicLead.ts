@@ -8,6 +8,7 @@ export type PublicLead = {
   video_skipped: boolean;
   closes_at?: string | null; now?: string;
   items?: import('./items').ItemsValue | null;
+  lang?: 'en' | null;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

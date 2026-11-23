@@ -2,14 +2,17 @@ import { Logo } from './themed/Logo';
 import '../app/landing.css';
 import '../app/tender.css';
 import { LEGAL } from '@/lib/legal';
+import { lp, t, type Locale } from '@/lib/i18n';
+import { FootLinks } from './themed/FootLinks';
 
 /** Shared frame for the client tender pages: calm, airy, a soft illustration of the new home instead of a busy photo. */
-export function TenderShell({ tenderNo, children, hero }: { tenderNo: number; children: React.ReactNode; hero?: React.ReactNode }) {
+export function TenderShell({ tenderNo, children, hero, locale = 'he' }: { tenderNo: number; children: React.ReactNode; hero?: React.ReactNode; locale?: Locale }) {
+  const d = t(locale);
   return (
     <div className="lp tp tz">
       <header className="lp-wrap tz-top">
-        <Logo />
-        <span className="tp-no">מכרז <b dir="ltr">{tenderNo}</b></span>
+        <Logo href={lp(locale, '/')} />
+        <span className="tp-no">{d.tender.no} <b dir="ltr">{tenderNo}</b></span>
       </header>
       {hero && (
         <section className="lp-wrap">
@@ -23,8 +26,8 @@ export function TenderShell({ tenderNo, children, hero }: { tenderNo: number; ch
       <main className="lp-wrap tp-main">{children}</main>
       <footer className="tp-foot">
         <div className="lp-wrap">
-          <span>© {new Date().getFullYear()} MoveMatch · {LEGAL.entityShort}, ח.פ. {LEGAL.companyId} · השירות ללא עלות ללקוח</span>
-          <span className="foot-links"><a href="/privacy">מדיניות פרטיות</a><a href="/terms">תנאי שימוש</a><a href="/accessibility">הצהרת נגישות</a><a href="/our-movers">המובילים שלנו</a></span>
+          <span>© {new Date().getFullYear()} MoveMatch · {locale === 'en' ? LEGAL.entityShortEn : LEGAL.entityShort}, {d.footer.companyId} {LEGAL.companyId} · {d.footer.free}</span>
+          <FootLinks locale={locale} />
         </div>
       </footer>
     </div>

@@ -4,7 +4,10 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Funnel, loadHandoff, NEXT_PATH, saveHandoff, VARIANT } from '@/lib/handoff';
 import { createLead, funnelParams, PhoneRecentError, track, trackOnce, trackStep, updateLead } from '@/lib/client';
-import { emptyAddress, isValidName, isValidPhone, MSG, normalizePhone, phoneRecentMsg, Rooms } from '@/lib/validate';
+import { emptyAddress, isValidName, isValidPhone, msgs, normalizePhone, phoneRecentMsg, Rooms } from '@/lib/validate';
+import { lp, t } from '@/lib/i18n';
+import { toHeCity } from '@/lib/cities';
+import { useLocale } from './Locale';
 import { CityDatalist, CityField, Field, PhoneField, RoomsPicker } from './fields';
 import { Blueprint, Corners, MidragBadge, Spinner } from './ui';
 import { LegalNote } from './LegalNote';
@@ -15,6 +18,8 @@ import type { FlowTheme as Theme } from '@/lib/handoff';
 /** Shared submit logic for the first step (old design and the themed landings). */
 export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-form') {
   const router = useRouter();
+  const locale = useLocale();
+  const MSG = msgs(locale);
   const [v, setV] = useState({ name: '', phone: '', city: '' });
   const [rooms, setRooms] = useState<Rooms | ''>(''); // funnel A only, optional (B–E ask it on their origin step)
   const [err, setErr] = useState<Record<string, string>>({});
@@ -52,17 +57,17 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
       // (a second one would also hit the 30-day phone rule and block the client from their own request).
       const prev = isA ? null : loadHandoff(funnel);
       if (prev && normalizePhone(prev.phone) === fields.phone) {
-        const r = await updateLead(prev.ref, { name: fields.name, city: fields.city }).catch(() => null);
+        const r = await updateLead(prev.ref, { name: fields.name, city: toHeCity(fields.city) }).catch(() => null);
         if (r && r.status !== 'complete') {
           saveHandoff({ ...prev, ...fields, theme: theme ?? prev.theme });
           leaving = true;
-          router.push(NEXT_PATH[funnel] + window.location.search);
+          router.push(lp(locale, NEXT_PATH[funnel]) + window.location.search);
           return;
         }
       }
       // A has no origin step: the (optional) home size is kept on move_from with the city, like the other funnels store it.
-      const size = isA && rooms ? { move_from: { ...emptyAddress(), city: fields.city, rooms } } : {};
-      const ref = await createLead(VARIANT[funnel], { ...fields, ...size, theme, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
+      const size = isA && rooms ? { move_from: { ...emptyAddress(), city: toHeCity(fields.city), rooms } } : {};
+      const ref = await createLead(VARIANT[funnel], { ...fields, city: toHeCity(fields.city), ...size, theme, status: isA ? 'complete' : 'partial', furthest_step: 1 }, hp);
       const fp = funnelParams(funnel, theme);
       track('lead_created', fp);
       trackOnce('generate_lead', ref.id, fp);
@@ -70,10 +75,10 @@ export function useCallbackLead(funnel: Funnel, theme?: Theme, formSel = '.hero-
       if (isA) { trackOnce('lead_complete', ref.id, fp); setDone(true); return; }
       saveHandoff({ funnel, ref, ...fields, theme });
       leaving = true;
-      router.push(NEXT_PATH[funnel] + window.location.search);
+      router.push(lp(locale, NEXT_PATH[funnel]) + window.location.search);
     } catch (e) {
-      if (e instanceof PhoneRecentError) setErr({ phone: phoneRecentMsg(e.until) });
-      else setFail('משהו השתבש. נסו שוב בעוד רגע.');
+      if (e instanceof PhoneRecentError) setErr({ phone: phoneRecentMsg(e.until, locale) });
+      else setFail(t(locale).common.fail);
     } finally { if (!leaving) setBusy(false); }
   }
   return { v, set, rooms, setRooms, err, busy, done, fail, hp, setHp, submit };

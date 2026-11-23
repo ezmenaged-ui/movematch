@@ -1,11 +1,13 @@
 'use client';
 import { type Address, addrParts, joinAddr } from '@/lib/validate';
 import { CityField, ElevatorChoice, ElevatorTypePicker, Field, ParkingPicker, RoomsPicker } from './fields';
+import { useT } from './Locale';
 
 /** `origin`: the address they're moving from, which starts with the home size. */
 export function AddressFields({ value, onChange, errors = {}, origin = false }: {
   value: Address; onChange: (a: Address) => void; errors?: Partial<Record<keyof Address, string>>; origin?: boolean;
 }) {
+  const f = useT().fields;
   const { street, number } = addrParts(value);
   const set = <K extends keyof Address>(k: K, v: Address[K]) => onChange({ ...value, [k]: v });
   return (
@@ -14,12 +16,12 @@ export function AddressFields({ value, onChange, errors = {}, origin = false }: 
       {/* Two rows of two: city + street, then house number + floor. `address` keeps "street number" for movers, emails and the crew sheet. */}
       <div className="row-2">
         <CityField value={value.city} onChange={(v) => set('city', v)} error={errors.city} />
-        <Field label="רחוב" value={street} onChange={(v) => onChange({ ...value, street: v, number, address: joinAddr(v, number) })} error={errors.street} autoComplete="address-line1" placeholder="שם הרחוב" />
+        <Field label={f.street} value={street} onChange={(v) => onChange({ ...value, street: v, number, address: joinAddr(v, number) })} error={errors.street} autoComplete="address-line1" placeholder={f.streetPh} />
       </div>
       <div className="row-2">
-        <Field label="מספר בית" value={number} onChange={(v) => onChange({ ...value, street, number: v, address: joinAddr(street, v) })} error={errors.number} inputMode="numeric" placeholder="למשל 12" />
+        <Field label={f.number} value={number} onChange={(v) => onChange({ ...value, street, number: v, address: joinAddr(street, v) })} error={errors.number} inputMode="numeric" placeholder={f.numberPh} />
         {/* Floor always (before the elevator), then elevator: with one we also ask its size. No apartment number. */}
-        <Field label="קומה" value={value.floor} onChange={(v) => set('floor', v)} error={errors.floor} inputMode="numeric" placeholder="קרקע = 0" />
+        <Field label={f.floor} value={value.floor} onChange={(v) => set('floor', v)} error={errors.floor} inputMode="numeric" placeholder={f.floorPh} />
       </div>
       <ElevatorChoice value={value.elevator} onChange={(v) => onChange({ ...value, elevator: v, elevator_type: v ? value.elevator_type || '' : '' })} error={errors.elevator} />
       {value.elevator === true && <ElevatorTypePicker value={value.elevator_type} onChange={(t) => set('elevator_type', t)} error={errors.elevator_type} />}

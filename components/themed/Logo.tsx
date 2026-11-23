@@ -1,7 +1,7 @@
 /** MoveMatch brand mark: the map pin with a house (as on the trucks) plus the wordmark. */
-export function Logo({ className = '' }: { className?: string }) {
+export function Logo({ className = '', href = '/' }: { className?: string; href?: string }) {
   return (
-    <a href="/" className={`lp-logo ${className}`} aria-label="MoveMatch" dir="ltr">
+    <a href={href} className={`lp-logo ${className}`} aria-label="MoveMatch" dir="ltr" translate="no">
       <svg viewBox="0 0 40 50" width="34" height="42" aria-hidden>
         <path d="M20 2a17.5 17.5 0 0 0-17.5 17.5C2.5 33 20 48 20 48s17.5-15 17.5-28.5A17.5 17.5 0 0 0 20 2z" fill="var(--lp-teal)" />
         <circle cx="20" cy="19.5" r="11.5" fill="#fff" />

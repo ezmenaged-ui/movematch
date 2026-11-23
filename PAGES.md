@@ -29,6 +29,26 @@ continues to `/e/steps`, same GA4 events as `e-photo`; tell /f leads apart by `l
 Phone: a round green button that opens WhatsApp with `היי, הגעתי מהאתר של MoveMatch ואני רוצה הצעת מחיר להובלה.` typed (not sent).
 Desktop: a "הצעת מחיר בוואטסאפ" pill that opens a panel with a WhatsApp Web button and a QR code for the phone. The chat runs as funnel F, labelled **FW**.
 
+**English site (`/en`)**, left to right, its own root layout (`app/(en)/layout.tsx`; Hebrew pages are in `app/(he)/`, URLs unchanged):
+
+| Page | What it is |
+|---|---|
+| `/en` | English homepage = funnel D, photo design. Held from movers like `/` (`entry = 'home'`) until `HOME_LEADS_LIVE=1`. |
+| `/en/d/photo` → `/en/d/steps` | Funnel D in English (`/en/d` and `/en/d/art` forward to the photo page). |
+| `/en/e/photo` → `/en/e/steps` | Funnel E in English. |
+| `/en/f` | E in English with the WhatsApp option; the chat it opens runs in English. |
+| `/en/t/<code>` (+ `/<n>`, `/all`, `/continue`) | The client's tender (offers) page in English. `/t/<code>` forwards there when the lead has `lang = 'en'`. |
+| `/en/u/<id>` | Phone video upload (QR code) in English. |
+| `/en/terms`, `/en/privacy` | English translations; the Hebrew versions prevail (stated on the page). |
+
+- A language switch ("English" / "עברית") sits at the top of every landing page; D, E, `/f` and the homepage switch to their twin, A/B/C to `/en`. hreflang links tell Google the pairs are translations.
+- Leads from `/en` are saved with `leads.lang = 'en'` (migration 029). Everything else is saved exactly as in Hebrew: English city names
+  are converted to the Hebrew list (`lib/cities.ts`, also server-side in `lib/sanitize.ts`), item lists keep the Hebrew item names (`lib/itemsEn.ts` is display only).
+- Movers and the operator see **"🇬🇧 הלקוח/ה דובר/ת אנגלית"**: in the mover WhatsApp/SMS alert details, on `/l/<token>`, in the mover panel, in `/admin` (tag "אנגלית") and in the operator email.
+- Client messages: the "tender opened" **SMS** is English (`lib/clientSms.ts`). **WhatsApp templates stay Hebrew** until English Utility templates are approved by Meta (their `/t/<code>` link opens the English page).
+- **WhatsApp chat in English**: a starter in English (the `/en` buttons, or anyone asking for a moving quote in English) runs funnel F in English (`lib/waFunnel.ts`, `data.lang = 'en'`): same questions as text (the tap buttons are Hebrew-only), English reminders, English tender link.
+- Text lives in `lib/i18n/he.ts` and `lib/i18n/en.ts` (same keys, TypeScript checks). Pages that exist in Hebrew only (accessibility statement, our movers, movers' pages, admin) are linked as "(Hebrew)".
+
 **Languages** (`lib/i18n/`): all landing-page text lives in `lib/i18n/he.ts`; components read it with `t(locale)`. To add a language, copy
 `he.ts`, add it to `lib/i18n/index.ts`, and add a route that passes `locale`. The pages also survive Chrome Translate: `app/layout.tsx` has a
 guard that stops React from crashing when a translator rewrites the page, and long translated headings wrap instead of spilling out

@@ -11,9 +11,12 @@ import { DEFAULT_LOCALE, t, type Locale } from '@/lib/i18n';
  * counted as the Google Ads WhatsApp ad (F2).
  */
 export const F_LANDING_STARTER = 'היי, הגעתי דרך MoveMatch ואני רוצה לקבל הצעות מחיר להובלה. אשמח לספר על המעבר שלי בוואטסאפ.';
+/** /en/f: the English starter. The bot recognises it (also FL) and runs the chat in English. */
+export const F_LANDING_STARTER_EN = "Hi, I found you through MoveMatch and I'd like moving quotes. I'd be happy to tell you about my move on WhatsApp.";
 
 /** The MoveMatch business WhatsApp number (the Twilio sender), from lib/legal.ts. Never the operator's personal number. */
 export const F_LANDING_WA_URL = `https://wa.me/${LEGAL.whatsapp}?text=${encodeURIComponent(F_LANDING_STARTER)}`;
+export const fLandingWaUrl = (locale: Locale) => `https://wa.me/${LEGAL.whatsapp}?text=${encodeURIComponent(locale === 'en' ? F_LANDING_STARTER_EN : F_LANDING_STARTER)}`;
 
 export function WhatsAppIcon({ size = 26 }: { size?: number }) {
   return (
@@ -32,7 +35,7 @@ export function WhatsAppCta({ funnel, theme, locale = DEFAULT_LOCALE }: { funnel
   return (
     <div className="lp-wa">
       <p className="lp-wa-q">{d.question}</p>
-      <a className="lp-wa-btn" href={F_LANDING_WA_URL} target="_blank" rel="noopener noreferrer"
+      <a className="lp-wa-btn" href={fLandingWaUrl(locale)} target="_blank" rel="noopener noreferrer"
         onClick={() => track('wa_cta_click', { ...funnelParams(funnel, theme), landing_page: 'f', placement: 'lead_card' })}>
         <WhatsAppIcon /> <span>{d.button}</span>
       </a>

@@ -12,6 +12,7 @@ import { waFunnelLive } from './qa';
 import { readAnswer, type AddrPatch, type Reading } from './waAi';
 import { gaEvent } from './gaServer';
 import { markQualified } from './qualify';
+import { toHeCity } from './cities';
 
 /**
  * Funnel F: the whole funnel as a WhatsApp chat.
@@ -38,6 +39,8 @@ type Data = {
   ask?: string;            // the question the bot is waiting for: 'from' (opener), 'from.floor', 'when', 'video', 'name', …
   name?: string; profile?: string;
   video_refusals?: number; videos?: number;
+  /** 'en': the chat started with an English starter (the English site): the bot asks and answers in English. */
+  lang?: 'en';
 };
 export type FunnelState = {
   phone: string; lead_id: string | null; lead_token: string | null; step: Step; data: Data; source: string | null;
@@ -52,7 +55,9 @@ const GA_NAME: Record<Step, string> = { from: 'start', to: 'to', when: 'when', v
 // ── Starter message ────────────────────────────────────────────────────────────────────────────────────────────────
 /** The ad's starter message: mentions a move and a price/offer, or carries an ad-group code like "#G1". */
 const CODE = /#([A-Za-z]{1,3}\d{0,3})\b/;
-export const isStarter = (body: string) => CODE.test(body) || (/הובל/.test(body) && /(הצע|מחיר)/.test(body) && body.length <= 120);
+/** An English starter (the English site's WhatsApp buttons, or anyone asking for a moving quote in English). */
+export const isEnStarter = (body: string) => !/[\u0590-\u05FF]/.test(body) && /\b(mov(e|ing|ers?)|relocat\w*)\b/i.test(body) && /\b(quotes?|prices?|offers?|estimates?)\b/i.test(body) && body.length <= 160;
+export const isStarter = (body: string) => CODE.test(body) || (/הובל/.test(body) && /(הצע|מחיר)/.test(body) && body.length <= 120) || isEnStarter(body);
 const isQaStarter = (body: string) => /^\s*QA\b/i.test(body);
 
 /**
@@ -72,6 +77,10 @@ export function starterSource(body: string): string | null {
   if (/הגעתי דרך MoveMatch/i.test(t)) return 'FL';
   // The floating WhatsApp button on every landing page (components/themed/WhatsAppFloat.tsx) → FW.
   if (/הגעתי מהאתר של MoveMatch/i.test(t)) return 'FW';
+  // The English site's starters (components/themed/WhatsAppCta.tsx, WhatsAppFloat.tsx): same labels. Other English text: unknown.
+  if (/found you through MoveMatch/i.test(t)) return 'FL';
+  if (/from the MoveMatch website/i.test(t)) return 'FW';
+  if (isEnStarter(t)) return null;
   if (/(בבקשה[.!]?|[.!])$/.test(t)) return 'F2';
   return null;
 }
@@ -115,6 +124,89 @@ const WHEN_Q = '*מתי ההובלה?*\n📅 תאריך (למשל 15/12), "סו�
 const VIDEO_Q = '*כמעט סיימנו 🎥*\nצלמו סרטון קצר ושלחו אותו כאן:\n🚪 עוברים על כל החדרים\n🗄️ עם ארונות פתוחים\n⏱️ עד 3 דקות\n\nכך המובילים נותנים מחיר מדויק בלי לבוא לראות את הדירה.';
 const NAME_Q = 'ועל איזה שם לרשום את הבקשה?';
 const TIME_Q = 'באיזה חלק של היום מתאים להתחיל?\n🌅 בוקר (7–11)\n☀️ צהריים (11–15)\n🌇 אחר הצהריים (15–19)\n🤷 לא משנה';
+// English versions of the questions (chats that started in English). Tap buttons are Hebrew-only, so English chats get text.
+const PARKING_Q_EN = ['How far from the building entrance can the truck park? (reply with a number)', '1. Up to 10 m', '2. 10 to 30 m', '3. 30 to 60 m', '4. 60 to 100 m', '5. Over 100 m / no parking'].join('\n');
+const FIELD_Q_EN: Record<AddrField, (s: Side) => string> = {
+  city: (s) => (s === 'from' ? 'Which city are you moving from?' : 'Which city are you moving to?'),
+  address: () => 'What is the street and house number?',
+  rooms: () => 'How many rooms does the home you are leaving have? (In Israel the living room counts: 2 bedrooms + living room = 3. Reply with a number, e.g. 3 or 3.5, or "house")',
+  floor: () => 'Which floor is the apartment on? (ground floor = 0)',
+  elevator: () => 'Is there an elevator in the building? (yes / no) If yes, is it small, medium or large?',
+  elevator_type: () => 'What size is the elevator: small, medium or large?',
+  crane: () => 'Can a crane be used at this address? (yes / no / not sure)',
+  parking: () => PARKING_Q_EN,
+};
+const OPENER_EN: Record<Side, string> = {
+  from: '*Where are you moving from?*\nPlease write in one message:\n🏙️ City\n📍 Street and house number\n🏠 How many rooms (in Israel the living room counts as a room)\n🛗 Is there an elevator',
+  to: '*And where are you moving to?*\nPlease write in one message:\n🏙️ City\n📍 Street and house number\n🛗 Is there an elevator',
+};
+const WHEN_Q_EN = '*When is the move?*\n📅 Date (e.g. 15/12), "end of the month" or "flexible"\n🕗 And if you have a preference: morning / midday / afternoon';
+const VIDEO_Q_EN = '*Almost done 🎥*\nFilm a short video and send it here:\n🚪 Walk through every room\n🗄️ With wardrobes open\n⏱️ Up to 3 minutes\n\nThis way movers can give an exact price without coming to see the home.';
+const NAME_Q_EN = 'And what name should we put the request under?';
+const TIME_Q_EN = 'What time of day suits you to start?\n🌅 Morning (7–11)\n☀️ Midday (11–15)\n🌇 Afternoon (15–19)\n🤷 Any time';
+
+/** Every other bot message, in Hebrew and English. */
+const TX = {
+  he: {
+    welcome: (hi: string) => [`היי${hi ? ` ${hi}` : ''}! 👋 כאן MoveMatch.`, '⏱️ כמה שאלות פשוטות, בערך 4 דקות', '💬 הצעות מחיר ממובילים מאומתים באזור שלכם, ישירות לכאן', '✅ בחינם וללא התחייבות', '', 'בהמשך השיחה אתם מאשרים ש-MoveMatch תעביר את הפרטים שתמסרו כאן למובילים ותשלח לכם עדכונים בוואטסאפ. להפסקה בכל שלב: כתבו "הסר".'].join('\n'),
+    resume: 'ממשיכים מאיפה שעצרנו 🙂\n\n',
+    recent: 'כבר נפתח מכרז הובלה עם המספר הזה בחודש האחרון, ולכן לא נוכל לפתוח חדש כרגע. יש שאלה? כתבו כאן ונחזור אליכם 🙏',
+    invalid: 'כדי לפתוח בקשה צריך מספר נייד ישראלי. אפשר למלא את הפרטים באתר: https://movematch.co.il',
+    videoFail: 'לא הצלחנו לשמור את הסרטון 😕 אפשר לנסות שוב, או לצלם סרטון קצר יותר.\n\n',
+    videoGot: 'קיבלנו את הסרטון 👍\n\n',
+    voice: 'כרגע אפשר לענות רק בהקלדה או בכפתורים 🙂\n\n',
+    videoNext: 'קיבלנו את הסרטון 👍 אם יש עוד חדרים, אפשר לשלוח עוד סרטונים גם בהמשך.\n\n',
+    noVideoOk: 'אין בעיה, נמשיך בלי סרטון. מוביל ייצור איתכם קשר כדי להבין מה עובר.\n\n',
+    videoWhy: 'הסרטון חוסך לכם ביקור של מוביל בבית ונותן מחיר מדויק יותר. אפשר לצלם גם מאוחר יותר ולשלוח כאן.\nאם בכל זאת אין אפשרות, כתבו "בלי סרטון" ונמשיך.',
+    done: (first: string, no: number | null, test: boolean, held: boolean, link: string) => [`תודה ${first}! 🎉 מכרז הובלה מס׳ ${no} נפתח.`,
+      test ? '🧪 זו בדיקה (QA): הבקשה נשמרה כליד בדיקה ולא נשלחה לאף מוביל.'
+        : held ? 'אנחנו מעבירים את הפרטים למובילים באזור שלך. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:'
+        : 'המובילים באזור שלך מקבלים עכשיו את הפרטים. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:',
+      link, '', 'צוות MoveMatch'].join('\n'),
+    human: 'בטח! נציג של MoveMatch יחזור אליכם כאן בהקדם 🙏',
+    waitingVideo: 'מחכים לסרטון 🙂\n\n',
+    notUnderstood: 'לא הבנתי עד הסוף 🙂 ',
+    lateVideoOk: 'קיבלנו את הסרטון והוספנו אותו לבקשה שלך 👍',
+    lateVideoFail: 'לא הצלחנו לשמור את הסרטון 😕 אפשר לנסות שוב, או לשלוח קובץ קצר יותר.',
+    remind1: (hi: string) => `היי${hi ? ` ${hi}` : ''} 👋 נשארו רק עוד כמה שאלות כדי לקבל הצעות מחיר להובלה.\n\n`,
+    remind2: 'תזכורת אחרונה מ-MoveMatch 🚚 אם עדיין מחפשים מוביל, אפשר להמשיך מכאן:\n\n',
+    noVideoWords: /^(בלי סרטון|אין לי סרטון|אין סרטון|לא רוצה|לא יכול(ה)?|אין)$/,
+    skipVideo: /בלי סרטון/,
+    declineVideo: /אין|לא יכול|לא רוצה|בלי סרטון|אחר כך|מאוחר/,
+    profileFallback: 'לקוח וואטסאפ',
+  },
+  en: {
+    welcome: (hi: string) => [`Hi${hi ? ` ${hi}` : ''}! 👋 This is MoveMatch.`, '⏱️ A few simple questions, about 4 minutes', '💬 Price quotes from vetted movers in your area, straight to this chat', '✅ Free, with no obligation', '', 'By continuing, you agree that MoveMatch passes the details you give here to movers and sends you updates on WhatsApp. To stop at any time, write "STOP".'].join('\n'),
+    resume: "Let's continue where we left off 🙂\n\n",
+    recent: "A moving tender was already opened with this number in the last month, so we can't open a new one right now. Any questions? Write here and we'll get back to you 🙏",
+    invalid: 'To open a request we need an Israeli mobile number. You can fill in your details on the website: https://movematch.co.il/en',
+    videoFail: "We couldn't save the video 😕 Please try again, or film a shorter video.\n\n",
+    videoGot: 'Got your video 👍\n\n',
+    voice: 'For now, please reply by typing 🙂\n\n',
+    videoNext: 'Got your video 👍 If there are more rooms, you can send more videos later too.\n\n',
+    noVideoOk: "No problem, we'll continue without a video. A mover will contact you to understand what is moving.\n\n",
+    videoWhy: 'The video saves you a home visit from a mover and gives a more exact price. You can also film later and send it here.\nIf it really is not possible, write "no video" and we will continue.',
+    done: (first: string, no: number | null, test: boolean, held: boolean, link: string) => [`Thank you ${first}! 🎉 Moving tender no. ${no} is open.`,
+      test ? '🧪 This is a test (QA): the request was saved as a test lead and not sent to any mover.'
+        : held ? 'We are passing your details to movers in your area. Every price quote will arrive here, and you can see and compare them all on your tender page:'
+        : 'Movers in your area are receiving your details now. Every price quote will arrive here, and you can see and compare them all on your tender page:',
+      link, '', 'The MoveMatch team'].join('\n'),
+    human: 'Of course! Someone from the MoveMatch team will get back to you here soon 🙏',
+    waitingVideo: 'Waiting for your video 🙂\n\n',
+    notUnderstood: "Sorry, I didn't quite get that 🙂 ",
+    lateVideoOk: 'Got your video and added it to your request 👍',
+    lateVideoFail: "We couldn't save the video 😕 Please try again, or send a shorter file.",
+    remind1: (hi: string) => `Hi${hi ? ` ${hi}` : ''} 👋 Just a few more questions and you can get moving quotes.\n\n`,
+    remind2: 'A last reminder from MoveMatch 🚚 If you are still looking for a mover, you can continue here:\n\n',
+    noVideoWords: /^(no video|no|i don'?t have (a|one|a video)|i can'?t|can'?t|cannot|not now|later)$/i,
+    skipVideo: /no video|without (a )?video/i,
+    declineVideo: /no video|without|can'?t|cannot|don'?t have|later|not now|skip/i,
+    profileFallback: 'WhatsApp customer',
+  },
+};
+type Lang = 'he' | 'en';
+const langOf = (d: Data | undefined): Lang => (d?.lang === 'en' ? 'en' : 'he');
+
 const LABEL: Record<AddrField, string> = { city: 'city', address: 'street and house number', rooms: 'number of rooms in the home they are leaving', floor: 'floor', elevator: 'elevator (and its size)', elevator_type: 'elevator size', crane: 'crane', parking: 'truck parking distance' };
 
 function missing(a: Partial<Address> | undefined, side: Side): AddrField | null {
@@ -145,9 +237,9 @@ const BUTTONS: Partial<Record<AddrField | 'time', { sid: string; text: string }>
 const buttonsFor = (ask: string | undefined) => BUTTONS[(ask || '').split('.')[1] as AddrField | 'time'];
 
 /** Send the question the bot is waiting for, after an optional prefix (buttons when the question has them). */
-async function sayQuestion(digits: string, prefix: string, ask: string | undefined) {
-  const b = buttonsFor(ask);
-  const plain = `${prefix}${questionText(ask)}`.trim(); // also the fallback if Twilio refuses the buttons
+async function sayQuestion(digits: string, prefix: string, ask: string | undefined, lang: Lang = 'he') {
+  const b = lang === 'en' ? undefined : buttonsFor(ask); // the tap buttons (Twilio Content) are in Hebrew
+  const plain = `${prefix}${questionText(ask, lang)}`.trim(); // also the fallback if Twilio refuses the buttons
   return b ? say(digits, `${prefix}${b.text}`.trim(), { sid: b.sid, fallback: plain }) : say(digits, plain);
 }
 
@@ -169,6 +261,8 @@ const timeAnswer = (payload: string): Partial<When> | null =>
 const tidy = (t: string) => t.trim().replace(/[.!,\s]+$/u, '').replace(/\s+/g, ' ');
 function quickAddress(field: AddrField, raw: string): Partial<Address> | null {
   const t = tidy(raw);
+  const en = quickAddressEn(field, t);
+  if (en) return en;
   if (field === 'floor') { const m = t.match(/^(?:קומה\s*)?(-?\d{1,2})$/); return m ? { floor: m[1] } : /^(קומת )?קרקע$/.test(t) ? { floor: '0' } : null; }
   if (field === 'city') return (CITIES as string[]).includes(t) ? { city: t } : null; // abbreviations (ת"א) go to Claude, which writes the full name
   if (field === 'address') return /^[א-ת"'׳״ .-]{2,30} \d{1,4}[א-ת]?$/.test(t) ? { address: t } : null;
@@ -184,13 +278,45 @@ function quickAddress(field: AddrField, raw: string): Partial<Address> | null {
   if (field === 'parking') { const m = t.match(/^[1-5]$/); return m ? { parking: PARKING_OPTIONS[Number(m[0]) - 1].v } : null; }
   return null;
 }
+/** English answers (English chats, or anyone who answers in English). */
+function quickAddressEn(field: AddrField, t: string): Partial<Address> | null {
+  if (/[\u0590-\u05FF]/.test(t)) return null;
+  const l = t.toLowerCase();
+  if (field === 'floor') { const m = l.match(/^(?:floor\s*)?(-?\d{1,2})(?:st|nd|rd|th)?(?:\s*floor)?$/); return m ? { floor: m[1] } : /^(ground|ground floor|g)$/.test(l) ? { floor: '0' } : null; }
+  if (field === 'city') { const c = toHeCity(t); return (CITIES as string[]).includes(c) ? { city: c } : null; }
+  if (field === 'address') return /^[a-z'" .-]{2,30} \d{1,4}[a-z]?$/i.test(t) || /^\d{1,4}[a-z]? [a-z'" .-]{2,30}$/i.test(t) ? { address: t } : null;
+  if (field === 'elevator' || field === 'elevator_type') {
+    const sz = /^(a )?(small)( one| elevator)?$/.test(l) ? 'small' : /^(a )?(medium|regular|normal|average)( one| elevator)?$/.test(l) ? 'regular' : /^(a )?(large|big)( one| elevator)?$/.test(l) ? 'large' : null;
+    if (sz) return { elevator: true, elevator_type: sz };
+    if (field === 'elevator' && /^(yes|yeah|yep|there is|there is one|yes there is)$/.test(l)) return { elevator: true };
+    if (field === 'elevator' && /^(no|nope|no elevator|stairs|stairs only|only stairs|there isn'?t)$/.test(l)) return { elevator: false, elevator_type: '' };
+    return null;
+  }
+  if (field === 'rooms') {
+    if (/^(a )?(private )?(house|home|cottage|villa)$/.test(l)) return { rooms: 'house' };
+    if (/^studio$/.test(l)) return { rooms: 'r1' };
+    const m = l.match(/^(\d{1,2})(?:[.,]5| and a half)?(?: rooms?)?$/);
+    if (!m || Number(m[1]) < 1) return null;
+    const n = Number(m[1]);
+    return { rooms: (n >= 6 ? 'r6' : `r${n}`) as Address['rooms'] };
+  }
+  if (field === 'crane') return /^(yes|yeah|possible)$/.test(l) ? { crane: 'yes' } : /^(no|not possible)$/.test(l) ? { crane: 'no' } : /^(not sure|don'?t know|no idea)$/.test(l) ? { crane: 'unknown' } : null;
+  return null;
+}
+
 function quickWhen(raw: string): Partial<When> | null {
   const t = tidy(raw);
+  if (/^(flexible|i'?m flexible|not sure( yet)?|don'?t know( yet)?)$/i.test(t)) return { date: '', date_flexible: true, time: '', time_flexible: true };
   if (/^(גמיש|גמישים|לא יודע(ת|ים)?( עדיין)?|עוד לא יודע(ת|ים)?)$/.test(t)) return { date: '', date_flexible: true, time: '', time_flexible: true };
   return /^\d{1,2}[./]\d{1,2}([./]\d{2,4})?( (ב)?(בוקר|צהריים|אחה"?צ|אחר הצהריים))?$/.test(t) ? fallbackWhen(t) : null;
 }
 function quickTime(raw: string): Partial<When> | null {
   const t = tidy(raw);
+  const l = t.toLowerCase();
+  if (/^(in the )?morning$/.test(l)) return { time: 'morning', time_flexible: false };
+  if (/^(at )?(midday|noon|lunchtime)$/.test(l)) return { time: 'noon', time_flexible: false };
+  if (/^(in the )?(afternoon|evening)$/.test(l)) return { time: 'afternoon', time_flexible: false };
+  if (/^(any ?time|doesn'?t matter|no preference|flexible|whenever)$/.test(l)) return { time: '', time_flexible: true };
   if (/^(ב)?בוקר$/.test(t)) return { time: 'morning', time_flexible: false };
   if (/^(ב)?צהריים$/.test(t)) return { time: 'noon', time_flexible: false };
   if (/^(אחה"?צ|אחר הצהריים|ערב)$/.test(t)) return { time: 'afternoon', time_flexible: false };
@@ -209,12 +335,14 @@ function roomsOf(t: string): Partial<Address> | null {
 const quickName = (raw: string) => { const t = tidy(raw); return /^[\p{L}'"׳״ -]{2,40}$/u.test(t) && t.split(' ').length <= 4 ? t : null; };
 
 /** The text of the question the bot is waiting for (also used by reminders). */
-export function questionText(ask: string | undefined): string {
-  if (!ask || ask === 'from' || ask === 'to') return OPENER[(ask as Side) || 'from'];
-  if (ask === 'when.time') return TIME_Q;
+export function questionText(ask: string | undefined, lang: Lang = 'he'): string {
+  const en = lang === 'en';
+  const O = en ? OPENER_EN : OPENER, F = en ? FIELD_Q_EN : FIELD_Q;
+  if (!ask || ask === 'from' || ask === 'to') return O[(ask as Side) || 'from'];
+  if (ask === 'when.time') return en ? TIME_Q_EN : TIME_Q;
   const [side, field] = ask.split('.') as [Side, AddrField];
-  if (field && FIELD_Q[field]) return FIELD_Q[field](side);
-  return ask === 'when' ? WHEN_Q : ask === 'video' ? VIDEO_Q : ask === 'name' ? NAME_Q : OPENER.from;
+  if (field && F[field]) return F[field](side);
+  return ask === 'when' ? (en ? WHEN_Q_EN : WHEN_Q) : ask === 'video' ? (en ? VIDEO_Q_EN : VIDEO_Q) : ask === 'name' ? (en ? NAME_Q_EN : NAME_Q) : O.from;
 }
 
 // ── State ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -283,27 +411,31 @@ export function nextReminder(lastIn: string, sent: number, now = new Date()) {
 }
 
 // ── Fallback parser (no AI key, or the AI call failed) ────────────────────────────────────────────────────────────
-const yesNo = (t: string) => (/לא\s*יודע|אין\s*לי\s*מושג/.test(t) ? 'unknown' : /^(לא|אין)\b|בלי|מדרגות/.test(t.trim()) ? 'no' : /^(כן|יש|בטח|אפשר)/.test(t.trim()) ? 'yes' : null);
-const size = (t: string) => (/קטנ/.test(t) ? 'small' : /גדול/.test(t) ? 'large' : /בינונ|רגיל/.test(t) ? 'regular' : null);
+const yesNo = (t: string) => (/לא\s*יודע|אין\s*לי\s*מושג|not sure|don'?t know|no idea/i.test(t) ? 'unknown' : /^(לא|אין)\b|בלי|מדרגות|^no\b|stairs|without/i.test(t.trim()) ? 'no' : /^(כן|יש|בטח|אפשר|yes|yeah|yep|there is)/i.test(t.trim()) ? 'yes' : null);
+const size = (t: string) => (/קטנ|small/i.test(t) ? 'small' : /גדול|large|big/i.test(t) ? 'large' : /בינונ|רגיל|medium|regular|normal/i.test(t) ? 'regular' : null);
 
 function fallbackAddress(t: string, field: AddrField | null): Partial<AddrPatch> {
   const p: Partial<AddrPatch> = {};
   if (!field) { // opener: try to pick out what we can
-    const city = [...CITIES].sort((a, b) => b.length - a.length).find((c) => t.includes(c)) || (areasOfCity(t.split(/[,\n]/)[0]).length ? t.split(/[,\n]/)[0].trim() : '');
+    const first = t.split(/[,\n]/)[0].trim();
+    const city = [...CITIES].sort((a, b) => b.length - a.length).find((c) => t.includes(c))
+      || ((CITIES as string[]).includes(toHeCity(first)) ? toHeCity(first) : '') // an English city name
+      || (areasOfCity(first).length ? first : '');
     if (city) p.city = city;
-    const floor = t.match(/קומה\s*(-?\d+)/)?.[1] ?? (/קרקע/.test(t) ? '0' : null);
+    const floor = t.match(/קומה\s*(-?\d+)/)?.[1] ?? t.match(/floor\s*(-?\d+)|(-?\d+)(?:st|nd|rd|th)?\s*floor/i)?.slice(1).find(Boolean) ?? (/קרקע|ground/i.test(t) ? '0' : null);
     if (floor != null) p.floor = floor;
-    const street = t.replace(city, '').split(/[,\n]/).map((s) => s.trim()).find((s) => /[א-ת]+\s*\d+/.test(s) && !/קומה|מעלית/.test(s));
+    const street = t.replace(city, '').replace(first, '').split(/[,\n]/).map((s) => s.trim()).find((s) => /[א-תA-Za-z]+\s*\d+/.test(s) && !/קומה|מעלית|floor|elevator|lift|rooms?\b/i.test(s));
     if (street) p.address = street;
-    const rm = t.match(/(\d{1,2})(?:[.,]5| וחצי)?\s*(?:חדרים|חד'?׳?)(?!\s*שינה)/)?.[1];
+    const rm = t.match(/(\d{1,2})(?:[.,]5| וחצי)?\s*(?:חדרים|חד'?׳?)(?!\s*שינה)/)?.[1] ?? t.match(/(\d{1,2})(?:[.,]5)?\s*rooms?\b(?!\s*bed)/i)?.[1];
     if (rm && Number(rm) >= 1) p.rooms = (Number(rm) >= 6 ? 'r6' : `r${rm}`) as AddrPatch['rooms'];
-    else if (/בית פרטי|קוטג|וילה/.test(t)) p.rooms = 'house';
-    if (/אין\s*מעלית|בלי\s*מעלית|מדרגות/.test(t)) p.elevator = false; else if (/מעלית/.test(t)) { p.elevator = true; p.elevator_type = size(t); }
+    else if (/בית פרטי|קוטג|וילה|private house|cottage|villa/i.test(t)) p.rooms = 'house';
+    if (/אין\s*מעלית|בלי\s*מעלית|מדרגות|no (elevator|lift)|without (an )?(elevator|lift)|stairs/i.test(t)) p.elevator = false; else if (/מעלית|elevator|lift/i.test(t)) { p.elevator = true; p.elevator_type = size(t); }
     return p;
   }
   const v = t.trim().slice(0, 120);
-  if (field === 'city' || field === 'address') p[field] = v;
-  if (field === 'floor') { const f = v.match(/-?\d+/)?.[0] ?? (/קרקע/.test(v) ? '0' : null); if (f != null) p.floor = f; }
+  if (field === 'city') p.city = toHeCity(v);
+  if (field === 'address') p.address = v;
+  if (field === 'floor') { const f = v.match(/-?\d+/)?.[0] ?? (/קרקע|ground/i.test(v) ? '0' : null); if (f != null) p.floor = f; }
   if (field === 'elevator') { const yn = yesNo(v); if (yn === 'no') p.elevator = false; else if (yn === 'yes' || size(v)) { p.elevator = true; p.elevator_type = size(v); } }
   if (field === 'elevator_type') p.elevator_type = size(v);
   if (field === 'crane') p.crane = yesNo(v) as AddrPatch['crane'];
@@ -313,7 +445,7 @@ function fallbackAddress(t: string, field: AddrField | null): Partial<AddrPatch>
 }
 
 function fallbackWhen(t: string): Partial<When> | null {
-  if (/גמיש|לא יודע|עוד לא/.test(t)) return { date: '', date_flexible: true, time: '', time_flexible: true };
+  if (/גמיש|לא יודע|עוד לא|flexible|not sure|don'?t know/i.test(t)) return { date: '', date_flexible: true, time: '', time_flexible: true };
   const m = t.match(/(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?/);
   if (!m) return null;
   const now = new Date(israelDate(new Date()) + 'T12:00:00Z');
@@ -321,7 +453,7 @@ function fallbackWhen(t: string): Partial<When> | null {
   let d = new Date(Date.UTC(y, Number(m[2]) - 1, Number(m[1]), 12));
   if (!m[3] && d < now) d = new Date(Date.UTC(++y, Number(m[2]) - 1, Number(m[1]), 12));
   if (Number.isNaN(d.getTime())) return null;
-  return { date: d.toISOString().slice(0, 10), date_flexible: false, time: /בוקר/.test(t) ? 'morning' : /צהר/.test(t) ? 'noon' : /אחה|ערב/.test(t) ? 'afternoon' : '', time_flexible: false };
+  return { date: d.toISOString().slice(0, 10), date_flexible: false, time: /בוקר|morning/i.test(t) ? 'morning' : /צהר|midday|noon/i.test(t) ? 'noon' : /אחה|ערב|afternoon|evening/i.test(t) ? 'afternoon' : '', time_flexible: false };
 }
 
 const cleanName = (s: string | null | undefined) => (s || '').replace(/[^\p{L}\p{M}\s'"׳״-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -333,9 +465,10 @@ type Ctx = { digits: string; local: string; st: FunnelState; profile: string };
 async function ensureLead(c: Ctx): Promise<'ok' | 'recent' | 'invalid'> {
   if (c.st.lead_id) return 'ok';
   if (!/^05\d{8}$/.test(c.local)) return 'invalid';
-  const name = (c.st.test ? 'QA וואטסאפ ' : '') + (cleanName(c.profile) || 'לקוח וואטסאפ');
+  const lang = langOf(c.st.data);
+  const name = (c.st.test ? 'QA וואטסאפ ' : '') + (cleanName(c.profile) || TX[lang].profileFallback);
   const { data, error } = await db().rpc('mm_create_lead', { p: {
-    variant: 'chat', name, phone: c.local, status: 'partial', furthest_step: 1,
+    variant: 'chat', name, phone: c.local, status: 'partial', furthest_step: 1, ...(lang === 'en' ? { lang: 'en' } : {}),
     utm_source: c.st.test ? 'qa' : 'whatsapp', utm_medium: 'google_ads_message', utm_campaign: c.st.source || null,
     user_agent: 'whatsapp-chat',
     // Held from movers while funnel F is being tested (see lib/qa.ts → waFunnelLive).
@@ -416,7 +549,8 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
       for (const v of videos) if (await storeVideo(c, v)) ok++;
       const row = await updateLead(c, {});
       if (ok && row) await notifyLead('video', row);
-      await say(digits, ok ? 'קיבלנו את הסרטון והוספנו אותו לבקשה שלך 👍' : 'לא הצלחנו לשמור את הסרטון 😕 אפשר לנסות שוב, או לשלוח קובץ קצר יותר.');
+      const tx = TX[langOf(st.data)];
+      await say(digits, ok ? tx.lateVideoOk : tx.lateVideoFail);
       await save(digits, {});
     } else {
       await save(digits, {});
@@ -427,35 +561,30 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
 
   if (fresh || !st || st.status !== 'active') {
     const test = isQaStarter(body) || !!m.operator;
+    const lang: Lang = isEnStarter(body.replace(/^\s*QA\b/i, '').trim()) ? 'en' : 'he';
     st = await save(digits, { reset: true, step: 'from', status: 'active', test, source: starterSource(body),
-      data: { ask: 'from', profile: m.name }, last_in: now, reminders: 0, next_reminder_at: null });
+      data: { ask: 'from', profile: m.name, ...(lang === 'en' ? { lang } : {}) }, last_in: now, reminders: 0, next_reminder_at: null });
     if (!st) return;
     const c: Ctx = { digits, local, st, profile: m.name };
-    ga(c, 'wa_conversation_start', { starter_variant: st.source || 'unknown' });
+    ga(c, 'wa_conversation_start', { starter_variant: st.source || 'unknown', ...(lang === 'en' ? { site_lang: 'en' } : {}) });
     step(c, 'from');
     const hi = cleanName(m.name).split(' ')[0];
     // Two messages: the welcome (with consent and how to opt out), then the first question on its own.
-    await say(digits, [
-      `היי${hi ? ` ${hi}` : ''}! 👋 כאן MoveMatch.`,
-      '⏱️ כמה שאלות פשוטות, בערך 4 דקות',
-      '💬 הצעות מחיר ממובילים מאומתים באזור שלכם, ישירות לכאן',
-      '✅ בחינם וללא התחייבות',
-      '',
-      'בהמשך השיחה אתם מאשרים ש-MoveMatch תעביר את הפרטים שתמסרו כאן למובילים ותשלח לכם עדכונים בוואטסאפ. להפסקה בכל שלב: כתבו "הסר".',
-    ].join('\n'));
-    await say(digits, OPENER.from);
+    await say(digits, TX[lang].welcome(hi));
+    await say(digits, questionText('from', lang));
     await save(digits, { next_reminder_at: nextReminder(now, 0) });
     return;
   }
 
   const c: Ctx = { digits, local, st, profile: m.name };
   const data: Data = { ...st.data };
+  const lang = langOf(data), tx = TX[lang];
   let reply = '';
   let nextStep: Step = st.step;
 
   // Starter sent again in the middle of a chat (clicked the ad twice): just ask the current question again.
   if (isStarter(body) && !videos.length) {
-    await sayQuestion(digits, 'ממשיכים מאיפה שעצרנו 🙂\n\n', data.ask);
+    await sayQuestion(digits, tx.resume, data.ask, lang);
     await save(digits, { last_in: now, next_reminder_at: nextReminder(now, st.reminders) });
     return;
   }
@@ -463,9 +592,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   // Lead first (from the first answer): runs the 30-day rule and gives videos somewhere to go.
   const lead = await ensureLead(c);
   if (lead !== 'ok') {
-    await say(digits, lead === 'recent'
-      ? 'כבר נפתח מכרז הובלה עם המספר הזה בחודש האחרון, ולכן לא נוכל לפתוח חדש כרגע. יש שאלה? כתבו כאן ונחזור אליכם 🙏'
-      : 'כדי לפתוח בקשה צריך מספר נייד ישראלי. אפשר למלא את הפרטים באתר: https://movematch.co.il');
+    await say(digits, lead === 'recent' ? tx.recent : tx.invalid);
     await save(digits, { status: 'handoff', last_in: now, next_reminder_at: null });
     return;
   }
@@ -474,16 +601,16 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   let stored = 0;
   for (const v of videos) if (await storeVideo(c, v)) stored++;
   if (stored) data.videos = (data.videos || 0) + stored;
-  if (videos.length && !stored) reply = 'לא הצלחנו לשמור את הסרטון 😕 אפשר לנסות שוב, או לצלם סרטון קצר יותר.\n\n';
-  else if (stored && st.step !== 'video') reply = 'קיבלנו את הסרטון 👍\n\n';
+  if (videos.length && !stored) reply = tx.videoFail;
+  else if (stored && st.step !== 'video') reply = tx.videoGot;
   let waitingForVideo = false;
   // Voice notes aren't transcribed (yet): ask to type or tap instead.
-  if (!body.trim() && media.some((x) => x.type.startsWith('audio/'))) reply += 'כרגע אפשר לענות רק בהקלדה או בכפתורים 🙂\n\n';
+  if (!body.trim() && media.some((x) => x.type.startsWith('audio/'))) reply += tx.voice;
 
   const text = body.trim();
   const ask = data.ask || st.step;
   let reading: Reading | null = null;
-  const readFor = async (asking: string) => (text ? (reading = await readAnswer({ asking, question: questionText(ask), message: text, today: todayText() })) : null);
+  const readFor = async (asking: string) => (text ? (reading = await readAnswer({ asking, question: questionText(ask, lang), message: text, today: todayText(), lang })) : null);
 
   if (st.step === 'from' || st.step === 'to') {
     const side = st.step;
@@ -539,22 +666,22 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
   } else if (st.step === 'video') {
     if (stored) {
       nextStep = 'name'; data.ask = 'name';
-      reply += 'קיבלנו את הסרטון 👍 אם יש עוד חדרים, אפשר לשלוח עוד סרטונים גם בהמשך.\n\n';
+      reply += tx.videoNext;
       await updateLead(c, { furthest_step: STEP_NO.name });
       step(c, 'name');
     } else if (text) {
-      const plainNo = /^(בלי סרטון|אין לי סרטון|אין סרטון|לא רוצה|לא יכול(ה)?|אין)$/.test(tidy(text));
+      const plainNo = tx.noVideoWords.test(tidy(text));
       const r = plainNo ? null : await readFor('a walk-through video of the apartment (the customer should send a video file)');
-      const declined = plainNo || (r ? r.intent === 'decline_video' : /אין|לא יכול|לא רוצה|בלי סרטון|אחר כך|מאוחר/.test(text));
+      const declined = plainNo || (r ? r.intent === 'decline_video' : tx.declineVideo.test(text));
       if (declined) {
         data.video_refusals = (data.video_refusals || 0) + 1;
-        if (data.video_refusals >= 2 || /בלי סרטון/.test(text)) {
+        if (data.video_refusals >= 2 || tx.skipVideo.test(text)) {
           nextStep = 'name'; data.ask = 'name';
-          reply += 'אין בעיה, נמשיך בלי סרטון. מוביל ייצור איתכם קשר כדי להבין מה עובר.\n\n';
+          reply += tx.noVideoOk;
           await updateLead(c, { video_skipped: true, furthest_step: STEP_NO.name });
           step(c, 'name');
         } else {
-          reply += 'הסרטון חוסך לכם ביקור של מוביל בבית ונותן מחיר מדויק יותר. אפשר לצלם גם מאוחר יותר ולשלוח כאן.\nאם בכל זאת אין אפשרות, כתבו "בלי סרטון" ונמשיך.';
+          reply += tx.videoWhy;
           await finish(c, data, nextStep, reply, now);
           return;
         }
@@ -579,15 +706,7 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
           else if (!q.qualified) console.warn(`[wa-funnel] lead ${row.id} complete but not qualified: ${q.missing.join(', ')}`);
           const first = name.split(' ')[0];
           const held = row.entry === 'home';
-          await say(digits, [
-            `תודה ${first}! 🎉 מכרז הובלה מס׳ ${row.tender_no} נפתח.`,
-            st.test ? '🧪 זו בדיקה (QA): הבקשה נשמרה כליד בדיקה ולא נשלחה לאף מוביל.'
-              : held ? 'אנחנו מעבירים את הפרטים למובילים באזור שלך. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:'
-              : 'המובילים באזור שלך מקבלים עכשיו את הפרטים. כל הצעת מחיר תגיע לכאן, ואפשר לראות את כולן ולהשוות בדף המכרז:',
-            `${siteUrl()}/t/${row.client_code}`,
-            '',
-            'צוות MoveMatch',
-          ].join('\n'));
+          await say(digits, tx.done(first, row.tender_no, st.test, held, `${siteUrl()}${lang === 'en' ? '/en' : ''}/t/${row.client_code}`));
           await save(digits, { step: 'done', status: 'done', data: { ...data, ask: 'done' }, last_in: now, next_reminder_at: null });
           await onLeadComplete(row, { pingMovers: true });
           return;
@@ -598,20 +717,20 @@ export async function handleFunnelMessage(m: { digits: string; name: string; bod
 
   // Asked for a person: hand the chat to the operator's inbox.
   if ((reading as Reading | null)?.intent === 'human') {
-    await say(digits, 'בטח! נציג של MoveMatch יחזור אליכם כאן בהקדם 🙏');
+    await say(digits, tx.human);
     await save(digits, { status: 'handoff', data, last_in: now, next_reminder_at: null });
-    await forwardToOperator({ digits, name: m.name, body, media, id: m.inboxId, st: m.st, note: '🙋 ביקש/ה נציג באמצע הצ׳אט (משפך F)' });
+    await forwardToOperator({ digits, name: m.name, body, media, id: m.inboxId, st: m.st, note: `🙋 ביקש/ה נציג באמצע הצ׳אט (משפך F)${lang === 'en' ? ' · 🇬🇧 באנגלית' : ''}` });
     return;
   }
   const rd = reading as Reading | null;
   if (rd?.intent === 'question' && rd.reply) reply += rd.reply + '\n\n';
-  else if (waitingForVideo) reply += 'מחכים לסרטון 🙂\n\n';
-  else if (nextStep === st.step && data.ask === ask && text && !stored) reply += 'לא הבנתי עד הסוף 🙂 ';
+  else if (waitingForVideo) reply += tx.waitingVideo;
+  else if (nextStep === st.step && data.ask === ask && text && !stored) reply += tx.notUnderstood;
   await finish(c, data, nextStep, reply, now);
 }
 
 async function finish(c: Ctx, data: Data, nextStep: Step, prefix: string, now: string) {
-  await sayQuestion(c.digits, prefix, data.ask);
+  await sayQuestion(c.digits, prefix, data.ask, langOf(data));
   // At most 2 reminders per chat in total (they are not reset when the customer answers).
   await save(c.digits, { step: nextStep, data, last_in: now, next_reminder_at: nextReminder(now, c.st.reminders) });
 }
@@ -625,10 +744,9 @@ export async function sendDueReminders() {
   for (const f of due) {
     if (!windowLeftMs(f.last_in)) continue; // the 24h window closed: free-form is no longer allowed
     const hi = cleanName(f.data.name || f.data.profile).split(' ')[0];
-    const prefix = f.reminders <= 1
-      ? `היי${hi ? ` ${hi}` : ''} 👋 נשארו רק עוד כמה שאלות כדי לקבל הצעות מחיר להובלה.\n\n`
-      : 'תזכורת אחרונה מ-MoveMatch 🚚 אם עדיין מחפשים מוביל, אפשר להמשיך מכאן:\n\n';
-    if (await sayQuestion(f.phone, prefix, f.data.ask)) sent++;
+    const lang = langOf(f.data);
+    const prefix = f.reminders <= 1 ? TX[lang].remind1(hi) : TX[lang].remind2;
+    if (await sayQuestion(f.phone, prefix, f.data.ask, lang)) sent++;
     await save(f.phone, { next_reminder_at: nextReminder(f.last_in, f.reminders) });
   }
   return { due: due.length, sent };

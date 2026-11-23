@@ -1,3 +1,5 @@
+import { t, type Locale } from './i18n';
+
 export type Variant = 'a' | 'wizard' | 'form' | 'items' | 'choice';
 
 export type ElevatorType = 'small' | 'regular' | 'large';
@@ -93,6 +95,7 @@ export function normalizePhone(raw: string): string {
 export const isValidPhone = (raw: string) => /^05\d{8}$/.test(normalizePhone(raw));
 export const isValidName = (raw: string) => (raw || '').trim().length >= 2;
 
+/** Form messages in Hebrew (kept for older callers); msgs(locale) for the page language. */
 export const MSG = {
   name: 'נא למלא שם מלא',
   phone: 'מספר טלפון לא תקין',
@@ -108,15 +111,18 @@ export const MSG = {
   rooms: 'נא לבחור כמה חדרים יש בדירה',
 };
 
+export const msgs = (locale: Locale = 'he') => t(locale).msg;
+
 /** Shown when this phone number already opened a tender in the last 30 days. `until` is YYYY-MM-DD. */
-export function phoneRecentMsg(until?: string) {
+export function phoneRecentMsg(until?: string, locale: Locale = 'he') {
   const d = until && /^\d{4}-\d{2}-\d{2}$/.test(until)
-    ? new Date(until + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: 'numeric' }) : '';
-  return `כבר נפתח מכרז עם מספר הטלפון הזה בחודש האחרון. אפשר לפתוח מכרז חדש${d ? ` החל מ־${d}` : ' 30 יום אחרי הקודם'}.`;
+    ? new Date(until + 'T12:00:00').toLocaleDateString(t(locale).dateLocale, { day: 'numeric', month: 'numeric', year: 'numeric' }) : '';
+  return t(locale).msg.phoneRecent(d);
 }
 
 /** `origin`: the address they're moving from, which also needs the home size. */
-export function validateAddress(a: Address, origin = false): Partial<Record<keyof Address, string>> {
+export function validateAddress(a: Address, origin = false, locale: Locale = 'he'): Partial<Record<keyof Address, string>> {
+  const MSG = t(locale).msg;
   const e: Partial<Record<keyof Address, string>> = {};
   if (origin && !a.rooms) e.rooms = MSG.rooms;
   if (!a.city.trim()) e.city = MSG.city;
@@ -125,7 +131,7 @@ export function validateAddress(a: Address, origin = false): Partial<Record<keyo
   if (!number.trim()) e.number = MSG.number;
   if (!a.floor.trim()) e.floor = MSG.floor;
   if (a.elevator == null) e.elevator = MSG.elevator;
-  if (a.elevator === true && !a.elevator_type) e.elevator_type = 'נא לבחור את גודל המעלית';
+  if (a.elevator === true && !a.elevator_type) e.elevator_type = MSG.elevatorType;
   if (!a.parking) e.parking = MSG.parking;
   return e;
 }
@@ -146,15 +152,17 @@ export type When = { date: string; date_flexible: boolean; time: '' | 'morning' 
 export const emptyWhen = (): When => ({ date: '', date_flexible: false, time: '', time_flexible: false });
 export const TIME_LABEL: Record<string, string> = { morning: 'בוקר (7:00–11:00)', noon: 'צהריים (11:00–15:00)', afternoon: 'אחר הצהריים (15:00–19:00)' };
 
-export function validateWhen(w: When): { date?: string } {
-  return !w.date && !w.date_flexible ? { date: 'נא לבחור תאריך, או לסמן שאתם גמישים' } : {};
+export function validateWhen(w: When, locale: Locale = 'he'): { date?: string } {
+  return !w.date && !w.date_flexible ? { date: t(locale).msg.date } : {};
 }
 
-export function whenText(w: Partial<When> | null | undefined): string {
+/** "יום שני, 15.12.2026 · בוקר (7:00–11:00)". Hebrew by default (movers, emails); `locale` for the English pages. */
+export function whenText(w: Partial<When> | null | undefined, locale: Locale = 'he'): string {
   if (!w) return '';
-  const d = w.date ? new Date(w.date + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' }) : '';
-  const date = d ? `${d}${w.date_flexible ? ' (גמיש)' : ''}` : w.date_flexible ? 'תאריך גמיש' : '';
-  const time = w.time ? `${TIME_LABEL[w.time] || w.time}${w.time_flexible ? ' (גמיש)' : ''}` : w.time_flexible ? 'שעה גמישה' : '';
+  const o = t(locale).opts;
+  const d = w.date ? new Date(w.date + 'T12:00:00').toLocaleDateString(t(locale).dateLocale, { weekday: 'long', day: 'numeric', month: locale === 'he' ? 'numeric' : 'short', year: 'numeric' }) : '';
+  const date = d ? `${d}${w.date_flexible ? o.flexible : ''}` : w.date_flexible ? o.dateFlexible : '';
+  const time = w.time ? `${o.time[w.time] || w.time}${w.time_flexible ? o.flexible : ''}` : w.time_flexible ? o.timeFlexible : '';
   return [date, time].filter(Boolean).join(' · ');
 }
 

@@ -3,6 +3,7 @@ export const LEGAL = {
   brand: 'MoveMatch',
   entity: 'אדטק, מרטק ייעוץ בע״מ (Adtech Martech Consulting Ltd.)',
   entityShort: 'אדטק, מרטק ייעוץ בע״מ',
+  entityShortEn: 'Adtech Martech Consulting Ltd.',
   companyId: '517038543', // ח.פ.
   address: 'הפורצים 10, ירושלים',
   email: 'legal@admarkgrowth.com',

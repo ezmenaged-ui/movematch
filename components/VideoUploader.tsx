@@ -3,6 +3,7 @@ import { Check, Clock, Copy, Upload, Video, X } from 'lucide-react';
 import { useRef } from 'react';
 import { fmtDuration, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS_TOLERANCE } from '@/lib/client';
 import '@/app/items.css';
+import { useT } from './Locale';
 
 export type Clip = {
   key: string; file: File; name: string; size: number; duration: number | null;
@@ -31,18 +32,16 @@ export function Checklist() {
  * Why it matters: a clear, full video is what keeps the price, the work and the insurance aligned with the movers.
  */
 export function VideoGuide({ compact = false }: { compact?: boolean }) {
+  const v = useT().video;
   return (
     <div className="vid-guide vid-guide-full" role="note">
-      <p className="vid-why"><b>סרטון ברור ומפורט הוא החלק הכי חשוב בבקשה.</b> לפיו המובילים יודעים בדיוק מה מובילים, מה מפרקים ומה מרכיבים, וכמה זה עולה. ככה אין הפתעות במחיר ואין אי־נעימויות ביום ההובלה. עדיף סרטון ארוך וברור מאשר קצר וחלקי.</p>
-      <b>איך מצלמים</b>
+      <p className="vid-why"><b>{v.why[0]}</b>{v.why[1]}</p>
+      <b>{v.how}</b>
       <ol>
-        <li><b>מתחילים מהכניסה לבית,</b> ואם אפשר גם מהכניסה לבניין.</li>
-        <li><b>עוברים חדר אחרי חדר, פריט אחרי פריט,</b> לאט ובלי לדלג.</li>
-        <li><b>אומרים בקול על כל פריט:</b> האם הוא עובר, האם צריך לפרק אותו, האם צריך להרכיב אותו מחדש בבית החדש, ומה אסור לפרק.</li>
-        <li><b>מצלמים את כל המסדרונות, הדלתות והפתחים</b> בין החדרים, כדי שהמובילים יראו אם משהו יתקשה לצאת מחדר או להיכנס אליו.</li>
+        {v.steps.map(([b, rest]) => <li key={b}><b>{b}</b>{rest}</li>)}
       </ol>
-      {!compact && <p className="vid-for-you"><b>זה לטובתכם:</b> סרטון טוב מבטיח שלא יהיו הפתעות במחיר, שההובלה תיעשה נכון, ושהחפצים שלכם יבוטחו כמו שצריך.</p>}
-      <small>כל סרטון עד 4 דקות. אפשר להעלות כמה סרטונים, למשל אחד לכל חדר.</small>
+      {!compact && <p className="vid-for-you"><b>{v.forYou[0]}</b>{v.forYou[1]}</p>}
+      <small>{v.limit}</small>
     </div>
   );
 }
@@ -60,6 +59,7 @@ export function VideoRules() {
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(n > 10 * 1024 * 1024 ? 0 : 1)}MB`;
 
 export function VideoButtons({ onFiles, compact = false, more = false }: { onFiles: (f: File[]) => void; compact?: boolean; more?: boolean }) {
+  const v = useT().video;
   const cam = useRef<HTMLInputElement>(null);
   const gal = useRef<HTMLInputElement>(null);
   const pick = (e: React.ChangeEvent<HTMLInputElement>) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length) onFiles(f); };
@@ -69,36 +69,37 @@ export function VideoButtons({ onFiles, compact = false, more = false }: { onFil
       <input ref={gal} type="file" accept="video/*" multiple hidden onChange={pick} />
       <button type="button" className={`btn ${more ? 'btn-secondary' : 'btn-primary blueprint'} ${compact ? 'btn-lg' : 'btn-xl'}`} onClick={() => cam.current?.click()}>
         {!more && <><i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" /></>}
-        <Video size={20} strokeWidth={1.5} aria-hidden /> {more ? 'צלמו סרטון נוסף' : 'התחילו לצלם'}
+        <Video size={20} strokeWidth={1.5} aria-hidden /> {more ? v.more : v.start}
       </button>
       <button type="button" className={`btn btn-secondary ${compact ? 'btn-lg' : 'btn-xl'}`} onClick={() => gal.current?.click()}>
-        <Upload size={18} strokeWidth={1.5} aria-hidden /> {more ? 'העלו סרטון נוסף' : 'העלו מהגלריה (אפשר כמה)'}
+        <Upload size={18} strokeWidth={1.5} aria-hidden /> {more ? v.galleryMore : v.gallery}
       </button>
     </div>
   );
 }
 
 export function ClipList({ clips, onRemove }: { clips: Clip[]; onRemove: (key: string) => void }) {
+  const v = useT().video;
   if (!clips.length) return null;
   const ok = clips.filter((c) => !clipRejected(c) && c.state !== 'error').length;
   return (
     <div className="stack" style={{ gap: 10 }}>
-      {ok > 0 && <div className="small" style={{ fontWeight: 700 }}>{ok === 1 ? 'סרטון אחד' : `${ok} סרטונים`}</div>}
+      {ok > 0 && <div className="small" style={{ fontWeight: 700 }}>{v.count(ok)}</div>}
       {clips.map((c) => (
         <div key={c.key} className={`clip ${c.state === 'error' || clipRejected(c) ? 'err' : ''}`}>
           <div className="clip-top">
             <span className="clip-name">{c.name}</span>
             <span style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 'none' }}>
               <span className="small">{fmtDuration(c.duration)} {mb(c.size)}</span>
-              {c.state === 'done' ? <Check size={16} strokeWidth={2} color="var(--color-accent)" aria-label="הועלה" /> : (
-                <button type="button" className="btn-link" style={{ padding: 4, minHeight: 0 }} onClick={() => onRemove(c.key)} aria-label="הסרה"><X size={16} /></button>
+              {c.state === 'done' ? <Check size={16} strokeWidth={2} color="var(--color-accent)" aria-label={v.uploaded} /> : (
+                <button type="button" className="btn-link" style={{ padding: 4, minHeight: 0 }} onClick={() => onRemove(c.key)} aria-label={v.remove}><X size={16} /></button>
               )}
             </span>
           </div>
-          {c.state === 'too_long' && <span className="small">הסרטון ארוך מ-4 דקות ולכן לא יעלה. צלמו אותו מחדש בכמה סרטונים קצרים יותר.</span>}
-          {c.state === 'too_big' && <span className="small">הקובץ גדול מדי. צלמו סרטון קצר יותר, או צלמו באיכות רגילה (לא 4K).</span>}
-          {c.state === 'not_video' && <span className="small">הקובץ הזה אינו סרטון ולכן לא יעלה. בחרו קובץ וידאו.</span>}
-          {c.state === 'error' && <span className="small">ההעלאה נכשלה. נסו שוב.</span>}
+          {c.state === 'too_long' && <span className="small">{v.tooLong}</span>}
+          {c.state === 'too_big' && <span className="small">{v.tooBig}</span>}
+          {c.state === 'not_video' && <span className="small">{v.notVideo}</span>}
+          {c.state === 'error' && <span className="small">{v.failed}</span>}
           {(c.state === 'uploading' || c.state === 'queued') && <div className="bar"><i style={{ width: `${c.progress}%` }} /></div>}
         </div>
       ))}

@@ -1,5 +1,7 @@
 import 'server-only';
 import { db } from './db';
+import { t, type Locale } from './i18n';
+import { cityEn } from './cities';
 
 export type TenderOffer = {
   id: string; price: number; available_date: string | null; available_flexible: boolean; note: string | null;
@@ -18,6 +20,8 @@ export type Tender = {
   resume: { id: string; token: string; name: string; phone: string; city: string | null } | null;
   /** Finished tenders: lets the client add a video from the tender page (migration 019). */
   upload?: { id: string; token: string } | null;
+  /** 'en' = the client came from the English site (migration 029): /t/<code> forwards to /en/t/<code>. */
+  lang?: 'en' | null;
 };
 
 const CODE = /^[a-z0-9]{4,12}$/i;
@@ -29,11 +33,18 @@ export async function getTender(code: string): Promise<Tender | null> {
   return data as Tender;
 }
 
-export const cityOf = (a: Record<string, unknown> | null, fb?: string | null) => (a?.city as string) || fb || '';
+/** The city of an address (saved in Hebrew); in English on the English pages. */
+export const cityOf = (a: Record<string, unknown> | null, fb?: string | null, locale: Locale = 'he') => {
+  const c = (a?.city as string) || fb || '';
+  return locale === 'en' ? cityEn(c) : c;
+};
 export const nis = (n: number) => `₪${n.toLocaleString('he-IL')}`;
-export const dateHe = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'numeric' });
-export const offerDate = (o: TenderOffer) => (o.available_flexible ? 'גמיש בתאריך' : o.available_date ? `פנוי ב${dateHe(o.available_date)}` : 'תאריך יתואם');
-export const offerName = (o: TenderOffer, n: number) => o.company || `מוביל ${n}`;
+export const dateHe = (d: string, locale: Locale = 'he') => new Date(d + 'T12:00:00').toLocaleDateString(t(locale).dateLocale, { weekday: 'long', day: 'numeric', month: locale === 'he' ? 'numeric' : 'short' });
+export const offerDate = (o: TenderOffer, locale: Locale = 'he') => {
+  const d = t(locale).tender;
+  return o.available_flexible ? d.flexibleDate : o.available_date ? d.freeOn(dateHe(o.available_date, locale)) : d.dateTbd;
+};
+export const offerName = (o: TenderOffer, n: number, locale: Locale = 'he') => o.company || t(locale).tender.mover(n);
 
 export const phoneDisplay = (p: string) => (p.length === 10 ? `${p.slice(0, 3)}-${p.slice(3)}` : p);
 export const waLink = (p: string, text: string) => `https://wa.me/972${p.replace(/^0/, '')}?text=${encodeURIComponent(text)}`;

@@ -59,12 +59,13 @@ const SCHEMA = {
 };
 
 // Stable text first (cached), the per-message details go in the user turn.
-const SYSTEM = `You read one WhatsApp message from an Israeli customer who is filling in a home-moving request, in Hebrew, with a bot.
+const SYSTEM = `You read one WhatsApp message from a customer in Israel who is filling in a home-moving request with a bot, usually in Hebrew
+(some chats are in English: the user turn then says so).
 The bot asked one question; you turn the customer's answer into structured fields. Return JSON only, matching the schema.
 
 Fields:
 - address (when the bot is asking about the origin or destination address): fill every field the message states, null for anything not stated. Never guess.
-  - city: the canonical name from this list when it is one of them (fix spelling and abbreviations: ת"א → תל אביב-יפו, ראשלצ → ראשון לציון, פ"ת → פתח תקווה, ב"ש → באר שבע, קרית → קריית). A place not on the list: write it as the customer did.
+  - city: the canonical Hebrew name from this list when it is one of them, also when the customer writes it in English (fix spelling and abbreviations: ת"א / Tel Aviv / TLV → תל אביב-יפו, ראשלצ / Rishon → ראשון לציון, פ"ת / Petah Tikva → פתח תקווה, ב"ש / Beer Sheva → באר שבע, קרית → קריית). A place not on the list: write it as the customer did.
     ${CITIES.join(', ')}
   - address: street and house number only (e.g. "הרצל 12"). floor: a number as text ("0" for ground floor / קרקע, "-1" for basement). apartment: apartment number.
   - elevator: true if there is an elevator, false for stairs only. elevator_type: small (קטנה) / regular (בינונית, רגילה) / large (גדולה).
@@ -80,7 +81,7 @@ Fields:
 - name: the customer's name when the bot asked for it: the name only (as written, without titles, remarks or anything in brackets).
 - intent: answer (the message answers the question, fully or partly); question (they ask something instead: price, how it works, who we are);
   human (they want a person / representative / to talk on the phone); decline_video (asked for a video, they say they can't or won't send one); other.
-- reply: only for intent "question": a short, friendly Hebrew answer (1–2 sentences, no promises about prices or dates).
+- reply: only for intent "question": a short, friendly answer in the customer's language (Hebrew, or English when the user turn says the chat is in English; 1–2 sentences, no promises about prices or dates).
   Facts you may use: MoveMatch is a free service that sends the moving request to vetted movers in the customer's area; the movers send price offers,
   the customer compares and chooses, with no obligation. Prices depend on the details, which is why we ask. Otherwise reply is "".`;
 
@@ -88,7 +89,7 @@ let client: Anthropic | null = null;
 export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY;
 
 /** Read the customer's answer. Returns null when AI is off or the call fails (the caller uses the fallback parser). */
-export async function readAnswer(args: { asking: string; question: string; message: string; today: string }): Promise<Reading | null> {
+export async function readAnswer(args: { asking: string; question: string; message: string; today: string; lang?: 'he' | 'en' }): Promise<Reading | null> {
   if (!aiEnabled()) return null;
   client ??= new Anthropic({ timeout: 20_000, maxRetries: 1 });
   try {
@@ -101,7 +102,8 @@ export async function readAnswer(args: { asking: string; question: string; messa
       system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{
         role: 'user',
-        content: `Today (Israel): ${args.today}\nThe bot is asking about: ${args.asking}\nThe bot's question: ${args.question}\n\nCustomer's message:\n${args.message.slice(0, 1500)}`,
+        // The language note goes in the user turn, so the cached system prompt stays the same for every chat.
+        content: `${args.lang === 'en' ? 'This chat is in English (the customer came from the English site). Write `reply` in English; city names still in Hebrew from the list.\n' : ''}Today (Israel): ${args.today}\nThe bot is asking about: ${args.asking}\nThe bot's question: ${args.question}\n\nCustomer's message:\n${args.message.slice(0, 1500)}`,
       }],
     });
     if (r.stop_reason === 'refusal' || r.stop_reason === 'max_tokens') { console.warn('[wa-ai] stop', r.stop_reason); return null; }

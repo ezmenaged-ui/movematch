@@ -58,6 +58,8 @@ export type LeadRow = {
   /** 'home' = homepage while it is the test area, 'qa' = /qa test area, null = live funnel (migration 023). */
   entry?: 'home' | 'qa' | null;
   is_test?: boolean;
+  /** 'en' = came from the English site (/en) or an English WhatsApp chat (migration 029). */
+  lang?: 'en' | null;
 };
 
 /** The DB refuses a phone number that opened a tender in the last 30 days (see migration 007). */

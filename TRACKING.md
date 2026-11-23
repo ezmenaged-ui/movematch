@@ -99,6 +99,9 @@ Cost per completed lead = Ads cost ÷ `lead_complete`, and cost per qualified le
   **not a lead**: no `generate_lead` / `lead_created`. Don't mark it as a key event or import it into Ads.
 - If the visitor sends the prefilled message, the chat runs as funnel F and is labelled **`ad_group` / `utm_campaign` = FL**
   (`lib/waFunnel.ts` → `starterSource`), so it is not counted as the Google Ads WhatsApp ad (F2).
+- **English site (`/en`)**: the same events and parameters as the Hebrew funnels (same `funnel`, `theme`, `variant_id`, step names), plus
+  **`site_lang: 'en'`** on every funnel event. Split by language with `site_lang` or GA4's Landing page (`/en/…`). English WhatsApp chats
+  send `site_lang: 'en'` on `wa_conversation_start`. Leads carry `leads.lang = 'en'` in the database.
 - **Floating WhatsApp button** (every landing page except `/qa`, `components/themed/WhatsAppFloat.tsx`): a phone tap fires
   `wa_cta_click` with `placement: 'float'`; on desktop the button opens a panel (`wa_float_open`) and its green button fires
   `wa_cta_click` with `placement: 'float_panel'`. Both carry `funnel`, `theme`, `variant_id` and `landing_page` (`home`, `a`…`e`, `f`).

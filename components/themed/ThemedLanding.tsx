@@ -1,4 +1,4 @@
-import { Award, ShieldCheck, Star, Timer } from 'lucide-react';
+import { Award, Globe, ShieldCheck, Star, Timer } from 'lucide-react';
 import type { Funnel } from '@/lib/handoff';
 import type { Theme } from '../CallbackForm';
 import { LeadCard } from './LeadCard';
@@ -8,8 +8,9 @@ import '../../app/landing.css';
 import { LEGAL } from '@/lib/legal';
 import type { Entry } from '@/lib/client';
 import { QaBanner } from '../QaBanner';
-import { DEFAULT_LOCALE, t, type Locale } from '@/lib/i18n';
+import { DEFAULT_LOCALE, lp, t, type Locale } from '@/lib/i18n';
 import { WhatsAppFloat } from './WhatsAppFloat';
+import { FootLinks } from './FootLinks';
 
 function Below({ locale }: { locale: Locale }) {
   const d = t(locale);
@@ -34,26 +35,42 @@ function Below({ locale }: { locale: Locale }) {
       </section>
       <footer className="lp-foot">
         <div className="lp-wrap">
-          <span>© {new Date().getFullYear()} <span translate="no">MoveMatch</span> · {LEGAL.entityShort}, {d.footer.companyId} {LEGAL.companyId}</span>
+          <span>© {new Date().getFullYear()} <span translate="no">MoveMatch</span> · {locale === 'en' ? LEGAL.entityShortEn : LEGAL.entityShort}, {d.footer.companyId} {LEGAL.companyId}</span>
           <span>{d.footer.note}</span>
-          <span className="foot-links"><a href="/privacy">{d.footer.privacy}</a><a href="/terms">{d.footer.terms}</a><a href="/accessibility">{d.footer.accessibility}</a><a href="/our-movers">{d.footer.ourMovers}</a><a href="/movers/join">{d.footer.moversJoin}</a></span>
+          <FootLinks locale={locale} />
         </div>
       </footer>
     </>
   );
 }
 
-type P = { funnel: Funnel; entry: Entry; whatsapp: boolean; locale: Locale };
+/**
+ * The same page in the other language, for the language switch. English exists for the homepage, D and E (photo design)
+ * and /f; the other Hebrew funnels (A, B, C and the art designs of D and E) switch to the English homepage.
+ */
+export function altPath(locale: Locale, funnel: Funnel, entry: Entry, whatsapp: boolean) {
+  const page = entry === 'home' ? '/' : whatsapp ? '/f' : funnel === 'd' || funnel === 'e' ? `/${funnel}/photo` : '/';
+  return locale === 'en' ? page : lp('en', page);
+}
 
-function ArtLanding({ funnel, entry, whatsapp, locale }: P) {
+/** Link to the other language, at the top of the landing page. */
+function LangSwitch({ href, locale }: { href: string; locale: Locale }) {
+  const l = t(locale).lang;
+  return <a className="lp-lang" href={href} hrefLang={l.switchLang} lang={l.switchLang} aria-label={l.switchAria}><Globe size={16} strokeWidth={1.75} aria-hidden /> {l.switchLabel}</a>;
+}
+
+type P = { funnel: Funnel; entry: Entry; whatsapp: boolean; locale: Locale; alt: string | null };
+
+function ArtLanding({ funnel, entry, whatsapp, locale, alt }: P) {
   const d = t(locale);
   return (
     <div className={`lp lp-art${whatsapp ? ' lp-has-wa' : ''}`} id="top">
       <section className="lp-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="art-leaves" src="/art-leaves.webp" alt="" width={320} height={280} aria-hidden />
+        {alt && <LangSwitch href={alt} locale={locale} />}
         <div className="lp-wrap art-center">
-          <Logo />
+          <Logo href={lp(locale, '/')} />
           <h1><HlTitle parts={d.hero.art} /></h1>
           <p className="lp-sub">{d.hero.subArt}</p>
           <LeadCard funnel={funnel} theme="art" entry={entry} whatsapp={whatsapp} locale={locale} />
@@ -80,7 +97,7 @@ function Points({ mobile = false, locale }: { mobile?: boolean; locale: Locale }
   );
 }
 
-function PhotoLanding({ funnel, entry, whatsapp, locale }: P) {
+function PhotoLanding({ funnel, entry, whatsapp, locale, alt }: P) {
   const d = t(locale);
   const h = d.hero.photo;
   return (
@@ -94,7 +111,8 @@ function PhotoLanding({ funnel, entry, whatsapp, locale }: P) {
           </picture>
         </div>
         <div className="lp-wrap ph-top">
-          <Logo />
+          <Logo href={lp(locale, '/')} />
+          {alt && <LangSwitch href={alt} locale={locale} />}
         </div>
         <div className="lp-wrap ph-grid">
           <div className="ph-copy">
@@ -132,12 +150,13 @@ function PhotoLanding({ funnel, entry, whatsapp, locale }: P) {
  * locale: the page language (lib/i18n). Every landing except /qa also gets the floating WhatsApp button (WhatsAppFloat.tsx).
  */
 export function ThemedLanding({ funnel, theme, entry = null, whatsapp = false, locale = DEFAULT_LOCALE }: { funnel: Funnel; theme: Theme; entry?: Entry; whatsapp?: boolean; locale?: Locale }) {
+  const alt = entry === 'qa' ? null : altPath(locale, funnel, entry, whatsapp);
   return (
     <main>
       {entry === 'qa' && <QaBanner always />}
       {theme === 'art'
-        ? <ArtLanding funnel={funnel} entry={entry} whatsapp={whatsapp} locale={locale} />
-        : <PhotoLanding funnel={funnel} entry={entry} whatsapp={whatsapp} locale={locale} />}
+        ? <ArtLanding funnel={funnel} entry={entry} whatsapp={whatsapp} locale={locale} alt={alt} />
+        : <PhotoLanding funnel={funnel} entry={entry} whatsapp={whatsapp} locale={locale} alt={alt} />}
       {entry !== 'qa' && <WhatsAppFloat funnel={funnel} theme={theme} landing={whatsapp ? 'f' : entry === 'home' ? 'home' : funnel} locale={locale} />}
     </main>
   );

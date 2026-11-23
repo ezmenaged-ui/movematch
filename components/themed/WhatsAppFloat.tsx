@@ -15,8 +15,10 @@ import { WhatsAppIcon } from './WhatsAppCta';
  * Google Ads WhatsApp ad (F2) and from /f's lead-card button (FL). Keep it in Hebrew: the bot matches it.
  */
 export const FLOAT_STARTER = 'היי, הגעתי מהאתר של MoveMatch ואני רוצה הצעת מחיר להובלה.';
+/** The English site's starter: the bot recognises it (also FW) and runs the whole chat in English. */
+export const FLOAT_STARTER_EN = "Hi, I came from the MoveMatch website and I'd like a moving quote.";
 /** The MoveMatch business WhatsApp number (the Twilio sender), from lib/legal.ts. Never the operator's personal number. */
-export const FLOAT_WA_URL = `https://wa.me/${LEGAL.whatsapp}?text=${encodeURIComponent(FLOAT_STARTER)}`;
+export const floatWaUrl = (locale: Locale) => `https://wa.me/${LEGAL.whatsapp}?text=${encodeURIComponent(locale === 'en' ? FLOAT_STARTER_EN : FLOAT_STARTER)}`;
 
 /** Desktop = a wide screen with a mouse. There the button opens a panel (WhatsApp Web button + QR for the phone). */
 const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches;
@@ -30,6 +32,7 @@ const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min
  */
 export function WhatsAppFloat({ funnel, theme, landing, locale = DEFAULT_LOCALE }: { funnel: Funnel; theme: Theme; landing: string; locale?: Locale }) {
   const d = t(locale).waFloat;
+  const FLOAT_WA_URL = floatWaUrl(locale);
   const [open, setOpen] = useState(false);
   const [qr, setQr] = useState('');
   const fab = useRef<HTMLAnchorElement>(null);

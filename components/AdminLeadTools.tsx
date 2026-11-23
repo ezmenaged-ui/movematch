@@ -3,7 +3,7 @@ import { Send, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { uploadVideo } from '@/lib/client';
-import { addLeadVideo } from '@/app/admin/actions';
+import { addLeadVideo } from '@/app/(he)/admin/actions';
 
 /** /admin: upload a video from the operator's computer or phone into a lead (same storage and format as client uploads). */
 export function AdminVideoUpload({ leadId }: { leadId: string }) {

@@ -1,10 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useT } from './Locale';
 
 /** Re-fetches the server page every `seconds` (and when the tab regains focus), so new offers appear live. */
 export function AutoRefresh({ seconds = 20, count }: { seconds?: number; count: number }) {
   const router = useRouter();
+  const d = useT().tender;
   const [prev, setPrev] = useState(count);
   const [fresh, setFresh] = useState(false);
   useEffect(() => {
@@ -19,7 +21,7 @@ export function AutoRefresh({ seconds = 20, count }: { seconds?: number; count: 
   }, [count, prev]);
   return (
     <div className={`live ${fresh ? 'fresh' : ''}`} role="status" aria-live="polite">
-      <i className="live-dot" /> {fresh ? 'הגיעה הצעה חדשה!' : 'הדף מתעדכן אוטומטית כשמגיעות הצעות חדשות'}
+      <i className="live-dot" /> {fresh ? d.fresh : d.live}
     </div>
   );
 }

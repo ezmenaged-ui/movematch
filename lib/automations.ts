@@ -8,6 +8,7 @@ import { moverAlertSms, operatorAlertSms } from './alertSms';
 import { isHomeHeld, isQaEntry, isTestLead, waFunnelLive } from './qa';
 import { areasOfCity, type Area } from './areas';
 import { missingInfo } from './moverFormat';
+import { EN_TAG, isEnLead } from './langTag';
 
 type Addr = Record<string, unknown> | null | undefined;
 const secret = () => process.env.MM_ADMIN_SECRET;
@@ -29,7 +30,7 @@ function moveDetails(l: LeadRow) {
   const floors = from || to ? `${from || '?'} ← ${to || '?'}` : '';
   const video = l.videos?.length ? `סרטון מצורף (${l.videos.length})` : 'בלי סרטון';
   const n = (l.items?.list || []).reduce((s, i) => s + i.qty, 0);
-  return [roomsText(l.move_from), floors, n ? `רשימת ${n} פריטים` : '', video].filter(Boolean).join(', ');
+  return [isEnLead(l) ? EN_TAG : '', roomsText(l.move_from), floors, n ? `רשימת ${n} פריטים` : '', video].filter(Boolean).join(', ');
 }
 
 /**
@@ -106,7 +107,7 @@ export async function onLeadComplete(l: LeadRow, opts: { pingMovers: boolean }) 
 
   await Promise.all([
     alertWithSmsBackup('op-lead', operator(), 'op_lead', [
-      `${l.name} · מכרז ${tenderRef(l)}`, l.phone, routeOf(l), when, String(l.videos?.length || 0) + (l.video_skipped ? ' (דילג, להתקשר)' : ''),
+      `${l.name}${isEnLead(l) ? ' (אנגלית)' : ''} · מכרז ${tenderRef(l)}`, l.phone, routeOf(l), when, String(l.videos?.length || 0) + (l.video_skipped ? ' (דילג, להתקשר)' : ''),
       opts.pingMovers ? `${moversSent}${routeNote ? ` (${routeNote})` : ''}` : '0 (משפך A, להתקשר ללקוח)', `${site}/admin`,
     ], { kind: 'op_lead', lead: l.id }, operatorAlertSms(l, site), { test: isTestLead(l), silent: isQaEntry(l) }),
     notifyLead('complete', l),
